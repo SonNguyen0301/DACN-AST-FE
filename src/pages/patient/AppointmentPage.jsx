@@ -322,7 +322,7 @@ import { useNavigate } from 'react-router-dom';
 import Footer from '../../components/common/Footer'; 
 
 const { Header, Content } = Layout;
-const { Title, Text, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 const { TextArea } = Input; 
 const { Dragger } = Upload; 

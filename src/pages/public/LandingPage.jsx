@@ -138,7 +138,7 @@ export default function LandingPage() {
                   </div>
                   <div style={{ textAlign: 'left' }}>
                       <Text strong style={{ fontSize: 16, display: 'block' }}>Độ chính xác</Text>
-                      <Text style={{ fontSize: 24, fontWeight: 800, color: '#1677ff' }}>98.5%</Text>
+                      <Text style={{ fontSize: 24, fontWeight: 800, color: '#1677ff' }}>85%</Text>
                   </div>
               </div>
             </Col>
