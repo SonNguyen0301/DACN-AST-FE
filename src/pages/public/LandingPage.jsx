@@ -1,62 +1,84 @@
-import React from 'react';
-import { Layout, Button, Typography, Row, Col, Avatar, Space, Card, Image, Steps, Divider,Carousel ,Tag} from 'antd';
+import  { useRef }from 'react';
+import { Layout, Button, Typography, Row, Col, Space, Card, Image, Carousel } from 'antd';
 import { 
-  ArrowRightOutlined, PlayCircleFilled, CheckCircleFilled, GlobalOutlined,
+  ArrowRightOutlined, CheckCircleFilled, 
   CloudUploadOutlined, ScanOutlined, FileProtectOutlined, ScheduleOutlined,
-  SafetyCertificateFilled, BankOutlined, UserOutlined, MedicineBoxOutlined,
-  ExperimentOutlined, LockOutlined, CalendarOutlined
+   BankOutlined, UserOutlined, MedicineBoxOutlined,
+  ExperimentOutlined, LockOutlined, CalendarOutlined, ReadOutlined, LeftOutlined, RightOutlined, 
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import Footer from "../../components/common/Footer"; 
 
-const { Header, Content, Footer } = Layout;
+const { Header, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const carouselRef = useRef(null);
 
-  // --- STYLE VARIABLES (Để đồng bộ giao diện) ---
+  const arrowBtnStyle = {
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    zIndex: 2,
+    background: 'rgba(255, 255, 255, 0.8)', 
+    border: 'none',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    width: 40,
+    height: 40,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
   const btnPrimaryStyle = {
     height: '50px', padding: '0 32px', borderRadius: '25px',
     fontSize: '16px', fontWeight: '600', background: '#1677ff', border: 'none',
     boxShadow: '0 10px 20px rgba(22, 119, 255, 0.2)', color: '#fff'
   };
+  const featureSlides = [
+    {
+      key: 'ai',
+      img: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=2070&auto=format&fit=crop", 
+      alt: "Chẩn đoán AI",
+      badgeIcon: <ScanOutlined style={{ color: '#1677ff', fontSize: 20 }} />,
+      badgeTitle: "Phân tích AI",
+      badgeSub: "Độ chính xác cao"
+    },
+    {
+      key: 'booking',
+      img: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=2070&auto=format&fit=crop", 
+      alt: "Đặt lịch khám",
+      badgeIcon: <CalendarOutlined style={{ color: '#52c41a', fontSize: 20 }} />,
+      badgeTitle: "Đặt lịch 24/7",
+      badgeSub: "Không cần chờ đợi"
+    },
+    {
+      key: 'support',
+      img: "https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=2070&auto=format&fit=crop", 
+      alt: "Hỗ trợ chuyên môn",
+      badgeIcon: <ReadOutlined style={{ color: '#722ed1', fontSize: 20 }} />,
+      badgeTitle: "Hồ sơ số",
+      badgeSub: "Quản lý tập trung"
+    }
+  ];
 
-  const btnSecondaryStyle = {
-    height: '50px', padding: '0 32px', borderRadius: '25px',
-    fontSize: '16px', fontWeight: '600', color: '#1677ff', background: '#e6f4ff', border: 'none',
-  };
-  const featureImages = [
-      {
-        src: "https://images.unsplash.com/photo-1579154204601-01588f351e67?q=80&w=2070&auto=format&fit=crop",
-        alt: "Chẩn đoán da liễu bằng hình ảnh"
-      },
-      {
-        src: "https://images.unsplash.com/photo-1506784365847-bbad939e9335?q=80&w=2068&auto=format&fit=crop",
-        alt: "Đặt lịch và quản lý thời gian thông minh"
-      },
-      {
-        src: "https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?q=80&w=2091&auto=format&fit=crop",
-        alt: "Đội ngũ bác sĩ hội chẩn chuyên môn"
-      }
-    ];
-  const sectionPadding = '100px 5%'; // Khoảng cách chuẩn giữa các phần
+  const sectionPadding = '100px 5%'; 
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#fff', fontFamily: "'Inter', sans-serif" }}>
       
-      {/* --- HEADER --- */}
-            <Header
+      <Header
         style={{
           background: "#fff", padding: "0 40px", display: "flex", alignItems: "center",
           justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-          position: 'sticky', top: 0, zIndex: 1000 // Sticky Header
+          position: 'sticky', top: 0, zIndex: 1000 
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
           <img 
-            src="/ASTCare1.png" // <-- Đường dẫn đến file ảnh trong thư mục public
+            src="/ASTCare1.png" 
             alt="ATSCare Logo" 
-            style={{ height: '40px', objectFit: 'contain' }} // Điều chỉnh chiều cao cho vừa header
+            style={{ height: '40px', objectFit: 'contain' }} 
           />
         </div>
         <Space size="large" className="hidden md:flex">
@@ -69,7 +91,6 @@ export default function LandingPage() {
 
       <Content>
         
-        {/* 1. HERO SECTION */}
         <div style={{ padding: '80px 5%', background: 'linear-gradient(180deg, #fff 0%, #f8fbff 100%)' }}>
           <Row gutter={[64, 48]} align="middle">
             <Col xs={24} md={12}>
@@ -87,7 +108,6 @@ export default function LandingPage() {
             </Col>
             <Col xs={24} md={12} style={{ textAlign: 'center', position: 'relative', padding: '20px' }}>
               
-              {/* 1. Lớp nền mờ (Glow Effect) trang trí phía sau */}
               <div style={{ 
                 position: 'absolute', 
                 top: '50%', 
@@ -101,24 +121,21 @@ export default function LandingPage() {
                 zIndex: 0 
               }}></div>
 
-              {/* 2. Hình ảnh chính */}
-              {/* Tôi dùng ảnh demo từ Unsplash. Bạn có thể thay bằng đường dẫn ảnh thật của bạn, ví dụ: "/hero-image.png" */}
               <Image 
                 preview={false}
                 src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                 alt="Công nghệ chẩn đoán da liễu AI"
                 style={{ 
-                  borderRadius: '40px 40px 40px 40px', // Bo góc kiểu hiện đại (góc dưới trái vuông)
+                  borderRadius: '40px 40px 40px 40px', 
                   boxShadow: '0 30px 60px rgba(22, 119, 255, 0.25)', 
                   maxWidth: '100%',
                   height: 'auto',
-                  position: 'relative', // Để nổi lên trên lớp nền mờ
+                  position: 'relative', 
                   zIndex: 1,
-                  border: '6px solid #fff' // Thêm viền trắng cho nổi bật
+                  border: '6px solid #fff' 
                 }} 
               />
 
-              {/* 3. Thẻ nổi (Floating Card) trang trí thêm */}
               <div style={{
                   position: 'absolute',
                   bottom: '10%',
@@ -131,7 +148,7 @@ export default function LandingPage() {
                   alignItems: 'center',
                   gap: '15px',
                   zIndex: 2,
-                  animation: 'bounce 3s infinite ease-in-out' // Bạn có thể thêm keyframe bounce trong CSS nếu muốn nó chuyển động
+                  animation: 'bounce 3s infinite ease-in-out' 
               }}>
                   <div style={{ width: 50, height: 50, background: '#e6f7ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <CheckCircleFilled style={{ fontSize: 28, color: '#1677ff' }} />
@@ -145,7 +162,6 @@ export default function LandingPage() {
           </Row>
         </div>
 
-        {/* 2. ABOUT & FEATURES (Gộp chung style ảnh bạn gửi) */}
         <div style={{ padding: sectionPadding, background: '#fff' }}>
           <Row gutter={[80, 48]} align="middle">
             <Col xs={24} md={13}>
@@ -172,49 +188,69 @@ export default function LandingPage() {
                 ))}
               </Space>
             </Col>
-<Col xs={24} md={11} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+
+           <Col xs={24} md={11} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               
-              {/* Hình ảnh Bác sĩ sử dụng Tablet (Thể hiện tính năng Quản lý & Chẩn đoán) */}
-              <Image 
-                preview={false}
-                src="https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=2070&auto=format&fit=crop"
-                alt="Bác sĩ sử dụng ứng dụng SkinCare"
-                style={{ 
-                  width: '100%',
-                  borderRadius: 24, 
-                  boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.15)', // Đổ bóng sâu
-                  border: '8px solid #fff', // Viền trắng tạo cảm giác khung tranh
-                }} 
-              />
+              <div style={{ width: '100%', maxWidth: '500px', position: 'relative' }}> 
+                
+                <Button 
+                  shape="circle"
+                  icon={<LeftOutlined style={{ color: '#1677ff', fontSize: 16 }} />}
+                  style={{ ...arrowBtnStyle, left: -20 }} 
+                  onClick={() => carouselRef.current.prev()} 
+                />
 
-              {/* Thẻ nổi nhỏ trang trí (Tùy chọn - Để nhấn mạnh tính năng AI) */}
-              <div style={{ 
-                position: 'absolute', 
-                bottom: 30, 
-                left: -20, 
-                background: '#fff', 
-                padding: '12px 20px', 
-                borderRadius: 12, 
-                boxShadow: '0 10px 25px rgba(0,0,0,0.1)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 10,
-                border: '1px solid #f0f0f0'
-              }}>
-                  <div style={{ width: 40, height: 40, background: '#e6f7ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <ScanOutlined style={{ color: '#1677ff', fontSize: 20 }} />
-                  </div>
-                  <div>
-                    <Text strong style={{ display: 'block', fontSize: 14 }}>Phân tích AI</Text>
-                    <Text type="success" style={{ fontSize: 12 }}>Độ chính xác cao</Text>
-                  </div>
+                <Carousel 
+                  ref={carouselRef} 
+                  autoplay 
+                  autoplaySpeed={3000} 
+                  effect="fade" 
+                  dots={false}
+                >
+                  {featureSlides.map((slide) => (
+                    <div key={slide.key} style={{ position: 'relative', padding: '10px' }}>
+                      <Image 
+                        preview={false}
+                        src={slide.img}
+                        alt={slide.alt}
+                        style={{ 
+                          width: '100%',
+                          height: '350px', 
+                          objectFit: 'cover',
+                          borderRadius: 24, 
+                          border: '8px solid #fff',
+                        }} 
+                      />
+                      <div style={{ 
+                        position: 'absolute', bottom: 40, left: -10,
+                        background: '#fff', padding: '12px 20px', borderRadius: 12, 
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', 
+                        gap: 10, border: '1px solid #f0f0f0', zIndex: 10
+                      }}>
+                          <div style={{ width: 40, height: 40, background: '#e6f7ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {slide.badgeIcon}
+                          </div>
+                          <div>
+                            <Text strong style={{ display: 'block', fontSize: 14 }}>{slide.badgeTitle}</Text>
+                            <Text type="success" style={{ fontSize: 12 }}>{slide.badgeSub}</Text>
+                          </div>
+                      </div>
+                    </div>
+                  ))}
+                </Carousel>
+
+                <Button 
+                  shape="circle"
+                  icon={<RightOutlined style={{ color: '#1677ff', fontSize: 16 }} />}
+                  style={{ ...arrowBtnStyle, right: -20 }} 
+                  onClick={() => carouselRef.current.next()} 
+                />
+                
               </div>
-
             </Col>
           </Row>
         </div>
 
-        {/* 4. QUY TRÌNH HOẠT ĐỘNG (HOW IT WORKS) */}
         <div style={{ padding: sectionPadding, background: '#f9fafb' }}>
           <div style={{ textAlign: 'center', marginBottom: 60 }}>
             <Title level={2} style={{ fontSize: 36, fontWeight: 800 }}>Quy trình hoạt động đơn giản</Title>
@@ -223,10 +259,22 @@ export default function LandingPage() {
 
           <Row gutter={[32, 32]}>
             {[
-              { step: '01', title: 'Tải ảnh lên', icon: <CloudUploadOutlined />, desc: 'Chụp ảnh vùng da tổn thương và mô tả triệu chứng.' },
-              { step: '02', title: 'Phân tích AI', icon: <ScanOutlined />, desc: 'AI xử lý hình ảnh, so sánh với cơ sở dữ liệu y khoa.' },
-              { step: '03', title: 'Nhận kết quả', icon: <FileProtectOutlined />, desc: 'Nhận gợi ý chẩn đoán sơ bộ và mức độ nghiêm trọng.' },
-              { step: '04', title: 'Kết nối Bác sĩ', icon: <ScheduleOutlined />, desc: 'Đặt lịch khám với bác sĩ hoặc nhập viện nếu cần.' },
+              { 
+                step: '01', title: 'Tải ảnh lên', icon: <CloudUploadOutlined />, desc: 'Chụp ảnh vùng da tổn thương và mô tả triệu chứng.',
+                color: '#1677ff', bg: '#e6f4ff' 
+              },
+              { 
+                step: '02', title: 'Phân tích AI', icon: <ScanOutlined />, desc: 'AI xử lý hình ảnh, so sánh với cơ sở dữ liệu y khoa.',
+                color: '#fa8c16', bg: '#fff7e6' 
+              },
+              { 
+                step: '03', title: 'Nhận kết quả', icon: <FileProtectOutlined />, desc: 'Nhận gợi ý chẩn đoán sơ bộ và mức độ nghiêm trọng.',
+                color: '#52c41a', bg: '#f6ffed' 
+              },
+              { 
+                step: '04', title: 'Kết nối Bác sĩ', icon: <ScheduleOutlined />, desc: 'Đặt lịch khám với bác sĩ hoặc nhập viện nếu cần.',
+                color: '#722ed1', bg: '#f9f0ff' 
+              },
             ].map((item, index) => (
               <Col xs={24} md={6} key={index}>
                 <Card 
@@ -234,8 +282,18 @@ export default function LandingPage() {
                   bordered={false} 
                   style={{ borderRadius: 20, height: '100%', textAlign: 'center', position: 'relative', overflow: 'hidden' }}
                 >
-                  {/* <div style={{ position: 'absolute', top: -10, right: -10, fontSize: 80, fontWeight: 900, color: '#f0f5ff', opacity: 0.5 }}>{item.step}</div> */}
-                  <div style={{ width: 70, height: 70, background: index % 2 === 0 ? '#e6f4ff' : '#fff7e6', borderRadius: '50%', margin: '0 auto 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, color: index % 2 === 0 ? '#1677ff' : '#fa8c16' }}>
+                  <div style={{ 
+                    width: 70, 
+                    height: 70, 
+                    background: item.bg, 
+                    borderRadius: '50%', 
+                    margin: '0 auto 20px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    fontSize: 30, 
+                    color: item.color 
+                  }}>
                     {item.icon}
                   </div>
                   <Title level={4} style={{ marginBottom: 12 }}>{item.title}</Title>
@@ -246,59 +304,65 @@ export default function LandingPage() {
           </Row>
         </div>
 
-        {/* 5. CÔNG NGHỆ & BẢO MẬT (TECHNOLOGY) */}
         <div style={{ padding: sectionPadding, background: '#001529', color: '#fff' }}>
-          <Row gutter={[64, 48]} align="middle">
-            <Col xs={24} md={12}>
-              <div style={{ padding: '40px', background: 'rgba(255,255,255,0.05)', borderRadius: 30, border: '1px solid rgba(255,255,255,0.1)' }}>
-                <Title level={2} style={{ color: '#fff', marginBottom: 24 }}>Công nghệ & Bảo mật</Title>
-                <Paragraph style={{ color: 'rgba(255,255,255,0.7)', fontSize: 16, marginBottom: 32 }}>
-                  Chúng tôi đặt sự an toàn và chính xác lên hàng đầu. Hệ thống được xây dựng dựa trên các tiêu chuẩn y tế khắt khe nhất.
-                </Paragraph>
-                
-                <Space direction="vertical" size="middle">
-                  <div style={{ display: 'flex', gap: 16 }}>
-                    <ExperimentOutlined style={{ fontSize: 28, color: '#4096ff' }} />
-                    <div>
-                      <Text strong style={{ color: '#fff', fontSize: 18 }}>Công nghệ AI Deep Learning</Text>
-                      <Paragraph style={{ color: 'rgba(255,255,255,0.6)', margin: 0 }}>Sử dụng TensorFlow, Keras và các mô hình CNN tiên tiến.</Paragraph>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
-                    <LockOutlined style={{ fontSize: 28, color: '#52c41a' }} />
-                    <div>
-                      <Text strong style={{ color: '#fff', fontSize: 18 }}>Bảo mật dữ liệu tuyệt đối</Text>
-                      <Paragraph style={{ color: 'rgba(255,255,255,0.6)', margin: 0 }}>Mã hóa toàn bộ bệnh án và hình ảnh, đảm bảo quyền riêng tư.</Paragraph>
-                    </div>
-                  </div>
-                </Space>
-              </div>
-            </Col>
-            {/* Ảnh minh họa công nghệ */}
-            <Col xs={24} md={12} style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-               <div style={{ position: 'relative', width: '100%', maxWidth: 500 }}>
-                 {/* Hiệu ứng phát sáng phía sau ảnh (Tùy chọn) */}
-                 <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '80%', height: '80%', background: 'radial-gradient(circle, rgba(64,150,255,0.3) 0%, rgba(0,21,41,0) 70%)', borderRadius: '50%', filter: 'blur(40px)', zIndex: 0 }}></div>
+          
+          <div style={{ textAlign: 'center', marginBottom: 50, maxWidth: 800, margin: '0 auto 50px' }}>
+            <Title level={2} style={{ color: '#fff', marginBottom: 16 }}>An tâm tuyệt đối về Sức khỏe & Dữ liệu</Title>
+            <Paragraph style={{ color: 'rgba(255,255,255,0.6)', fontSize: 18 }}>
+              Sự kết hợp hoàn hảo giữa tốc độ của AI và sự tận tâm của bác sĩ.
+            </Paragraph>
+          </div>
 
-                 <Image 
-                   preview={false} 
-                   // Ảnh Server Room chất lượng cao
-                   src="/public/ai.png" 
-                   alt="Trung tâm dữ liệu bảo mật"
-                   style={{ 
-                     borderRadius: 30, 
-                     boxShadow: '0 30px 60px rgba(0,0,0,0.5)', // Đổ bóng tối cho nền tối
-                     position: 'relative',
-                     zIndex: 1,
-                     border: '1px solid rgba(255,255,255,0.1)' // Viền mờ tinh tế
-                   }} 
-                 />
-               </div>
-            </Col>
+          <Row gutter={[24, 24]}>
+            {[
+              {
+                icon: <ExperimentOutlined style={{ fontSize: 32, color: '#4096ff' }} />,
+                title: "AI Chẩn đoán chuẩn xác",
+                desc: "Được huấn luyện trên hàng ngàn hình ảnh lâm sàng, giúp phát hiện sớm các dấu hiệu bất thường mà mắt thường dễ bỏ qua."
+              },
+              {
+                icon: <LockOutlined style={{ fontSize: 32, color: '#52c41a' }} />,
+                title: "Dữ liệu là 'Của Riêng Bạn'",
+                desc: "Hồ sơ bệnh án được mã hóa an toàn. Chỉ bạn và bác sĩ trực tiếp điều trị mới có quyền truy cập."
+              },
+            ].map((item, index) => (
+              <Col xs={24} md={12} key={index}>
+                <div 
+                  style={{ 
+                    padding: '32px', 
+                    background: 'rgba(255,255,255,0.05)', 
+                    borderRadius: 24, 
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    height: '100%',
+                    transition: 'all 0.3s',
+                    cursor: 'default'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                >
+                  <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+                    <div style={{ 
+                      padding: 16, 
+                      background: 'rgba(255,255,255,0.05)', 
+                      borderRadius: 16, 
+                      display: 'flex', alignItems: 'center', justifyContent: 'center' 
+                    }}>
+                      {item.icon}
+                    </div>
+
+                    <div>
+                      <Title level={4} style={{ color: '#fff', marginTop: 0, marginBottom: 8 }}>{item.title}</Title>
+                      <Paragraph style={{ color: 'rgba(255,255,255,0.65)', fontSize: 15, lineHeight: 1.6, margin: 0 }}>
+                        {item.desc}
+                      </Paragraph>
+                    </div>
+                  </div>
+                </div>
+              </Col>
+            ))}
           </Row>
         </div>
 
-        {/* 6. ĐỐI TƯỢNG SỬ DỤNG (TARGET AUDIENCE) */}
         <div style={{ padding: sectionPadding, background: '#fff' }}>
           <div style={{ textAlign: 'center', marginBottom: 60 }}>
             <Title level={2} style={{ fontSize: 36, fontWeight: 800 }}>Ai nên sử dụng ATSCare?</Title>
@@ -337,7 +401,6 @@ export default function LandingPage() {
           </Row>
         </div>
 
-        {/* CTA FINAL */}
         <div style={{ padding: '80px 5%', background: 'linear-gradient(90deg, #1677ff 0%, #4096ff 100%)', textAlign: 'center', color: '#fff' }}>
           <Title level={2} style={{ color: '#fff', marginBottom: 24 }}>Sẵn sàng chăm sóc làn da của bạn?</Title>
           <Paragraph style={{ color: 'rgba(255,255,255,0.9)', fontSize: 18, marginBottom: 40, maxWidth: 600, margin: '0 auto 40px' }}>
@@ -350,47 +413,7 @@ export default function LandingPage() {
 
       </Content>
 
-      {/* 7. FOOTER */}
-      <Footer style={{ background: '#fff', padding: '60px 5%', borderTop: '1px solid #eee' }}>
-        <Row gutter={[48, 48]}>
-          <Col xs={24} md={8}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-              <div style={{ width: 32, height: 32, background: '#1677ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><GlobalOutlined /></div>
-              <span style={{ fontSize: 20, fontWeight: 'bold' }}>ATSCare</span>
-            </div>
-            <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-              Hệ thống hỗ trợ chẩn đoán da liễu thông minh.
-            </Text>
-            <Text type="secondary" style={{ display: 'block' }}><SafetyCertificateFilled style={{ color: '#faad14' }} /> Disclaimer: Kết quả chỉ mang tính tham khảo.</Text>
-          </Col>
-          <Col xs={12} md={4}>
-            <Title level={5}>Liên kết</Title>
-            <Space direction="vertical" style={{ color: '#666' }}>
-              <Text type="secondary">Về chúng tôi</Text>
-              <Text type="secondary">Đặt lịch khám</Text>
-              <Text type="secondary">Dành cho bác sĩ</Text>
-            </Space>
-          </Col>
-          <Col xs={12} md={4}>
-            <Title level={5}>Liên hệ</Title>
-            <Space direction="vertical">
-              <Text type="secondary">123 Nguyễn Huệ, Q.1, TP.HCM</Text>
-              <Text type="secondary">contact@atscare.ai</Text>
-              <Text type="secondary">1900 123 456</Text>
-            </Space>
-          </Col>
-          <Col xs={24} md={8}>
-            <Title level={5}>Tải ứng dụng</Title>
-            <Space>
-              <Button>App Store</Button>
-              <Button>Google Play</Button>
-            </Space>
-          </Col>
-        </Row>
-        <div style={{ textAlign: 'center', marginTop: 60, color: '#aaa', fontSize: 14 }}>
-          © 2025 ATSCare AI System. All rights reserved.
-        </div>
-      </Footer>
+      <Footer />
 
     </Layout>
   );

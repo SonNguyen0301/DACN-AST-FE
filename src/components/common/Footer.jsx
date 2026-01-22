@@ -17,7 +17,7 @@ export default function AppFooter() {
         
         {/* CỘT 1: Về ATS-Care */}
         <Col xs={24} md={8}>
-          <Title level={4} style={{ color: '#1677ff', marginBottom: 16 }}>ATS-Care</Title>
+          <Title level={4} style={{ color: '#1677ff', marginBottom: 16 }}>AST-Care</Title>
           <Text type="secondary">
             Nền tảng y tế thông minh giúp bệnh nhân dễ dàng đặt lịch, 
             theo dõi sức khỏe và nhận chẩn đoán AI.
@@ -57,7 +57,7 @@ export default function AppFooter() {
       {/* Copyright */}
       <div style={{ textAlign: 'center', marginTop: 30, paddingTop: 20, borderTop: '1px solid #f0f0f0' }}>
         <Text type="secondary">
-          © {currentYear} ATS-Care. All rights reserved.
+          © {currentYear} AST-Care. All rights reserved.
         </Text>
       </div>
     </Footer>

@@ -19,11 +19,13 @@ import ManageSchedulePage from "../pages/staff/ManageSchedulePage";
 import AdminDashboardPage from "../pages/admin/DashboardPage";
 import UserManagementPage from "../pages/admin/UserManagementPage";
 import ModelAIPage from "../pages/admin/ModelAIPage";
+import SignInPage from "../pages/public/SignInPage";
 export default function AppRouter() {
   return (
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<SignInPage />} />
 
       {/* Patient routes */}
       <Route path="/patient/dashboard" element={<PatientDashboardPage />} />

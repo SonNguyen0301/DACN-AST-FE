@@ -1,14 +1,13 @@
 import { 
   Layout, Menu, Avatar, Typography, Card, Button,
   Space, List, Dropdown, Row, Col,
-  Collapse, Checkbox, Rate, Tag 
+  Collapse, Checkbox, Rate
 } from "antd";
 import { 
   UserOutlined, 
   LogoutOutlined,
   CalendarOutlined,
   EnvironmentOutlined,
-  SafetyOutlined,
   ReloadOutlined
 } from "@ant-design/icons";
 import ChatBotIcon from "../../components/common/ChatBotIcon";
@@ -136,10 +135,9 @@ export default function BookingPage() {
   const navigate = useNavigate();
   const user = { name: "Nguyen Van A" }; 
 
-  // (Các hàm Dropdown Menu cho Header)
   const handleSignOut = () => {
     console.log("Đã đăng xuất!");
-    // navigate('/login');
+    navigate('/login');
   };
   const menuItems = [
     { key: '1', label: (<a onClick={() => navigate('/patient/personal')}>Thông tin cá nhân</a>), icon: <UserOutlined />},
@@ -148,7 +146,6 @@ export default function BookingPage() {
 
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
-      {/* HEADER (Giữ nguyên) */}
       <Header
         style={{
           background: "#fff",
@@ -195,11 +192,9 @@ export default function BookingPage() {
         </Dropdown>
       </Header>
 
-      {/* CONTENT (NỘI DUNG TRANG BOOKING ĐÃ "ĐỘ" LẠI) */}
       <Content style={{ padding: "40px 60px" }}>
         <Layout style={{ background: '#f5f7fa' }}>
           
-          {/* CỘT TRÁI: BỘ LỌC (SIDER) */}
           <Sider width={280} theme="light" style={{ background: '#f5f7fa', paddingRight: 24 }}>
             <div style={{ background: '#fff', padding: 16, borderRadius: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -232,18 +227,17 @@ export default function BookingPage() {
             </div>
           </Sider>
 
-          {/* CỘT PHẢI: KẾT QUẢ (CONTENT) */}
           <Content>
             <Title level={4} style={{ marginBottom: 16 }}>
               {detailedDoctorsData.length} bệnh viện và phòng khám
             </Title>
             
             <List
-              grid={{ gutter: 16, column: 1 }} // Chỉ 1 cột
+              grid={{ gutter: 16, column: 1 }} 
               dataSource={detailedDoctorsData}
               pagination={{
-                pageSize: 5, // 5 mục mỗi trang
-                style: { textAlign: 'center' } // Căn giữa cho đẹp
+                pageSize: 5, 
+                style: { textAlign: 'center' } 
               }}
               renderItem={(doctor) => (
                 <List.Item>
@@ -252,19 +246,16 @@ export default function BookingPage() {
                     variant="borderless"
                   >
                     <Row gutter={16}>
-                      {/* Cột Avatar */}
                       <Col span={4} style={{ textAlign: 'center' }}>
                         <Avatar size={160} src={doctor.avatarUrl} icon={<UserOutlined />} />
                       </Col>
                       
-                      {/* Cột Thông tin */}
                       <Col span={20}>
                         <Title level={5} style={{ color: '#1677ff', cursor: 'pointer', margin: 0 }}>
                           {doctor.name}
                         </Title>
                         <Space style={{ margin: '4px 0' }}>
                           <Rate disabled defaultValue={doctor.rating} style={{ fontSize: 14 }} />
-                          {/* {doctor.isVerified && <Tag color="green" icon={<SafetyOutlined />}>Đã xác minh</Tag>} */}
                         </Space>
                         <Text type="secondary" style={{ display: 'block', marginTop: 10 }}>
                           <UserOutlined /> {doctor.specialty}
@@ -273,7 +264,6 @@ export default function BookingPage() {
                           <EnvironmentOutlined /> {doctor.address} 
                         </Text>
                         
-                        {/* NÚT ĐẶT LỊCH (ĐÃ SỬA) */}
                         <div style={{ marginTop: 16 }}>
                           <Button 
                             type="primary" 
@@ -296,7 +286,6 @@ export default function BookingPage() {
       
       <Footer /> 
 
-      {/* Chatbot AI cố định */}
       <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000 }}>
         <ChatBotIcon />
       </div>

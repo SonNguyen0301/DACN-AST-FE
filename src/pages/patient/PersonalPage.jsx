@@ -13,11 +13,10 @@ import {
   IdcardOutlined, 
   ScheduleOutlined,
   LogoutOutlined ,
-  SmileOutlined, // (Cho Giới tính)
-  WalletOutlined, // (Cho Nghề nghiệp)
-  TeamOutlined, // (Cho Dân tộc)
+  SmileOutlined, 
+  WalletOutlined, 
+  TeamOutlined, 
   LeftOutlined,
-  FileImageOutlined
 } from "@ant-design/icons";
 import ChatBotIcon from "../../components/common/ChatBotIcon";
 import { useNavigate } from 'react-router-dom';
@@ -26,9 +25,8 @@ import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 dayjs.extend(customParseFormat);
 const { Header, Content, Sider } = Layout;
-const { Title, Text, Link } = Typography;
+const { Title, Text } = Typography;
 
-// Dữ liệu mẫu (giữ nguyên)
 const appointmentsData = [
   { id: 1, date: "12/11/2025", type: "Khám Da liễu", doctor: "BS. Phạm Anh Dũng ", timeSlot: "18:30 - 19:00", room: "Phòng 203" , avatarUrl: "/doctor1.png", diagnosis: "Viêm da cơ địa dị ứng,"},
   { id: 2, date: "15/08/2025", type: "Khám Tổng quát", doctor: "BS. Trần Thị Hoa", timeSlot: "09:00 - 09:30", room: "Phòng 101", avatarUrl: "/doctor2.png" , diagnosis: "Sức khỏe bình thường"},
@@ -45,9 +43,8 @@ const appointmentsData = [
 
 export default function PersonalPage() {
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 4; // Số lượng hiển thị trên 1 trang
+  const pageSize = 4; 
 
-  // 2. TÍNH TOÁN DỮ LIỆU CHO TRANG HIỆN TẠI
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const currentAppointments = appointmentsData.slice(startIndex, endIndex);
@@ -87,7 +84,6 @@ const showModal = () => {
       gender: user.gender,
       occupation: user.occupation,
       ethnicity: user.ethnicity,
-      // "Phá" địa chỉ ra
       province: user.address.province,
       district: user.address.district,
       ward: user.address.ward,
@@ -145,7 +141,6 @@ const showModal = () => {
     );
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
-      {/* HEADER */}
       <Header
         style={{
           background: "#fff",
@@ -216,24 +211,22 @@ const showModal = () => {
             </div>
             
             <div style={{ padding: '0 24px' }}>
-              {renderInfoItem(<MailOutlined />, "Email", user.email)}
-              {renderInfoItem(<PhoneOutlined />, "Số điện thoại", user.phone)}
               {renderInfoItem(<ScheduleOutlined />, "Ngày sinh", user.dob)}
               {renderInfoItem(<SmileOutlined />, "Giới tính", user.gender)}
+              {renderInfoItem(<PhoneOutlined />, "Số điện thoại", user.phone)}
+              {renderInfoItem(<MailOutlined />, "Email", user.email)}
+              {renderInfoItem(<HomeOutlined />, "Địa chỉ", fullAddress)}
               {renderInfoItem(<WalletOutlined />, "Nghề nghiệp", user.occupation)}
+              {renderInfoItem(<UserOutlined />, "CCCD", user.identifyNumber)}
               {renderInfoItem(<TeamOutlined />, "Dân tộc", user.ethnicity)}
               {renderInfoItem(<IdcardOutlined />, "Mã BHYT", user.bhyt)}
-              {renderInfoItem(<UserOutlined />, "CCCD", user.identifyNumber)}
-              {renderInfoItem(<HomeOutlined />, "Địa chỉ", fullAddress)}
             </div>
           </Sider>
 
           <Content style={{ padding: "30px 40px", position: 'relative' }}>
             
-            {/* --- BẮT ĐẦU LOGIC "LẬT" TRANG --- */}
             {selectedAppointmentId === null ? (
               
-              // --- CHẾ ĐỘ 1: XEM DANH SÁCH (LIST VIEW) ---
               <>
                 <div style={{ 
                   marginBottom: 24, 
@@ -264,7 +257,6 @@ const showModal = () => {
                         allowClear
                     />
 
-                    {/* Sắp xếp */}
                     <Select
                         defaultValue="newest"
                         style={{ width: 160 }}
@@ -276,9 +268,7 @@ const showModal = () => {
                   </Space>
                 </div>
 
-                {/* --- DANH SÁCH CARD (ĐÃ CẮT THEO TRANG) --- */}
                 <Space direction="vertical" style={{ width: '100%',minHeight: 650 }} size="large">
-                  {/* Sử dụng currentAppointments thay vì appointmentsData */}
                   {currentAppointments.map(apt => (
                     <Card 
                       key={apt.id} 
@@ -287,7 +277,6 @@ const showModal = () => {
                       style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", transition: 'all 0.3s' }}
                     >
                     <Row gutter={24} align="middle">
-                        {/* CỘT 1: THÔNG TIN BÁC SĨ + THỜI GIAN + PHÒNG (Chiếm 40% - Tăng lên để chứa đủ info) */}
                         <Col xs={24} md={10}>
                           <Space align="start">
                             <Avatar size={64} src={apt.avatarUrl} icon={<UserOutlined />} />
@@ -305,7 +294,6 @@ const showModal = () => {
                             </div>
                           </Space>
                         </Col>
-                        {/* CỘT 2: CHỈ CÒN CHẨN ĐOÁN SƠ BỘ (Chiếm 40%) */}
                         <Col xs={24} md={10}>
                              <div style={{ 
                                 background: '#f5f7fa', 
@@ -325,7 +313,6 @@ const showModal = () => {
                                 </Text>
                              </div>
                         </Col>
-                        {/* CỘT 3: NÚT ACTION (Chiếm 20%) */}
                         <Col xs={24} md={4} style={{ display: 'flex', justifyContent: 'flex-end' }}>
                           <Button 
                             type="primary" 
@@ -342,34 +329,29 @@ const showModal = () => {
                   ))}
                 </Space>
 
-                {/* --- THANH PHÂN TRANG (MỚI THÊM) --- */}
                 <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
-                  {/* Nhớ import { Pagination } from 'antd' ở trên cùng */}
                   <Pagination
                     current={currentPage}
                     pageSize={pageSize}
                     total={appointmentsData.length}
                     onChange={(page) => setCurrentPage(page)}
-                    showSizeChanger={false} // Ẩn nút chọn số lượng/trang cho gọn
+                    showSizeChanger={false} 
                   />
                 </div>
               </>
 
             ) : (
 
-              // --- CHẾ ĐỘ 2: XEM CHI TIẾT (DETAIL VIEW) ---
               <>
-                {/* 7. NÚT QUAY LẠI */}
                 <Button 
                   type="link" 
                   icon={<LeftOutlined />} 
                   style={{ padding: 0, marginBottom: 16 }}
-                  onClick={() => setSelectedAppointmentId(null)} // <-- Reset state
+                  onClick={() => setSelectedAppointmentId(null)} 
                 >
                   Quay lại danh sách
                 </Button>
 
-                {/* 8. BẢNG CHI TIẾT */}
                 <Card>
                   <Title level={4} style={{marginTop: 0, marginBottom: 24}}>
                     Chi tiết hồ sơ khám bệnh
@@ -386,7 +368,6 @@ const showModal = () => {
                     <Descriptions.Item label="Giờ khám">{selectedAppointment.timeSlot}</Descriptions.Item>
                     <Descriptions.Item label="Phòng khám">{selectedAppointment.room}</Descriptions.Item>
                     
-                    {/* Bạn có thể thêm dữ liệu thật vào đây sau */}
                     <Descriptions.Item label="Kết luận bác sĩ">
                       <Text strong>Chẩn đoán: Rách da cẳng tay phải (S51.8).</Text>
                       <br />
@@ -407,7 +388,6 @@ const showModal = () => {
                     </Descriptions.Item>
 
                     <Descriptions.Item label="Lời khuyên">
-                      {/* Phần lời khuyên của bạn từ trước, rất hợp lý */}
                       <Text type="primary">Kiêng gà, trứng, tránh làm ẩm vết thương, nên tái khám 19/11/2025</Text>
                     </Descriptions.Item>
 
@@ -415,8 +395,8 @@ const showModal = () => {
                       <Image.PreviewGroup>
                         <Space size="middle">
                           <Image
-                            width={200} // Kích thước ảnh thu nhỏ
-                            src="/vet_thuong.png" // Đường dẫn file trong public
+                            width={200} 
+                            src="/vet_thuong.png" 
                           />
                           <Image
                             width={200}
@@ -429,7 +409,6 @@ const showModal = () => {
                 </Card>
               </>
             )}
-            {/* --- KẾT THÚC LOGIC "LẬT" TRANG --- */}
 
           </Content>
         </Layout>
@@ -445,7 +424,6 @@ const showModal = () => {
         width={800} 
       >
         <Form form={form} layout="vertical" style={{ marginTop: 24 }}>
-          {/* Hàng 1: Tên, Ngày sinh */}
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="name" label="Họ và tên" rules={[{ required: true }]}>
@@ -459,7 +437,6 @@ const showModal = () => {
             </Col>
           </Row>
 
-          {/* Hàng 2: Email, Điện thoại */}
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
@@ -473,7 +450,6 @@ const showModal = () => {
             </Col>
           </Row>
 
-          {/* Hàng 3: Giới tính, Nghề nghiệp */}
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="gender" label="Giới tính" rules={[{ required: true }]}>
@@ -491,7 +467,6 @@ const showModal = () => {
             </Col>
           </Row>
 
-          {/* Hàng 4: Dân tộc, CCCD, BHYT */}
           <Row gutter={16}>
              <Col span={8}>
               <Form.Item name="ethnicity" label="Dân tộc">
@@ -510,7 +485,6 @@ const showModal = () => {
             </Col>
           </Row>
           
-          {/* Hàng 5: Địa chỉ (đã phá) */}
           <Title level={5} style={{ marginTop: 8 }}>Địa chỉ thường trú</Title>
           <Row gutter={16}>
             <Col span={12}>
@@ -539,8 +513,9 @@ const showModal = () => {
 
         </Form>
       </Modal>
+      
       <Footer /> 
-      {/* Chatbot AI cố định */}
+
       <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000 }}>
         <ChatBotIcon />
       </div>

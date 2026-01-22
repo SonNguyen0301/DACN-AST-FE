@@ -61,14 +61,14 @@ export default function ManageStaffSchedulePage() {
   const user = { name: "Lê Thị Bích", role: "admission" };
 
   const [scheduleData, setScheduleData] = useState({
-    '2025-12-12': [
+    '2026-01-01': [
       { id: 1, doctor: 'BS. CK2 Trần Thị Hoa', dept: 'Da liễu', time: '08:00 - 12:00', room: 'P.201', quota: 20 },
       { id: 2, doctor: 'BS. Nguyễn Văn Nam', dept: 'Nội khoa', time: '13:00 - 17:00', room: 'P.305', quota: 15 },
     ],
-    '2025-12-13': [
+    '2026-01-12': [
       { id: 3, doctor: 'BS. Lê Thị Tú', dept: 'Nhi khoa', time: '08:00 - 16:00', room: 'P.102', quota: 30 },
     ],
-    '2025-12-25': [
+    '2026-01-13': [
        { id: 4, doctor: 'BS. Phạm Minh', dept: 'Tai Mũi Họng', time: '08:00 - 12:00', room: 'P.401', quota: 20 },
     ]
   });
@@ -257,13 +257,7 @@ export default function ManageStaffSchedulePage() {
                 >
                     Nhập từ CSV
                 </Button>
-                <Button 
-                    type="primary" 
-                    icon={<PlusOutlined />} 
-                    onClick={handleAddNew}
-                >
-                    Thêm lịch thủ công
-                </Button>
+
             </Space>
         </div>
 

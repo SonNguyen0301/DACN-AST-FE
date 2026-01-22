@@ -55,7 +55,7 @@ export default function AdmissionStaffAppointmentPage() {
   const initialData = [
     {
       key: '1',
-      date: '2025-12-12', 
+      date: '2026-01-01', 
       time: '08:00 - 08:30',
       patientName: 'Nguyễn Văn A',
       gender: 'male',
@@ -67,7 +67,7 @@ export default function AdmissionStaffAppointmentPage() {
     },
     {
       key: '2',
-      date: '2025-12-12',
+      date: '2026-01-01',
       time: '08:30 - 09:00',
       patientName: 'Trần Thị B',
       gender: 'female',
@@ -79,7 +79,7 @@ export default function AdmissionStaffAppointmentPage() {
     },
     {
       key: '3',
-      date: '2025-12-13', 
+      date: '2026-01-01', 
       time: '09:00 - 09:30',
       patientName: 'Lê Văn C',
       gender: 'male',
@@ -91,7 +91,7 @@ export default function AdmissionStaffAppointmentPage() {
     },
     {
       key: '4',
-      date: '2025-12-13',
+      date: '2026-01-01',
       time: '09:30 - 10:00',
       patientName: 'Phạm Thị D',
       gender: 'female',
@@ -103,7 +103,7 @@ export default function AdmissionStaffAppointmentPage() {
     },
     {
       key: '5',
-      date: '2025-12-14', 
+      date: '2026-01-01', 
       time: '10:00 - 10:30',
       patientName: 'Hoàng Văn E',
       gender: 'male',

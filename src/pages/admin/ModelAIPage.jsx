@@ -219,7 +219,7 @@ export default function ModelAIPage() {
                 items={[
                     { 
                         key: 'chatbot', 
-                        label: (<span><RobotOutlined /> AI Chatbot (Tư vấn)</span>),
+                        label: (<span><RobotOutlined /> AI Chatbot </span>),
                         children: (
                             <div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -275,7 +275,7 @@ export default function ModelAIPage() {
                     },
                     { 
                         key: 'diagnosis', 
-                        label: (<span><ScanOutlined /> AI Diagnosis (Chẩn đoán ảnh)</span>),
+                        label: (<span><ScanOutlined /> AI Diagnosis </span>),
                         children: (
                             <div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

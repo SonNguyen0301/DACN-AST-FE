@@ -97,7 +97,6 @@ export default function AdminDashboardPage() {
     { key: 4, name: 'BS. Phạm Minh', dept: 'Tai Mũi Họng', patients: 70, rating: 4.6, revenue: '85tr' },
   ];
 
-  const monthlyRevenue = [40, 55, 45, 70, 60, 85, 90]; 
 
   const columns = [
     {
@@ -215,25 +214,6 @@ export default function AdminDashboardPage() {
             <Row gutter={[24, 24]}>
                 
                 <Col xs={24} lg={16}>
-                    {/* <Card 
-                        title="Biểu đồ doanh thu 7 tháng gần nhất" 
-                        variant="borderless" 
-                        style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", marginBottom: 24 }}
-                    >
-                        <div style={{ height: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', paddingBottom: 10 }}>
-                            {monthlyRevenue.map((height, idx) => (
-                                <div key={idx} style={{ textAlign: 'center', width: '10%' }}>
-                                    <div style={{ 
-                                        height: `${height}%`, 
-                                        background: idx === monthlyRevenue.length - 1 ? '#1677ff' : '#e6f4ff', 
-                                        borderRadius: '4px 4px 0 0',
-                                        transition: 'all 0.3s'
-                                    }}></div>
-                                    <Text type="secondary" style={{ fontSize: 12 }}>T{idx + 6}</Text>
-                                </div>
-                            ))}
-                        </div>
-                    </Card> */}
 
                     <Card 
                         title="Top bác sĩ tiêu biểu tháng này" 
