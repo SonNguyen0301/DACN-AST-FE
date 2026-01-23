@@ -7,12 +7,15 @@ import {
   ScanOutlined 
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import useAuth from '../../hooks/useAuth';
+
 
 const { Header, Content } = Layout;
 const { Title, Text, Link } = Typography;
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { login, loading } = useAuth();
 
   const primaryColor = '#1677ff';
   
@@ -30,10 +33,18 @@ export default function LoginPage() {
     border: '1px solid #e5e7eb'
   };
 
-  const onFinish = (values) => {
-    console.log('Received values of form: ', values);
-    message.success('Đăng nhập thành công!');
-    navigate('/patient/dashboard');
+const onFinish = async (values) => {
+    console.log('Form values:', values);
+    
+    const res = await login(values.email);
+
+    if (res.success) {
+      message.success('Đăng nhập thành công!');
+      
+      navigate('/patient/dashboard'); 
+    } else {
+      message.error(res.message || 'Đăng nhập thất bại, vui lòng thử lại.');
+    }
   };
 
   return (
@@ -175,9 +186,15 @@ export default function LoginPage() {
                   </div>
                 </Form.Item>
 
+
                 <Form.Item style={{ marginBottom: 20, textAlign: 'center' }}>
-                  <Button type="primary" htmlType="submit" style={btnPrimaryStyle}>
-                    Đăng nhập ngay
+                  <Button 
+                    type="primary" 
+                    htmlType="submit" 
+                    style={btnPrimaryStyle}
+                    loading={loading} 
+                  >
+                    {loading ? 'Đang xử lý...' : 'Đăng nhập ngay'}
                   </Button>
                 </Form.Item>
 

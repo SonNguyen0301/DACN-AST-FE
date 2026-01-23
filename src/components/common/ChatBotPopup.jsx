@@ -2,235 +2,354 @@ import { useState, useRef, useEffect } from "react";
 import PropTypes from "prop-types";
 import { 
   Modal, Input, Button, List, Typography, 
-  Layout, Avatar, Space, Upload
+  Layout, Avatar, Upload, message as antMessage 
 } from "antd";
 import { 
-  PlusOutlined, 
-  MessageOutlined, 
-  UserOutlined, 
-  SendOutlined,
-  PaperClipOutlined
+  PlusOutlined, SendOutlined, 
+  PaperClipOutlined, LoadingOutlined
 } from "@ant-design/icons";
+import useAuth from "../../hooks/useAuth"; 
+import { getConversationsAPI, getMessagesAPI, sendChatStreamAPI } from "../../services/chatService";
 
 const { Sider, Content } = Layout;
 const { Text } = Typography;
 
-// (Dữ liệu "giả" giữ nguyên)
-const initialChatHistory = [
-  { id: 1, title: "Giới thiệu & Hỗ trợ" },
-  { id: 2, title: "Hỏi về đặt lịch" },
-  { id: 3, title: "Thông tin Bác sĩ" },
-];
-const initialAllMessages = {
-  1: [
-    { sender: "bot", text: "Hi , I'm your AI assistant. How can I help you today?" },
-  ],
-  2: [
-    { sender: "bot", text: "Bạn muốn hỏi về quy trình đặt lịch khám?" },
-    { sender: "user", text: "Đúng rồi, tôi cần đặt cho chuyên khoa Da liễu." },
-  ],
-  3: [
-    { sender: "bot", text: "Bạn cần tìm thông tin bác sĩ nào?" },
-  ],
-};
-const currentUser = {
-  name: "Nguyen Van A",
-  avatarUrl: null
-};
-// -------------------------------------------
-
 export default function ChatBotPopup({ onClose }) {
-  const [chatHistory, setChatHistory] = useState(initialChatHistory);
-  const [allMessages, setAllMessages] = useState(initialAllMessages);
-  const [currentChatId, setCurrentChatId] = useState(1); 
+  const { chatToken, user } = useAuth(); 
+  
+  // State quản lý dữ liệu
+  const [conversations, setConversations] = useState([]); // List bên trái
+  const [messages, setMessages] = useState([]);           // List tin nhắn hiện tại
+  
+  // State quản lý ngữ cảnh chat
+  const [currentConversationId, setCurrentConversationId] = useState(null); // ID hội thoại đang chọn
+  const [parentMessageId, setParentMessageId] = useState(null);             // ID tin nhắn cuối cùng để nối mạch
+  
   const [input, setInput] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false); // Đang nhận phản hồi?
   const chatLogRef = useRef(null); 
 
+  // --- 1. Load danh sách hội thoại khi mở Popup ---
   useEffect(() => {
-    if (chatLogRef.current) {
-      chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight;
+    console.log("hsdbfsdhbfkjcnfc");
+    if (chatToken) {
+      fetchConversations();
     }
-  }, [allMessages, currentChatId]);
+  }, [chatToken]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
-    const newMessage = { sender: "user", text: input };
-    const currentMessages = allMessages[currentChatId] || [];
-    const updatedMessages = [...currentMessages, newMessage];
-    const newAllMessages = { ...allMessages, [currentChatId]: updatedMessages };
-    
-    setAllMessages(newAllMessages);
-    setInput("");
-
-    setTimeout(() => {
-      const botMessage = { sender: "bot", text: "I'm processing your question..." };
-      setAllMessages((prevAllMessages) => ({
-        ...prevAllMessages,
-        [currentChatId]: [...updatedMessages, botMessage],
-      }));
-    }, 600);
-  };
-
-  const uploadProps = {
-    name: 'file',
-    action: 'https://www.mocky.io/v2/5cc8019d300000980a055e76', 
-    showUploadList: false, 
-    onChange(info) {
-      if (info.file.status === 'done') {
-        const newMessage = { sender: "user", text: `Đã gửi ảnh: ${info.file.name}` };
-        const currentMessages = allMessages[currentChatId] || [];
-        setAllMessages({
-          ...allMessages,
-          [currentChatId]: [...currentMessages, newMessage],
-        });
+  // Hàm load list bên trái
+  const fetchConversations = async () => {
+    try {
+      const res = await getConversationsAPI(chatToken);
+      if (res.data?.success) {
+        setConversations(res.data.data.data || []);
       }
-    },
+    } catch (error) {
+      console.error("Lỗi lấy lịch sử chat:", error);
+    }
   };
 
-  // (Hàm renderMessage giữ nguyên)
+  // --- 2. Xử lý khi chọn một cuộc hội thoại cũ ---
+  const handleSelectConversation = async (convId) => {
+    if (isStreaming) return; // Không cho chuyển khi đang chat dở
+    setCurrentConversationId(convId);
+    setMessages([]); // Clear màn hình tạm thời
+    
+    try {
+      const res = await getMessagesAPI(convId, chatToken);
+      if (res.data?.success) {
+        const historyData = res.data.data.data || [];
+        
+        // Map dữ liệu API -> format của UI
+        // API trả về: { message: "...", type: "sent" | "received" }
+        // UI cần: { text: "...", sender: "user" | "bot" }
+        const mappedMessages = historyData.map(item => ({
+            id: item.id,
+            text: item.message,
+            sender: item.type === 'sent' ? 'user' : 'bot'
+        }));
+
+        setMessages(mappedMessages);
+
+        // Quan trọng: Lấy ID tin nhắn cuối cùng làm parent_message_id
+        if (historyData.length > 0) {
+            setParentMessageId(historyData[historyData.length - 1].id);
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi lấy chi tiết tin nhắn:", error);
+    }
+  };
+
+  // --- 3. Xử lý tạo cuộc hội thoại mới ---
+  const handleNewChat = () => {
+      if (isStreaming) return;
+      setCurrentConversationId(null); // Reset ID -> API sẽ hiểu là tạo mới
+      setParentMessageId(null);       // Reset Parent -> API sẽ hiểu là bắt đầu mới
+      setMessages([{ sender: 'bot', text: `Xin chào ${user?.lastName || ''}, tôi có thể giúp gì cho bạn hôm nay?` }]);
+  };
+
+  // --- 4. Gửi tin nhắn & Xử lý Stream ---
+  const handleSend = async () => {
+    if (!input.trim() || isStreaming) return;
+
+    const userText = input;
+    setInput(""); // Xóa ô nhập liệu ngay
+    setIsStreaming(true);
+
+    // 4.1. Hiển thị tin nhắn User lên UI ngay lập tức
+    const tempUserMsgId = Date.now(); // ID tạm
+    setMessages(prev => [...prev, { id: tempUserMsgId, sender: "user", text: userText }]);
+
+    // 4.2. Tạo bong bóng tin nhắn rỗng cho Bot để chuẩn bị hứng chữ
+    const tempBotMsgId = "temp-bot-" + Date.now();
+    setMessages(prev => [...prev, { id: tempBotMsgId, sender: "bot", text: "" }]);
+
+    // Biến tạm để cộng dồn text stream
+    let fullBotResponse = "";
+
+    // 4.3. Gọi API Stream
+    await sendChatStreamAPI({
+        query: userText,
+        conversation_id: currentConversationId, // Có thể null
+        parent_message_id: parentMessageId,     // Có thể null
+        chatToken,
+        // Callback khi có từng chữ (chunk) trả về
+        onData: (chunkText) => {
+            fullBotResponse += chunkText;
+            
+            // Cập nhật text vào bong bóng tin nhắn cuối cùng (là của Bot)
+            setMessages(prev => {
+                const newArr = [...prev];
+                const lastMsg = newArr[newArr.length - 1];
+                if (lastMsg.sender === 'bot') {
+                    lastMsg.text = fullBotResponse; // Cập nhật text
+                }
+                return newArr;
+            });
+            
+            // Auto scroll
+            if (chatLogRef.current) {
+                chatLogRef.current.scrollTo({ top: chatLogRef.current.scrollHeight, behavior: 'smooth' });
+            }
+        },
+        // Callback khi Bot trả lời xong
+        onEnd: (metaData) => {
+            setIsStreaming(false);
+            
+            // CỰC KỲ QUAN TRỌNG: Cập nhật lại Context cho lần chat tiếp theo
+            // API trả về conversation_id mới (nếu nãy là null) và message_id của câu trả lời này
+            if (metaData) {
+                if (metaData.conversation_id) {
+                    setCurrentConversationId(metaData.conversation_id);
+                    // Nếu nãy là chat mới, reload lại list bên trái để hiện cuộc hội thoại mới tạo
+                    if (!currentConversationId) fetchConversations();
+                }
+                if (metaData.message_id) {
+                    setParentMessageId(metaData.message_id); // Set cái này để câu sau nối tiếp câu trước
+                }
+            }
+        },
+        onError: (err) => {
+            console.error(err);
+            setIsStreaming(false);
+            antMessage.error("Mất kết nối với AI.");
+        }
+    });
+  };
+
+  // --- Render Message Bubble ---
   const renderMessage = (msg) => {
     const isUser = msg.sender === "user";
     return (
-      <List.Item
+      <div 
+        key={msg.id || Math.random()} 
         style={{ 
-          borderBottom: 'none', 
-          padding: '10px 0',
-          display: 'flex',
-          justifyContent: isUser ? "flex-end" : "flex-start",
+          display: 'flex', 
+          justifyContent: isUser ? 'flex-end' : 'flex-start', 
+          marginBottom: 20,
+          paddingRight: isUser ? 10 : 0 
         }}
       >
-        <Space align="start" direction={isUser ? "horizontal-reverse" : "horizontal"}>
-          <div
-            style={{
-              background: isUser ? "#1677ff" : "#f1f1f1",
-              color: isUser ? "white" : "black",
-              padding: "10px 14px",
-              borderRadius: 16,
-              maxWidth: "350px",
-              wordBreak: 'break-word',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-            }}
-          >
-            <Text style={{ color: isUser ? "white" : "black", fontSize: 15 }}>
-              {msg.text}
-            </Text>
-          </div>
-        </Space>
-      </List.Item>
+        {!isUser && (
+            <Avatar 
+                style={{ backgroundColor: '#e6f7ff', color: '#1677ff', marginRight: 10, marginTop: 5 }} 
+            />
+        )}
+        
+        <div
+          style={{
+            background: isUser ? "#1677ff" : "#f5f5f5", 
+            color: isUser ? "white" : "#1f2937",
+            padding: "12px 16px",
+            borderRadius: isUser ? "20px 20px 5px 20px" : "20px 20px 20px 5px", 
+            maxWidth: "75%",
+            wordBreak: 'break-word',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+            fontSize: '15px',
+            lineHeight: '1.5',
+            whiteSpace: 'pre-wrap' // Giữ format xuống dòng của AI
+          }}
+        >
+          {msg.text}
+          {/* Hiệu ứng loading dot nếu text đang rỗng (mới bắt đầu stream) */}
+          {!isUser && msg.text === "" && isStreaming && <LoadingOutlined style={{ marginLeft: 5 }} />}
+        </div>
+      </div>
     );
   };
 
   return (
     <Modal
       open
-      // title={<Text strong style={{ fontSize: 18 }}>AI tư vấn</Text>}
       onCancel={onClose}
       footer={null}
-      width={800} 
-      bodyStyle={{ padding: 0 }} 
+      width="80%" 
+      centered
+      closeIcon={null} 
+      styles={{ body: { height: '80vh', padding: 0 } }}
     >
-      <Layout style={{ height: '70vh', background: '#fff' }}>
+      <Layout style={{ height: '100%', background: '#fff', overflow: 'hidden', borderRadius: '8px' }}>
         
-        {/* CỘT TRÁI (ĐÃ "ĐỘ" LẠI) */}
+        {/* --- CỘT TRÁI (LỊCH SỬ) --- */}
         <Sider 
-          width={240} 
+          width={280} 
           theme="light" 
           style={{ 
-            borderRight: '1px solid #f0f0f0', 
-            background: '#f9f9f9',
-            // Bỏ flex ở đây...
+            borderRight: '1px solid #e5e7eb', 
+            background: '#f8fafc', 
+            display: 'flex',
+            flexDirection: 'column'
           }}
         >
-          {/* SỬA 1: Thêm 1 div wrapper 100% để "đẩy" user xuống */}
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {/* Div "cuộn" (flex: 1) */}
-            <div style={{ flex: 1, overflowY: 'auto' }}>
-              <Button
-                type="primary" 
-                icon={<PlusOutlined />}
-                style={{ margin: 16, width: 'calc(100% - 32px)' }}
-                onClick={() => {
-                  const newId = chatHistory.length + 10;
-                  setChatHistory([...chatHistory, { id: newId, title: `New Chat ${newId}` }]);
-                  setAllMessages({...allMessages, [newId]: [{sender: 'bot', text: 'Đây là chat mới!'}]});
-                  setCurrentChatId(newId);
-                }}
-              >
-                New Chat
-              </Button>
-              <List
-                dataSource={chatHistory}
-                renderItem={(chat) => (
-                  <List.Item
-                    style={{
-                      padding: '12px 20px', 
-                      cursor: 'pointer',
-                      borderBottom: 'none',
-                      background: chat.id === currentChatId ? '#ceeffeff' : 'transparent',
-                      borderRadius: 8,
-                      margin: '4px 12px',
-                      width: 'auto',
-                    }}
-                    onClick={() => setCurrentChatId(chat.id)}
-                  >
-                    <Text ellipsis style={{ fontSize: 15 }}>{chat.title}</Text>
-                  </List.Item>
-                )}
-              />
-            </div>
-            
-            {/* Div User (bị ghim ở đáy) */}
-            <div style={{ 
-              borderTop: '1px solid #f0f0f0', 
-              padding: 16, 
-              background: '#fff' 
-            }}>
-              <Space>
-                <Avatar src={currentUser.avatarUrl} icon={<UserOutlined />} />
-                <Text strong>{currentUser.name}</Text>
-              </Space>
-            </div>
+          <div style={{ padding: '20px', borderBottom: '1px solid #e5e7eb' }}>
+            <Button
+              type="primary" 
+              icon={<PlusOutlined />}
+              style={{ 
+                  width: '100%', height: '45px', borderRadius: '12px', 
+                  background: '#fff', color: '#1677ff', border: '1px dashed #1677ff',
+                  fontWeight: 600, boxShadow: 'none'
+              }}
+              onClick={handleNewChat}
+            >
+              Cuộc hội thoại mới
+            </Button>
           </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
+            <Text type="secondary" style={{ fontSize: 12, marginLeft: 10, marginBottom: 5, display: 'block' }}>Gần đây</Text>
+            <List
+              dataSource={conversations}
+              renderItem={(chat) => (
+                <div
+                  key={chat.id}
+                  onClick={() => handleSelectConversation(chat.id)}
+                  style={{
+                    padding: '12px 16px', 
+                    cursor: 'pointer',
+                    borderRadius: 12,
+                    margin: '4px 0',
+                    transition: 'all 0.2s',
+                    background: chat.id === currentConversationId ? '#e6f7ff' : 'transparent',
+                    color: chat.id === currentConversationId ? '#1677ff' : '#4b5563',
+                  }}
+                  className="hover:bg-gray-100" 
+                >
+                  <Text ellipsis style={{ color: 'inherit', fontWeight: chat.id === currentConversationId ? 600 : 400 }}>
+                    {chat.name || "Cuộc trò chuyện mới"}
+                  </Text>
+                </div>
+              )}
+            />
+          </div>
+          
         </Sider>
 
-        {/* CỘT PHẢI (ĐÃ "ĐỘ" LẠI) */}
-        <Content style={{ display: 'flex', flexDirection: 'column', padding: '16px 24px' }}>
+        {/* --- CỘT PHẢI (CHAT CHÍNH) --- */}
+        <Content style={{ display: 'flex', flexDirection: 'column', background: '#fff', position: 'relative' }}>
           
+          <div style={{ padding: '15px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text strong style={{ fontSize: 18 }}>ASTCare AI Assistant</Text>
+            <Button type="text" onClick={onClose} style={{ color: '#999' }}>Đóng</Button>
+          </div>
+
           <div
             ref={chatLogRef}
-            style={{ flex: 1, overflowY: "auto", marginBottom: 16, paddingRight: 8 }}
+            style={{ 
+                flex: 1, overflowY: "auto", 
+                padding: "20px 40px", 
+                scrollBehavior: 'smooth' 
+            }}
           >
-            <List
-              dataSource={allMessages[currentChatId] || []} 
-              renderItem={renderMessage}
-            />
+            {messages.length === 0 && !currentConversationId && (
+                <div style={{ textAlign: 'center', marginTop: '20%', color: '#aaa' }}>
+                    <p>Bắt đầu cuộc trò chuyện mới với AI ngay.</p>
+                </div>
+            )}
+            
+            {messages.map((msg) => renderMessage(msg))}
           </div>
-          
-          {/* SỬA 2: Bỏ Input.Group, dùng Input với prefix/suffix */}
-          <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
-            <Input
-              placeholder="Type a message..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onPressEnter={handleSend}
-              size="large"
-              style={{ flex: 1 }} 
-              // Icon Kẹp ghim (Upload)
-              prefix={
-                <Upload {...uploadProps}>
-                  <Button icon={<PaperClipOutlined />} type="text" style={{ marginLeft: -8 }} />
+        
+          <div style={{ padding: '20px 40px 30px 40px' }}>
+             <div style={{ 
+                display: 'flex',              
+                alignItems: 'flex-end',       
+                gap: '10px',                  
+                border: '1px solid #e5e7eb', 
+                borderRadius: '16px', 
+                padding: '8px 12px',          
+                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                background: '#fff'
+            }}>
+                <Upload showUploadList={false} beforeUpload={() => false}>
+                    <Button 
+                        type="text" 
+                        icon={<PaperClipOutlined style={{ fontSize: 20, color: '#9ca3af' }} />} 
+                        disabled={isStreaming} 
+                        style={{ padding: '0 8px', height: '32px' }} 
+                    />
                 </Upload>
-              }
-              // Icon Send (Gửi)
-              suffix={
-                <Button 
-                  type="primary" 
-                  onClick={handleSend}
-                  icon={<SendOutlined />}
-                  style={{ marginRight: -8 }} // Chỉnh lại padding
+
+                <Input.TextArea
+                    placeholder="Nhập câu hỏi của bạn..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSend();
+                        }
+                    }}
+                    autoSize={{ minRows: 1, maxRows: 6 }} 
+                    style={{ 
+                        flex: 1,             
+                        border: 'none', 
+                        boxShadow: 'none', 
+                        resize: 'none', 
+                        padding: '4px 0',     
+                        fontSize: '15px', 
+                        background: 'transparent',
+                        lineHeight: '1.5'
+                    }}
+                    disabled={isStreaming}
                 />
-              }
-            />
+                
+                <Button 
+                    type="primary" 
+                    shape="circle"
+                    onClick={handleSend}
+                    icon={isStreaming ? <LoadingOutlined /> : <SendOutlined />}
+                    disabled={!input.trim() || isStreaming}
+                    style={{ 
+                        background: input.trim() ? '#1677ff' : '#e5e7eb', 
+                        color: input.trim() ? '#fff' : '#9ca3af',
+                        border: 'none',
+                        flexShrink: 0,      
+                        width: '32px', height: '32px', minWidth: '32px'
+                    }}
+                />
+            </div>
           </div>
 
         </Content>
