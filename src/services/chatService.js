@@ -2,7 +2,7 @@ import axios from './api';
 
 
 const getChatbotTokenAPI = () => {
-    return axios.get('/embedded-chat/passport'); 
+    return axios.post('/embedded-chat/passport'); 
 };
 
 
