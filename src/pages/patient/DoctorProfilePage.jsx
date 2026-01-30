@@ -47,18 +47,17 @@ const detailedDoctorsData = [
   },
 ];
 
-const slots_morning = ["08:00-08:15", "08:15-08:30", "08:30-08:45", "09:00-09:15", "09:15-09:30"];
-const slots_afternoon = ["14:00-14:15", "14:15-14:30", "14:30-14:45", "14:45-15:00", "15:00-15:15", "15:15-15:30"];
-const slots_evening = ["17:00-17:15", "17:15-17:30", "17:30-17:45", "17:45-18:00"];
+const slots_morning = ["07:00 - 07:30", "07:30 - 08:00", "08:00 - 08:30", "08:30 - 09:00", "09:00 - 09:30", "09:30 - 10:00", "10:00 - 10:30", "10:30 - 11:00"];
+const slots_afternoon = ["13:00 - 13:30", "13:30 - 14:00", "14:00 - 14:30", "14:30 - 15:00", "15:00 - 15:30", "15:30 - 16:00", "16:00 - 16:30", "16:30 - 17:00"];
 
 const bookingSchedule = [
-  { id: 1, day: "Thứ 6", date: "14-11", timeSlots: [...slots_evening] },
-  { id: 2, day: "Thứ 7", date: "15-11", timeSlots: [...slots_morning, ...slots_afternoon] }, 
-  { id: 3, day: "Thứ 2", date: "17-11", timeSlots: slots_afternoon },
-  { id: 4, day: "Thứ 3", date: "18-11", timeSlots: slots_evening },
-  { id: 5, day: "Thứ 4", date: "19-11", timeSlots: slots_morning },
-  { id: 6, day: "Thứ 5", date: "20-11", timeSlots: slots_afternoon },
-  { id: 7, day: "Thứ 6", date: "21-11", timeSlots: slots_morning },
+  { id: 1, day: "Thứ 6", date: "14-11-2025", timeSlots: [...slots_morning] },
+  { id: 2, day: "Thứ 7", date: "15-11-2025", timeSlots: [...slots_morning, ...slots_afternoon] }, 
+  { id: 3, day: "Thứ 2", date: "17-11-2025", timeSlots: slots_afternoon },
+  { id: 4, day: "Thứ 3", date: "18-11-2025", timeSlots: slots_morning },
+  { id: 5, day: "Thứ 4", date: "19-11-2025", timeSlots: slots_morning },
+  { id: 6, day: "Thứ 5", date: "20-11-2025", timeSlots: slots_afternoon },
+  { id: 7, day: "Thứ 6", date: "21-11-2025", timeSlots: slots_morning },
 ];
 
 export default function DoctorProfilePage() {
@@ -92,7 +91,7 @@ export default function DoctorProfilePage() {
   const { morning, afternoon, evening } = categorizeSlots(currentSchedule?.timeSlots);
 
   const onDateSelect = (value) => {
-    const dateStr = value.format('DD-MM');
+    const dateStr = value.format('DD-MM-YYYY');
     const hasSchedule = bookingSchedule.some(d => d.date === dateStr);
     if (hasSchedule) {
       setSelectedDateStr(dateStr);
@@ -103,7 +102,7 @@ export default function DoctorProfilePage() {
   };
 
   const disabledDate = (current) => {
-    const dateStr = current.format('DD-MM');
+    const dateStr = current.format('DD-MM-YYYY');
     return !bookingSchedule.some(d => d.date === dateStr);
   };
 
@@ -136,7 +135,7 @@ export default function DoctorProfilePage() {
             <Col key={time} span={6} md={8} lg={6}> 
               <Button
                 block
-                size="middle"
+                size="large"
                 type={time === selectedTime ? 'primary' : 'default'}
                 onClick={() => setSelectedTime(time)}
               >
@@ -233,11 +232,11 @@ export default function DoctorProfilePage() {
 
         <Row gutter={24}>
           
-          <Col span={15}>
-            <Card title={<Title level={4} style={{margin:0}}>1. Chọn Lịch Khám</Title>} style={{ borderRadius: 12, marginBottom: 24 }}>
+          <Col span={17}>
+            <Card title={<Title level={4} style={{margin:0}}>1. Chọn lịch khám</Title>} style={{ borderRadius: 12, marginBottom: 24 }}>
               
               <Row gutter={24}>
-                <Col span={10} style={{ borderRight: '1px solid #f0f0f0' }}>
+                <Col span={12} style={{ borderRight: '1px solid #f0f0f0' }}>
                    <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 4 }}>
                     <Calendar 
                       fullscreen={false} 
@@ -299,14 +298,9 @@ export default function DoctorProfilePage() {
                       }}
                     />
                    </div>
-                   <div style={{ marginTop: 16, textAlign: 'center' }}>
-                     <Text type="secondary" style={{ fontSize: 12 }}>
-                       * Ngày có màu đen là ngày có lịch khám
-                     </Text>
-                   </div>
                 </Col>
 
-                <Col span={14}>
+                <Col span={12}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <Text strong style={{ fontSize: 16 }}>
                        Lịch khám ngày: <span style={{ color: '#1677ff' }}>{selectedDateStr}</span>
@@ -331,7 +325,7 @@ export default function DoctorProfilePage() {
 
             </Card>
 
-            <Card title="2. Thông tin bổ sung (Tuỳ chọn)" style={{ borderRadius: 12, marginBottom: 24 }}>
+            <Card title={<Title level={4} style={{margin:0}}>2. Thông tin bổ sung</Title>} style={{ borderRadius: 12, marginBottom: 24 }}>
                <div style={{ marginBottom: 16 }}>
                   <Text strong>Ghi chú cho bác sĩ:</Text>
                   <TextArea 
@@ -352,9 +346,9 @@ export default function DoctorProfilePage() {
             </Card>
           </Col>
 
-          <Col span={9}>
+          <Col span={7}>
             <Card 
-              title={<Title level={5} style={{margin: 0, color: '#1677ff'}}>Phiếu đặt khám</Title>}
+              title={<Title level={4} style={{margin: 0, color: '#1677ff'}}>Phiếu đặt khám</Title>}
               style={{ borderRadius: 12, position: 'sticky', top: 80, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }} 
             >
               <Space direction="vertical" style={{ width: '100%' }} size="middle">

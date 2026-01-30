@@ -1,6 +1,6 @@
 import { 
   Layout, Form, Input, Button, Checkbox, Typography, 
-  Row, Col, Space, Image, message 
+  Row, Col,  Image, message 
 } from 'antd';
 import { 
   UserOutlined, LockOutlined,
@@ -62,14 +62,17 @@ const onFinish = async (values) => {
             src="/ASTCare1.png" 
             alt="ATSCare Logo" 
             style={{ height: '40px', objectFit: 'contain' }} 
+            onClick={() => navigate('/')}
           />
         </div>
-        <Space size="large" className="hidden md:flex">
-          {['Trang chủ', 'Tính năng', 'Quy trình', 'Công nghệ', 'Đối tượng'].map(item => (
-            <Button type="text" key={item} style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{item}</Button>
-          ))}
-        </Space>
-        <Button type="primary" style={btnPrimaryStyle} onClick={() => navigate('/login')}>Đăng nhập</Button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <Button type="text" style={{ fontSize: '16px', fontWeight: '600', color: '#1677ff' }} onClick={() => navigate('/login')}>
+                Đăng nhập
+            </Button>
+            <Button type="primary" style={btnPrimaryStyle} onClick={() => navigate('/register')}>
+                Đăng ký
+            </Button>
+        </div>
       </Header>
 
       <Content>

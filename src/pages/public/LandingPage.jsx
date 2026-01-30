@@ -86,7 +86,14 @@ export default function LandingPage() {
             <Button type="text" key={item} style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{item}</Button>
           ))}
         </Space>
-        <Button type="primary" style={btnPrimaryStyle} onClick={() => navigate('/login')}>Đăng nhập</Button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <Button type="text" style={{ fontSize: '16px', fontWeight: '600', color: '#1677ff' }} onClick={() => navigate('/login')}>
+                Đăng nhập
+            </Button>
+            <Button type="primary" style={btnPrimaryStyle} onClick={() => navigate('/register')}>
+                Đăng ký
+            </Button>
+        </div>
       </Header>
 
       <Content>
@@ -365,7 +372,7 @@ export default function LandingPage() {
 
         <div style={{ padding: sectionPadding, background: '#fff' }}>
           <div style={{ textAlign: 'center', marginBottom: 60 }}>
-            <Title level={2} style={{ fontSize: 36, fontWeight: 800 }}>Ai nên sử dụng ATSCare?</Title>
+            <Title level={2} style={{ fontSize: 36, fontWeight: 800 }}>Ai nên sử dụng ASTCare?</Title>
           </div>
           <Row gutter={[32, 32]}>
             {[

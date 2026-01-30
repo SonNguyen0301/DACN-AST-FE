@@ -157,12 +157,12 @@ export default function UserManagementPage() {
       ),
     },
     {
-      title: 'Hành động',
+      title: '',
       key: 'action',
       render: (_, record) => (
         <Space>
           <Button type="text" icon={<EditOutlined style={{ color: '#1677ff' }} />} onClick={() => handleEdit(record)} />
-          <Popconfirm title="Xóa tài khoản?" onConfirm={() => handleDelete(record.id)} okText="Xóa" cancelText="Hủy">
+          <Popconfirm title="CHẮC CHẮN xóa tài khoản?" onConfirm={() => handleDelete(record.id)} okText="Xóa" cancelText="Hủy">
             <Button type="text" icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />} />
           </Popconfirm>
         </Space>
@@ -213,8 +213,8 @@ export default function UserManagementPage() {
                     <Title level={3} style={{ margin: 0 }}>Quản lý Tài khoản</Title>
                     <Text type="secondary">Quản lý danh sách Bác sĩ, Nhân viên và Bệnh nhân trong hệ thống</Text>
                 </div>
-                <Button type="primary" icon={<PlusOutlined />} size="large" onClick={handleAdd}>
-                    Tạo tài khoản có thẩm quyền (Bác sĩ / Nhân viên)
+                <Button type="primary" icon={<PlusOutlined  />} size="large" onClick={handleAdd}>
+                    Tạo tài khoản có thẩm quyền
                 </Button>
             </div>
 
@@ -255,7 +255,7 @@ export default function UserManagementPage() {
         <Footer />
 
         <Modal
-            title={editingUser ? "Chỉnh sửa thông tin" : "Tạo tài khoản có thẩm quyền (Bác sĩ / Nhân viên)"}
+            title={editingUser ? "Chỉnh sửa thông tin" : "Tạo tài khoản có thẩm quyền "}
             open={isModalOpen}
             onCancel={() => setIsModalOpen(false)}
             footer={null}
@@ -267,6 +267,10 @@ export default function UserManagementPage() {
 
                 <Form.Item label="Email" name="email" rules={[{ required: true, type: 'email', message: 'Email không hợp lệ' }]}>
                     <Input placeholder="example@astcare.com" />
+                </Form.Item>
+                
+                <Form.Item label="Password" name="password" rules={[{ required: true, type: 'password', message: 'Password không hợp lệ' }]}>
+                    <Input placeholder="••••••••" />
                 </Form.Item>
 
                 <div style={{ display: 'flex', gap: 16 }}>
