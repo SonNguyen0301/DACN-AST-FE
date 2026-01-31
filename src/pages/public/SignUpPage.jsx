@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { requestOtpAPI, verifyOtpAPI, registerAPI } from '../../services/authService';
 
 import ReactCountryFlag from "react-country-flag";
+import useAuth from '../../hooks/useAuth';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -72,7 +73,7 @@ const phoneCodeSelector = (
 
 export default function SignUpPage() {
   const navigate = useNavigate();
-
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0); 
   
@@ -106,19 +107,19 @@ export default function SignUpPage() {
         }
     } catch (error) {
         message.error(error.response?.data?.message || "Lỗi gửi OTP");
-        setCurrentStep(1);
     } finally {
         setLoading(false);
     }
   };
 
-  const handleVerifyOtp = async (values) => {
+  const handleVerifyOtpRegister = async (values) => {
     setLoading(true);
     try {
         const payload = {
             email: registerData.email,
             otp: values.otp,
-            sessionId: registerData.sessionId
+            sessionId: registerData.sessionId,
+            type: 'REGISTER'
         };
         
         const res = await verifyOtpAPI(payload);
@@ -129,7 +130,6 @@ export default function SignUpPage() {
         }
     } catch (error) {
         const errorMsg = error.response?.data?.message || "Lỗi xác thực";
-        setCurrentStep(2);
         if (errorMsg === 'OTP is expired') {
             message.error("Mã OTP đã hết hạn. Vui lòng lấy mã mới.");
             setCurrentStep(0); 
@@ -160,7 +160,13 @@ export default function SignUpPage() {
 
         if (res.data?.success) {
             message.success('Đăng ký tài khoản thành công!');
-            navigate('/login');
+            const loginRes = await login(registerData.email, values.password);
+            if (loginRes.success) {
+                navigate('/patient/dashboard'); 
+            } else {
+                message.error('Đăng nhập tự động thất bại. Vui lòng đăng nhập thủ công.');
+                navigate('/login');
+            }
         }
     } catch (error) {
         const errorData = error.response?.data?.message;
@@ -202,7 +208,7 @@ export default function SignUpPage() {
 
         case 1: 
             return (
-                <Form onFinish={handleVerifyOtp} layout="vertical" size="large">
+                <Form onFinish={handleVerifyOtpRegister} layout="vertical" size="large">
                     <div style={{ textAlign: 'center', marginBottom: 20 }}>
                         <Title level={4}>Nhập mã xác thực</Title>
                         <Text type="secondary">Mã OTP đã gửi đến <b>{registerData.email}</b></Text>
@@ -297,7 +303,7 @@ export default function SignUpPage() {
                             <Option value="OTHER">Khác</Option>
                         </Select>
                     </Form.Item>
-
+ 
                     <Form.Item
                         name="password"
                         label={<span style={{ fontWeight: 600, color: '#374151' }}>Mật khẩu</span>}
