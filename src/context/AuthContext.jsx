@@ -1,28 +1,28 @@
 // src/context/AuthContext.jsx
 import { createContext, useState, useEffect } from 'react';
-import { loginDevModeAPI } from '../services/authService';
-import { getChatbotTokenAPI } from '../services/chatService'; // <--- Import mới
+import { loginDevModeAPI, loginAPI } from '../services/authService';
+import { getChatbotTokenAPI } from '../services/chatService'; 
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [chatToken, setChatToken] = useState(null); // <--- Thêm state cho chat token
+    const [chatToken, setChatToken] = useState(null); 
 
-    const login = async (email) => {
+    const login = async (email, password) => {
         try {
             // --- GIAI ĐOẠN 1: LẤY USER TOKEN ---
-            const userRes = await loginDevModeAPI(email);
+            const userRes = await loginAPI(email, password);
             const userToken = userRes.data.data.accessToken; 
             
-            // Lưu User Token (Quan trọng: api.js sẽ dùng cái này để gọi API Passport)
+            // Lưu User Token 
             localStorage.setItem('accessToken', userToken);
             setIsAuthenticated(true);
 
             // --- GIAI ĐOẠN 2: LẤY CHATBOT TOKEN ---
             try {
                 const chatRes = await getChatbotTokenAPI();
-                // API trả về: data.data.access_token (theo mẫu bạn cung cấp)
+                // API trả về: data.data.access_token 
                 const tokenForBot = chatRes.data.data.access_token;
                 
                 // Lưu Chat Token riêng ra
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
 
     const logout = () => {
         localStorage.removeItem('accessToken');
-        localStorage.removeItem('chatToken'); // <--- Xóa cả 2
+        localStorage.removeItem('chatToken'); 
         setIsAuthenticated(false);
         setChatToken(null);
     };

@@ -36,7 +36,7 @@ export default function LoginPage() {
 const onFinish = async (values) => {
     console.log('Form values:', values);
     
-    const res = await login(values.email);
+    const res = await login(values.email, values.password);
 
     if (res.success) {
       message.success('Đăng nhập thành công!');

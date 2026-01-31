@@ -256,7 +256,6 @@ export default function SignUpPage() {
                         </Col>
                     </Row>
 
-                    {/* --- 4. Cấu trúc lại phần nhập SĐT để sửa lỗi giao diện --- */}
                     <Form.Item label={<span style={{ fontWeight: 600, color: '#374151' }}>Số điện thoại</span>} required>
                         <Input.Group compact style={{ display: 'flex', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'hidden', focus: 'border-color: #40a9ff' }}>
                             <div style={{
@@ -280,10 +279,10 @@ export default function SignUpPage() {
                                         height: '50px',
                                         fontSize: '15px',
                                         border: 'none', 
-                                        boxShadow: 'none', // Bỏ shadow khi focus
+                                        boxShadow: 'none', 
                                         background: '#f9fafb',
                                         flex: 1,
-                                        borderRadius: 0 // Không bo tròn để khớp với select
+                                        borderRadius: 0 
                                     }}
                                 />
                             </Form.Item>
@@ -339,7 +338,6 @@ export default function SignUpPage() {
 
       <Content>
         <Row style={{ minHeight: 'calc(100vh - 80px)' }}> 
-          {/* CỘT TRÁI - ẢNH */}
           <Col xs={0} md={12} lg={14} style={{ 
             background: 'linear-gradient(135deg, #f0f7ff 0%, #e6f4ff 100%)',
             display: 'flex',
@@ -390,7 +388,6 @@ export default function SignUpPage() {
             </div>
           </Col>
 
-          {/* CỘT PHẢI - FORM */}
           <Col xs={24} md={12} lg={10} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px 8%', background: '#fff' }}>
             <div style={{ maxWidth: 450, width: '100%', margin: '0 auto' }}>
               
