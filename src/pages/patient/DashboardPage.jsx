@@ -11,6 +11,8 @@ import {
   Space, 
   Carousel,
   Dropdown,
+  Spin,
+  Empty
 } from "antd";
 import { 
   CalendarOutlined, 
@@ -27,13 +29,41 @@ import {
 import ChatBotIcon from "../../components/common/ChatBotIcon";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/Footer";
+import { useEffect, useState } from "react";
+import useAuth from "../../hooks/useAuth";
+import dayjs from "dayjs";
+import { getUpcomingAppointmentAPI } from "../../services/appointmentService";
 
 const { Header, Content } = Layout;
 const { Paragraph, Text, Title } = Typography;
 
 export default function PatientDashboardPage() {
   const navigate = useNavigate();
-  const user = { name: "Nguyen Van A" };
+  const { user, logout} = useAuth(); 
+  const [upcomingApt, setUpcomingApt] = useState(null);
+  const [loadingApt, setLoadingApt] = useState(true);
+
+  useEffect(() => {
+    const fetchUpcomingApt = async () => {
+      if (!user?.id) return;
+      setLoadingApt(true);
+      try {
+        const res = await getUpcomingAppointmentAPI(user.id);
+        if (res.data?.success && res.data?.data) {
+          setUpcomingApt(res.data.data);
+        } else {
+          setUpcomingApt(null);
+        }
+      } catch (error) {
+        console.error("Lỗi lấy lịch sắp tới:", error);
+        setUpcomingApt(null);
+      } finally {
+        setLoadingApt(false);
+      }
+    };
+
+    fetchUpcomingApt();
+  }, [user]);
 
   const hospitalIntroSlides = [
     "ATS-Care là nền tảng y tế thông minh giúp bệnh nhân dễ dàng đặt lịch, theo dõi sức khỏe và nhận chẩn đoán da liễu từ AI.",
@@ -78,7 +108,7 @@ const featureCards = [
   ];
 
   const handleSignOut = () => {
-    console.log("Đã đăng xuất!");
+    logout();
     navigate('/');
   };
 
@@ -130,7 +160,7 @@ const featureCards = [
         
         <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.name}</span>
+            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.firstName + ' ' + user.lastName}</span>
             <Avatar size={36} icon={<UserOutlined />} />
           </div>
         </Dropdown>
@@ -143,32 +173,47 @@ const featureCards = [
             <Card
               variant="borderless" 
               style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", height: '100%' }}
-              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
+              styles={{ body: { height: '100%', display: 'flex', flexDirection: 'column' } }}
             >
-              <div>
-                <Paragraph style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Lịch hẹn sắp tới</Paragraph> 
-                <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <CalendarOutlined style={{ fontSize: 18, color: '#1677ff' }} />
-                    <Text>Ngày: <Text strong>20/11/2025</Text></Text>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <ClockCircleOutlined style={{ fontSize: 18, color: '#1677ff' }} />
-                    <Text>Thời gian: <Text strong>09:30</Text></Text>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <MedicineBoxOutlined style={{ fontSize: 18, color: '#1677ff' }} />
-                    <Text>Bác sĩ: <Text strong>Trần Thị Hoa</Text></Text>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <EnvironmentOutlined style={{ fontSize: 18, color: '#1677ff' }} />
-                    <Text>Chuyên khoa: <Tag color="blue" style={{ marginLeft: 4 }}>Da liễu</Tag></Text>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <HomeOutlined style={{ fontSize: 18, color: '#1677ff' }} />
-                      <Text>Tại phòng: <Text strong>205</Text></Text>
-                  </div>
-                </Space>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Paragraph style={{ fontSize: 18, fontWeight: 'bold', margin: 0 }}>Lịch hẹn sắp tới</Paragraph>
+                <div style={{ cursor: 'pointer', color: '#1677ff', fontSize: 13 }} onClick={() => navigate('/patient/appointments')}>
+                  Xem tất cả
+                </div>
+              </div>
+
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                {loadingApt ? (
+                  <div style={{ textAlign: 'center' }}><Spin /></div>
+                ) : upcomingApt ? (
+                  <Space direction="vertical" size={16} style={{ width: '100%' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <CalendarOutlined style={{ fontSize: 18, color: '#1677ff' }} />
+                      <Text>Ngày: <Text strong>{dayjs(upcomingApt.date).format('DD/MM/YYYY')}</Text></Text>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <ClockCircleOutlined style={{ fontSize: 18, color: '#1677ff' }} />
+                      <Text>Thời gian: <Text strong>{upcomingApt.from?.substring(0, 5)} - {upcomingApt.to?.substring(0, 5)}</Text></Text>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <MedicineBoxOutlined style={{ fontSize: 18, color: '#1677ff' }} />
+                      <Text>Bác sĩ: <Text strong>{upcomingApt.doctorName}</Text></Text>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <EnvironmentOutlined style={{ fontSize: 18, color: '#1677ff' }} />
+                      <Text>Chuyên khoa: <Tag color="blue" style={{ marginLeft: 4 }}>{upcomingApt.department}</Tag></Text>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <HomeOutlined style={{ fontSize: 18, color: '#1677ff' }} />
+                        <Text>Tại phòng: <Text strong>{upcomingApt.room}</Text></Text>
+                    </div>
+                  </Space>
+                ) : (
+                  <Empty 
+                    image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                    description={<Text type="secondary">Bạn chưa có lịch hẹn nào sắp tới</Text>} 
+                  />
+                )}
               </div>
             </Card>
           </Col>

@@ -1,9 +1,9 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Card, Button,
   Space, Dropdown, Tabs, Tag, Popconfirm,
-  Modal, Form, Input, Upload,Row, Col,
+  Modal, Form, Input, Upload,Row, Col, message, Spin
 } from "antd";
 import { 
   UserOutlined, LogoutOutlined, CalendarOutlined,
@@ -13,6 +13,10 @@ import {
 import ChatBotIcon from "../../components/common/ChatBotIcon";
 import { useNavigate } from 'react-router-dom';
 import Footer from '../../components/common/Footer'; 
+import dayjs from 'dayjs';
+
+import { getPatientAppointmentsAPI, cancelAppointmentAPI, updateAppointmentAPI } from '../../services/appointmentService';
+import useAuth from '../../hooks/useAuth';
 
 const { Header, Content } = Layout;
 const { Text, Paragraph } = Typography;
@@ -20,52 +24,53 @@ const { TabPane } = Tabs;
 const { TextArea } = Input; 
 const { Dragger } = Upload; 
 
-const upcomingAppointments = [
-  { 
-    id: 10, 
-    date: "25/12/2025", 
-    type: "Khám Răng Hàm Mặt", 
-    doctor: "Dr. Hoang Thi C", 
-    timeSlot: "10:00 - 10:30", 
-    room: "Phòng 401", 
-    avatarUrl: "/doctor1.png", 
-    status: "chưa khám",
-    notes: "Tôi bị ê buốt răng hàm dưới bên trái, đau hơn khi uống nước", 
-    files: [ 
-      { name: "X-Quang_Rang.jpg", url: "#" },
-      { name: "Don_thuoc_cu.pdf", url: "#" }
-    ]
-  },
-  { 
-    id: 11, 
-    date: "30/12/2025", 
-    type: "Khám Tổng quát", 
-    doctor: "Dr. Nguyen Van A", 
-    timeSlot: "08:00 - 08:30", 
-    room: "Phòng 102", 
-    avatarUrl: "/doctor2.png", 
-    status: "chưa khám",
-    notes: "", 
-    files: []
-  }
-];
-
-const pastAppointments = [
-  { id: 1, date: "Thứ 4 12/11/2025", type: "Khám Da liễu", doctor: "Dr. Tran Thi Hoa", timeSlot: "18:30 - 19:00", room: "Phòng 203" , avatarUrl: "/doctor1.png", status: "đã khám"},
-  { id: 2, date: "Thứ 4 15/08/2025", type: "Khám Tổng quát", doctor: "Dr. Pham Anh Dung", timeSlot: "09:00 - 09:30", room: "Phòng 101", avatarUrl: "/doctor2.png", status: "đã khám" },
-  { id: 3, date: "Thứ 3 01/03/2025", type: "Khám Tim mạch", doctor: "Dr. Le Minh Tuan", timeSlot: "14:00 - 14:30", room: "Phòng 305", avatarUrl: "/doctor3.png", status: "đã hủy" },
-  { id: 5, date: "Thứ 7 01/03/2025", type: "Khám Tim mạch", doctor: "Dr. Le Minh Tuan", timeSlot: "14:00 - 14:30", room: "Phòng 305", avatarUrl: "/doctor4.png", status: "đã trễ" },
-];
 
 export default function AppointmentPage() {
   const navigate = useNavigate();
-  const user = { name: "Nguyen Van A" }; 
+  const { user, logout } = useAuth(); 
+
+  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+  const [pastAppointments, setPastAppointments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [fileList, setFileList] = useState([]);
+
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState(null); 
   const [form] = Form.useForm();
 
-  const handleSignOut = () => { console.log("Đã đăng xuất!"); navigate('/'); };
+  const fetchAppointments = async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+        const allRes = await getPatientAppointmentsAPI(user.id, {
+            sort: 'date', sortDirection: 'DESC', page: 1, take: 100 
+        });
+
+        if (allRes.data?.data) {
+            const allData = allRes.data.data;
+            
+            const upcoming = allData.filter(apt => apt.status === 'SCHEDULED' || apt.status === 'PENDING');
+            const past = allData.filter(apt => apt.status === 'EXAMINED' || apt.status === 'CANCELLED' || apt.status === 'LATE');
+
+            setUpcomingAppointments(upcoming.reverse());
+            setPastAppointments(past);
+        }
+    } catch (error) {
+        console.error("Lỗi lấy lịch hẹn:", error);
+        message.error("Không thể tải danh sách lịch hẹn.");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+      fetchAppointments();
+  }, [user]);
+
+  const handleSignOut = () => { logout(); navigate('/'); };
   
   const menuItems = [
     { key: '1', label: (<a onClick={() => navigate('/patient/personal')}>Thông tin cá nhân</a>), icon: <UserOutlined />},
@@ -73,55 +78,115 @@ export default function AppointmentPage() {
   ];
 
   const renderStatusTag = (status) => {
-      const tagStyle = { fontSize: '14px', padding: '5px 10px', borderRadius: '6px', fontWeight: 'bold' };
-      switch (status) {
-        case 'chưa khám': return <Tag color="blue" style={tagStyle}>Chưa khám</Tag>;
-        case 'đã khám': return <Tag color="green" style={tagStyle}>Đã khám</Tag>;
-        case 'đã hủy': return <Tag color="red" style={tagStyle}>Đã hủy</Tag>;
-        case 'đã trễ': return <Tag color="orange" style={tagStyle}>Đã trễ</Tag>;
-        default: return <Tag style={tagStyle}>{status}</Tag>;
-      }
+    const tagStyle = { fontSize: '14px', padding: '5px 10px', borderRadius: '6px', fontWeight: 'bold' };
+    switch (status) {
+      case 'SCHEDULED': return <Tag color="blue" style={tagStyle}>Sắp tới</Tag>;
+      case 'PENDING': return <Tag color="orange" style={tagStyle}>Chờ duyệt</Tag>;
+      case 'EXAMINED': return <Tag color="green" style={tagStyle}>Đã khám</Tag>;
+      case 'CANCELLED': return <Tag color="red" style={tagStyle}>Đã hủy</Tag>;
+      case 'LATE': return <Tag color="purple" style={tagStyle}>Đã trễ</Tag>;
+      default: return <Tag style={tagStyle}>{status}</Tag>;
+    }
+  };
+
+  const showEditModal = (apt) => {
+      setEditingAppointment(apt); 
+      form.setFieldsValue({
+        notes: apt.description || "", 
+      });
+      
+      const existingFiles = (apt.images || []).map((img, index) => ({
+          uid: `old-${index}`, 
+          name: img.description || `Hình_anh_đính_kèm_${index+1}.png`,
+          status: 'done',
+          url: img.dataUrl,
+      }));
+      setFileList(existingFiles);
+
+      setIsEditModalOpen(true);
+  };
+
+    const handleEditOk = async () => {
+        setSubmitting(true);
+        try {
+            const values = form.getFieldsValue();
+            const formData = new FormData();
+            
+            if (values.notes) formData.append('description', values.notes);
+            
+            fileList.forEach(file => {
+                if (file.originFileObj) {
+                    formData.append('images', file.originFileObj);
+                }
+            });
+
+            const res = await updateAppointmentAPI(editingAppointment.id, formData);
+            if(res.data) {
+                message.success("Cập nhật thông tin thành công!");
+                setIsEditModalOpen(false);
+                setEditingAppointment(null);
+                setFileList([]);
+                fetchAppointments(); 
+            }
+        } catch (error) {
+            message.error("Cập nhật thất bại.");
+            console.error(error);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
-    const showEditModal = (apt) => {
-        setEditingAppointment(apt); 
-        form.setFieldsValue({
-           notes: apt.notes || "", 
-           files: [], 
-        });
-        setIsEditModalOpen(true);
-    };
-
-    const handleEditOk = () => {
-        console.log("Đã lưu thay đổi cho:", editingAppointment.id);
-        console.log("Dữ liệu mới:", form.getFieldsValue());
-        setIsEditModalOpen(false);
-        setEditingAppointment(null);
-    };
     const handleEditCancel = () => {
         setIsEditModalOpen(false);
         setEditingAppointment(null);
+        setFileList([]); 
     };
     
     const uploadProps = {
-        name: 'file', multiple: true, action: 'https://www.mocky.io/v2/5cc8019d300000980a055e76', maxCount: 5,
-        onChange(info) { console.log(info.file.status); },
+        name: 'file', multiple: true, maxCount: 5,
+        beforeUpload: () => false, 
+        fileList: fileList,
+        onChange(info) { 
+            setFileList(info.fileList); 
+        },
     };
 
-  const renderActionButtons = (apt, isUpcomingTab = false) => {
-    if (isUpcomingTab && apt.status === 'chưa khám') {
-      return (
-        <Space direction="vertical" align="end">
-          <Button type="primary" icon={<EditOutlined />} onClick={() => showEditModal(apt)} style={{ minWidth: 120 }}>Chỉnh sửa</Button>
-          <Popconfirm title="Hủy lịch hẹn?" description="Bạn có chắc muốn hủy lịch hẹn này?" onConfirm={() => console.log("Đã hủy lịch", apt.id)} okText="Đồng ý" cancelText="Không">
-            <Button danger icon={<DeleteOutlined />} style={{ minWidth: 120 }}>Hủy lịch</Button>
-          </Popconfirm>
-        </Space>
-      );
-    }
-    if (!isUpcomingTab) return renderStatusTag(apt.status);
-    return null;
+    const handleCancelAppointment = async (aptId) => {
+      setSubmitting(true);
+      try {
+          const res = await cancelAppointmentAPI(aptId);
+          if(res.data?.isSuccess) { 
+              message.success("Đã hủy lịch khám thành công.");
+              fetchAppointments(); 
+          }
+      } catch (error) {
+          console.error("Lỗi hủy lịch hẹn:", error);
+          message.error("Hủy lịch thất bại.");
+      } finally {
+          setSubmitting(false);
+      }
   };
+
+  const renderActionButtons = (apt, isUpcomingTab = false) => {
+      if (isUpcomingTab && (apt.status === 'SCHEDULED' || apt.status === 'PENDING')) {
+        return (
+          <Space direction="vertical" align="end">
+            <Button type="primary" icon={<EditOutlined />} onClick={() => showEditModal(apt)} style={{ minWidth: 120 }}>Chỉnh sửa</Button>
+            <Popconfirm 
+              title="Hủy lịch hẹn?" 
+              description="Bạn có chắc muốn hủy lịch hẹn này?" 
+              onConfirm={() => handleCancelAppointment(apt.id)} 
+              okText="Đồng ý" cancelText="Không"
+              okButtonProps={{ loading: submitting }}
+            >
+              <Button danger icon={<DeleteOutlined />} style={{ minWidth: 120 }}>Hủy lịch</Button>
+            </Popconfirm>
+          </Space>
+        );
+      }
+      if (!isUpcomingTab) return renderStatusTag(apt.status);
+      return null;
+    };
 
   const renderAppointmentList = (data, isUpcomingTab = false) => {
     if (data.length === 0) {
@@ -136,7 +201,7 @@ export default function AppointmentPage() {
     return (
       <Space direction="vertical" style={{ width: '100%' }} size="large">
         {data.map(apt => {
-           const hasNotesOrFiles = isUpcomingTab && (apt.notes || (apt.files && apt.files.length > 0));
+           const hasNotesOrFiles = isUpcomingTab && (apt.description || (apt.images && apt.images.length > 0));
 
            return (
             <Card key={apt.id} variant="borderless" style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
@@ -149,8 +214,8 @@ export default function AppointmentPage() {
                       <Text strong style={{ fontSize: 18, color: '#1677ff' }}>{apt.doctor}</Text>
                       <div style={{ marginBottom: 6 }}><Text type="secondary" style={{ fontStyle: 'italic' }}>{apt.type}</Text></div>
                       <Space direction="vertical" size={2}>
-                        <Text type="secondary" style={{ fontSize: 13 }}><CalendarOutlined /> {apt.date}</Text>
-                        <Text type="secondary" style={{ fontSize: 13 }}><ScheduleOutlined /> {apt.timeSlot}</Text>
+                        <Text type="secondary" style={{ fontSize: 13 }}><CalendarOutlined /> {dayjs(apt.date).format('DD/MM/YYYY')}</Text>
+                        <Text type="secondary" style={{ fontSize: 13 }}><ScheduleOutlined /> {apt.from?.substring(0,5)} - {apt.to?.substring(0,5)}</Text>
                         <Text type="secondary" style={{ fontSize: 13 }}><HomeOutlined /> {apt.room}</Text>
                       </Space> 
                     </div>
@@ -250,6 +315,7 @@ export default function AppointmentPage() {
       </Header>
 
       <Content style={{ padding: "40px 60px" }}>
+        <Spin spinning={loading} size="large">
         <Card style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
           <Tabs defaultActiveKey="1" size="large">
             <TabPane tab={`Lịch hẹn sắp tới (${upcomingAppointments.length})`} key="1">
@@ -260,20 +326,21 @@ export default function AppointmentPage() {
             </TabPane>
           </Tabs>
         </Card>
+        </Spin>
       </Content>
 
       <Footer /> 
       
-      <Modal title="Chỉnh sửa thông tin đặt khám" open={isEditModalOpen} onOk={handleEditOk} onCancel={handleEditCancel} okText="Lưu thay đổi" cancelText="Hủy" width={700}>
+      <Modal title="Chỉnh sửa thông tin đặt khám" open={isEditModalOpen} onOk={handleEditOk} onCancel={handleEditCancel} okText="Lưu thay đổi" cancelText="Hủy" width={700} confirmLoading={submitting}>
         <Form form={form} layout="vertical" style={{ marginTop: 24 }}>
           <Form.Item name="notes" label="Ghi chú" style={{ marginTop: 8 }}>
             <TextArea rows={4} placeholder="Triệu chứng, thuốc đang dùng, tiền sử, ..." />
           </Form.Item>
-          <Form.Item name="files" label="Tệp đính kèm (0/5)" style={{ marginTop: 16 }}>
+          <Form.Item label="Tệp đính kèm (Tối đa 5 file)" style={{ marginTop: 16 }}>
             <Dragger {...uploadProps}>
               <p className="ant-upload-drag-icon"><InboxOutlined /></p>
               <p className="ant-upload-text">Chọn tệp tin hoặc kéo thả vào đây</p>
-              <p className="ant-upload-hint">PNG, JPG tối đa 15MB</p>
+              <p className="ant-upload-hint">Hỗ trợ ảnh định dạng PNG, JPG</p>
             </Dragger>
           </Form.Item>
         </Form>

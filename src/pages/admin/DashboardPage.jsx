@@ -11,7 +11,6 @@ import {
   Button, 
   Dropdown, 
   Progress,
-  List,
 } from "antd";
 import { 
   UserOutlined, 
@@ -22,7 +21,6 @@ import {
   RiseOutlined,
   FallOutlined,
   ArrowRightOutlined,
-  BellOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/Footer"; 
@@ -268,30 +266,7 @@ export default function AdminDashboardPage() {
                         </div>
                     </Card>
 
-                    <Card 
-                        title="Hoạt động hệ thống" 
-                        variant="borderless" 
-                        style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
-                    >
-                        <List
-                            itemLayout="horizontal"
-                            dataSource={[
-                                { title: 'Bệnh nhân Nguyễn A đã đặt lịch khám Da liễu', time: '5 phút trước' },
-                                { title: 'BS. Hoa đã hoàn thành ca khám #1234', time: '10 phút trước' },
-                                { title: 'Thêm mới thuốc "Panadol" vào kho', time: '1 giờ trước' },
-                                { title: 'Hệ thống sao lưu dữ liệu tự động', time: '2 giờ trước' },
-                            ]}
-                            renderItem={(item) => (
-                                <List.Item>
-                                    <List.Item.Meta
-                                        avatar={<BellOutlined style={{ color: '#faad14', fontSize: 18 }} />}
-                                        title={<Text style={{ fontSize: 13 }}>{item.title}</Text>}
-                                        description={<Text type="secondary" style={{ fontSize: 11 }}>{item.time}</Text>}
-                                    />
-                                </List.Item>
-                            )}
-                        />
-                    </Card>
+                
                 </Col>
             </Row>
 

@@ -214,7 +214,7 @@ export default function UserManagementPage() {
                     <Text type="secondary">Quản lý danh sách Bác sĩ, Nhân viên và Bệnh nhân trong hệ thống</Text>
                 </div>
                 <Button type="primary" icon={<PlusOutlined  />} size="large" onClick={handleAdd}>
-                    Tạo tài khoản có thẩm quyền
+                    Tạo tài khoản
                 </Button>
             </div>
 
@@ -261,30 +261,6 @@ export default function UserManagementPage() {
             footer={null}
         >
             <Form form={form} layout="vertical" onFinish={handleSave}>
-                <Form.Item label="Họ và tên" name="name" rules={[{ required: true, message: 'Nhập họ tên' }]}>
-                    <Input placeholder="Nhập họ tên đầy đủ" />
-                </Form.Item>
-
-                <Form.Item label="Email" name="email" rules={[{ required: true, type: 'email', message: 'Email không hợp lệ' }]}>
-                    <Input placeholder="example@astcare.com" />
-                </Form.Item>
-                
-                <Form.Item label="Password" name="password" rules={[{ required: true, type: 'password', message: 'Password không hợp lệ' }]}>
-                    <Input placeholder="••••••••" />
-                </Form.Item>
-
-                <div style={{ display: 'flex', gap: 16 }}>
-                    <Form.Item label="Số điện thoại" name="phone" style={{ flex: 1 }} rules={[{ required: true, message: 'Nhập SĐT' }]}>
-                        <Input />
-                    </Form.Item>
-                    <Form.Item label="Trạng thái" name="status" style={{ flex: 1 }}>
-                        <Select>
-                            <Option value="active">Hoạt động</Option>
-                            <Option value="inactive">Đã khóa</Option>
-                        </Select>
-                    </Form.Item>
-                </div>
-
                 <Form.Item label="Vai trò (Phân quyền)" name="role" rules={[{ required: true }]}>
                     <Select onChange={() => {}}>
                         <Option value="doctor">Bác sĩ (Doctor)</Option>
@@ -317,6 +293,21 @@ export default function UserManagementPage() {
                             </Form.Item>
                         ) : null
                     }
+                </Form.Item>
+                <Form.Item label="Họ và tên" name="name" rules={[{ required: true, message: 'Nhập họ tên' }]}>
+                    <Input placeholder="Nhập họ tên đầy đủ" />
+                </Form.Item>
+
+                <Form.Item label="Email" name="email" rules={[{ required: true, type: 'email', message: 'Email không hợp lệ' }]}>
+                    <Input placeholder="example@astcare.com" />
+                </Form.Item>
+                
+                <Form.Item label="Password" name="password" rules={[{ required: true, type: 'password', message: 'Password không hợp lệ' }]}>
+                    <Input placeholder="••••••••" />
+                </Form.Item>
+
+                <Form.Item label="Số điện thoại" name="phone" style={{ flex: 1 }} rules={[{ required: true, message: 'Nhập SĐT' }]}>
+                    <Input />
                 </Form.Item>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 24 }}>

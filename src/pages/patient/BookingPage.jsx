@@ -1,144 +1,108 @@
 import { 
   Layout, Menu, Avatar, Typography, Card, Button,
   Space, List, Dropdown, Row, Col,
-  Collapse, Checkbox, Rate
+  Collapse, Checkbox, Rate, Spin, message, Input 
 } from "antd";
 import { 
   UserOutlined, 
   LogoutOutlined,
   CalendarOutlined,
-  EnvironmentOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  InfoCircleOutlined,
+  MedicineBoxOutlined
 } from "@ant-design/icons";
 import ChatBotIcon from "../../components/common/ChatBotIcon";
 import { useNavigate } from 'react-router-dom';
 import Footer from '../../components/common/Footer'; 
+import { useState, useEffect } from 'react';
+
+import { getDoctorsAPI } from '../../services/doctorService';
+import useAuth from '../../hooks/useAuth';
+
 
 const { Header, Content, Sider } = Layout;
-const { Title, Text } = Typography;
+const { Title, Text , Paragraph} = Typography;
 const { Panel } = Collapse;
+const { Search } = Input;
 
-const detailedDoctorsData = [
-  { 
-    id: 1, 
-    name: "BS Nguyễn Hồ Vĩnh Phước", 
-    rating: 5, 
-    isVerified: true, 
-    specialty: "Nam khoa", 
-    address: "Căn 7.33 Tòa nhà Charmington 181 Cao Thắng, Quận 10",
-    canBookInPerson: true,
-    canBookOnline: true,
-    avatarUrl: "/doctor1.png" 
-  },
-  { 
-    id: 2, 
-    name: "BS. CK1 Trần Văn Dũng", 
-    rating: 5, 
-    isVerified: true, 
-    specialty: "Nam khoa", 
-    address: "Nguyễn Văn Trỗi, Phương Liệt, Thanh Xuân, Hà Nội",
-    canBookInPerson: true,
-    canBookOnline: false,
-    avatarUrl: "/doctor2.png" 
-  },
-  { 
-    id: 3, 
-    name: "BS. CK2 Phạm Thị Hồng Nhung", 
-    rating: 4, 
-    isVerified: false, 
-    specialty: "Tim mạch", 
-    address: "Viện Tim TP.HCM, 88 Thành Thái, Quận 10",
-    canBookInPerson: true,
-    canBookOnline: true,
-    avatarUrl: "/doctor3.png" 
-  },
-  { 
-    id: 4, 
-    name: "BS. CK2 Lê Thị Minh Hồng", 
-    rating: 5, 
-    isVerified: true, 
-    specialty: "Nhi khoa", 
-    address: "Bệnh viện Nhi Đồng 2, 14 Lý Tự Trọng, Bến Nghé, Quận 1",
-    canBookInPerson: true,
-    canBookOnline: true,
-    avatarUrl: "/doctor4.png" 
-  },
-  { 
-    id: 5, 
-    name: "PGS. TS. BS Lâm Việt Trung", 
-    rating: 5, 
-    isVerified: true, 
-    specialty: "Tiêu hóa", 
-    address: "Bệnh viện Chợ Rẫy, 201B Nguyễn Chí Thanh, Phường 12, Quận 5",
-    canBookInPerson: true,
-    canBookOnline: false,
-    avatarUrl: "/doctor5.png" 
-  },
-  { 
-    id: 6, 
-    name: "BS. CK1 Trần Thị Thu Hà", 
-    rating: 4, 
-    isVerified: true, 
-    specialty: "Da liễu", 
-    address: "Bệnh viện Da liễu, 2 Nguyễn Thông, Phường 6, Quận 3",
-    canBookInPerson: true,
-    canBookOnline: true,
-    avatarUrl: "/doctor5.png" 
-  },
-  { 
-    id: 7, 
-    name: "PGS. TS. BS Nguyễn Thị Thanh Hương", 
-    rating: 4, 
-    isVerified: false, 
-    specialty: "Nhãn khoa", 
-    address: "456 Lê Lợi, Quận 3, TP. HCM",
-    canBookInPerson: true,
-    canBookOnline: false,
-    avatarUrl: "/doctor4.png" 
-  },
-  { 
-    id: 8, 
-    name: "BS. CK1 Lê Văn Thành", 
-    rating: 5, 
-    isVerified: true, 
-    specialty: "Cơ Xương Khớp", 
-    address: "Hồng Bàng, Quận 5, TP. HCM",
-    canBookInPerson: true,
-    canBookOnline: false,
-    avatarUrl: "/doctor3.png" 
-  },
-  { 
-    id: 9, 
-    name: "BS. CK2 Phan Thị Bích Ngọc", 
-    rating: 5, 
-    isVerified: true, 
-    specialty: "Tai Mũi Họng", 
-    address: "Trịnh Văn Cấn, Quận 1, TP. HCM",
-    canBookInPerson: true,
-    canBookOnline: true,
-    avatarUrl: "/doctor2.png" 
-  },
-  { 
-    id: 10, 
-    name: "BS. CK2 Võ Đức Hiếu", 
-    rating: 5, 
-    isVerified: true, 
-    specialty: "Ung bướu", 
-    address: "Bệnh viện Ung Bướu TP. HCM, Nơ Trang Long, Bình Thạnh",
-    canBookInPerson: true,
-    canBookOnline: false,
-    avatarUrl: "/doctor1.png" 
-  },
-];
 
 export default function BookingPage() {
   const navigate = useNavigate();
-  const user = { name: "Nguyen Van A" }; 
+  const { user, logout } = useAuth();
 
   const handleSignOut = () => {
-    console.log("Đã đăng xuất!");
+    logout(); 
     navigate('/login');
   };
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [totalDoctors, setTotalDoctors] = useState(0);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5); 
+
+  const [selectedDepartments, setSelectedDepartments] = useState([]);
+
+  const [searchKeyword, setSearchKeyword] = useState('');
+
+  const fetchDoctors = async () => {
+      setLoading(true);
+      try {
+          const params = {
+              page: currentPage,
+              take: pageSize,
+              sortDirection: 'DESC', 
+          };
+
+          // Nếu có chọn chuyên khoa thì gửi lên (API đang nhận chuỗi string)
+          if (selectedDepartments.length > 0) {
+              // Tạm thời lấy chuyên khoa đầu tiên nếu API chỉ hỗ trợ 1, hoặc join(',') nếu hỗ trợ mảng
+              params.department = selectedDepartments[0]; 
+          }
+
+          if (searchKeyword) {
+              params.keyword = searchKeyword; 
+          }
+
+          const res = await getDoctorsAPI(params);
+          
+          if (res.data) {
+              // Tùy theo response thực tế, thường sẽ nằm trong res.data.data hoặc res.data
+              const dataArray = res.data.data || res.data; 
+              setDoctors(dataArray);
+              
+              // Nếu backend trả về tổng số lượng để chia trang (total), bạn set vào đây. 
+              // Tạm thời giả lập total = 50 nếu API chưa trả về trường total
+              setTotalDoctors(res.data.total || 50); 
+          }
+      } catch (error) {
+          console.error("Lỗi lấy danh sách bác sĩ:", error);
+          message.error("Không thể tải danh sách bác sĩ lúc này.");
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  // --- SỬA: Gọi API mỗi khi page, pageSize hoặc filter thay đổi ---
+  useEffect(() => {
+      fetchDoctors();
+  }, [currentPage, pageSize, selectedDepartments, searchKeyword]);
+
+  const handleDepartmentChange = (checkedValues) => {
+      setSelectedDepartments(checkedValues);
+      setCurrentPage(1); 
+  };
+  const handleSearch = (value) => {
+      setSearchKeyword(value);
+      setCurrentPage(1); 
+  };
+
+  const handleResetFilters = () => {
+      setSelectedDepartments([]);
+      setSearchKeyword('');
+      setCurrentPage(1);
+  };
+
   const menuItems = [
     { key: '1', label: (<a onClick={() => navigate('/patient/personal')}>Thông tin cá nhân</a>), icon: <UserOutlined />},
     { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true}
@@ -157,7 +121,7 @@ export default function BookingPage() {
           position: 'sticky', top: 0, zIndex: 1000
         }}
       >
-<div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
                    <img 
             src="/ASTCare1.png" 
             alt="ATSCare Logo" 
@@ -186,7 +150,7 @@ export default function BookingPage() {
         />
         <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.name}</span>
+            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.firstName}</span>
             <Avatar size={36} icon={<UserOutlined />} />
           </div>
         </Dropdown>
@@ -199,29 +163,31 @@ export default function BookingPage() {
             <div style={{ background: '#fff', padding: 16, borderRadius: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <Text strong style={{ fontSize: 16 }}>Lọc</Text>
-                <Button type="link" icon={<ReloadOutlined />} style={{ padding: 0 }}>
+                <Button type="link" icon={<ReloadOutlined />} style={{ padding: 0 }} onClick={handleResetFilters}>
                   Xoá bộ lọc
                 </Button>
               </div>
-              <Collapse defaultActiveKey={['1', '2']} ghost>
-                <Panel header="Ngôn ngữ" key="1">
-                  <Checkbox.Group>
-                    <Space direction="vertical">
-                      <Checkbox value="vi">Tiếng Việt</Checkbox>
-                      <Checkbox value="en">English</Checkbox>
+              <Collapse defaultActiveKey={['1']} ghost>
+                <Panel header={<Text strong>Chuyên khoa</Text>} key="1">
+                  <Checkbox.Group value={selectedDepartments} onChange={handleDepartmentChange} style={{ width: '100%' }}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Checkbox value="Da liễu">Da liễu</Checkbox>
+                      <Checkbox value="Tim mạch">Tim mạch</Checkbox>
+                      <Checkbox value="Nhi khoa">Nhi khoa</Checkbox>
+                      <Checkbox value="Tiêu hóa">Tiêu hóa</Checkbox>
+                      <Checkbox value="Tai Mũi Họng">Tai Mũi Họng</Checkbox>
+                      <Checkbox value="Cơ Xương Khớp">Cơ Xương Khớp</Checkbox>
                     </Space>
                   </Checkbox.Group>
                 </Panel>
-                <Panel header="Bảo hiểm" key="2">
+                <Panel header={<Text strong>Giới tính bác sĩ</Text>} key="2">
+                   
                   <Checkbox.Group>
                     <Space direction="vertical">
-                      <Checkbox value="bhxh">Bảo hiểm xã hội</Checkbox>
-                      <Checkbox value="other">Bảo hiểm khác</Checkbox>
+                      <Checkbox value="MALE">Nam</Checkbox>
+                      <Checkbox value="FEMALE">Nữ</Checkbox>
                     </Space>
                   </Checkbox.Group>
-                </Panel>
-                <Panel header="Gần tôi" key="3">
-                  <Checkbox value="nearby">Gần tôi</Checkbox>
                 </Panel>
               </Collapse>
             </div>
@@ -229,16 +195,28 @@ export default function BookingPage() {
 
           <Content>
             <Title level={4} style={{ marginBottom: 16 }}>
-              {detailedDoctorsData.length} bệnh viện và phòng khám
+              Danh sách Bác sĩ ({totalDoctors})
+              <Search 
+                    placeholder="Tìm kiếm theo tên bác sĩ..." 
+                    allowClear 
+                    onSearch={handleSearch} 
+                    style={{ width: 300 }} 
+                />
             </Title>
-            
+            <Spin spinning={loading} size="large">
             <List
               grid={{ gutter: 16, column: 1 }} 
-              dataSource={detailedDoctorsData}
+              dataSource={doctors}
               pagination={{
-                pageSize: 5, 
-                style: { textAlign: 'center' } 
-              }}
+                    current: currentPage,
+                    pageSize: pageSize, 
+                    total: totalDoctors,
+                    onChange: (page, size) => {
+                        setCurrentPage(page);
+                        setPageSize(size);
+                    },
+                    style: { textAlign: 'center', marginTop: 30 } 
+                }}
               renderItem={(doctor) => (
                 <List.Item>
                   <Card 
@@ -251,18 +229,30 @@ export default function BookingPage() {
                       </Col>
                       
                       <Col span={20}>
-                        <Title level={5} style={{ color: '#1677ff', cursor: 'pointer', margin: 0 }}>
-                          {doctor.name}
-                        </Title>
-                        <Space style={{ margin: '4px 0' }}>
-                          <Rate disabled defaultValue={doctor.rating} style={{ fontSize: 14 }} />
-                        </Space>
-                        <Text type="secondary" style={{ display: 'block', marginTop: 10 }}>
-                          <UserOutlined /> {doctor.specialty}
-                        </Text>
-                        <Text type="secondary" style={{ display: 'block' , marginTop: 10 }}>
-                          <EnvironmentOutlined /> {doctor.address} 
-                        </Text>
+                        <Title level={5} style={{ color: '#1677ff', cursor: 'pointer', margin: 0, fontSize: 20 }}>
+                                {doctor.lastName} {doctor.firstName}
+                            </Title>
+                            <Space style={{ margin: '8px 0' }}>
+                                {/* API không có rating, tạm thời để mặc định 5 sao cho đẹp giao diện */}
+                                <Rate disabled defaultValue={5} style={{ fontSize: 14 }} />
+                                <Text type="secondary" style={{ marginLeft: 8 }}>Mã BS: {doctor.doctorCode}</Text>
+                            </Space>
+                            
+                            <Text strong style={{ display: 'block', marginTop: 10, fontSize: 15 }}>
+                                <MedicineBoxOutlined style={{ color: '#1677ff', marginRight: 8 }}/> 
+                                Khoa: {doctor.department}
+                            </Text>
+
+                            <Paragraph type="secondary" style={{ marginTop: 10, marginBottom: 0 }}>
+                                <InfoCircleOutlined style={{ marginRight: 8 }}/>
+                                {doctor.experience || "Nhiều năm kinh nghiệm trong nghề."}
+                            </Paragraph>
+
+                            {doctor.description && (
+                                <Paragraph type="secondary" style={{ marginTop: 4, fontStyle: 'italic' }}>
+                                    {doctor.description}
+                                </Paragraph>
+                            )}
                         
                         <div style={{ marginTop: 16 }}>
                           <Button 
@@ -280,6 +270,7 @@ export default function BookingPage() {
                 </List.Item>
               )}
             />
+            </Spin>
           </Content>
         </Layout>
       </Content>

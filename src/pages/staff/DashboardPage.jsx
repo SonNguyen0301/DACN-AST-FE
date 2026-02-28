@@ -191,7 +191,7 @@ export default function AdmissionStaffDashboardPage() {
         <Row gutter={[24, 24]}>
             <Col xs={24} lg={16}>
                 <Card 
-                    title="Lịch hẹn sắp tới" 
+                    title="Lịch hẹn" 
                     variant="borderless"
                     extra={<Button type="link">Xem tất cả</Button>}
                     style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", height: '100%' }}

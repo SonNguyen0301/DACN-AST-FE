@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Card, Button, Row, Col,Image
-,  Space, Select, Modal, Form, Input, DatePicker, Dropdown ,Descriptions,Tag, Pagination
+,  Space, Select, Modal, Form, Input, DatePicker, Dropdown ,Descriptions,Tag, Pagination,message,Spin
 } from "antd";
 import { 
   UserOutlined, 
@@ -14,7 +14,6 @@ import {
   ScheduleOutlined,
   LogoutOutlined ,
   SmileOutlined, 
-  WalletOutlined, 
   TeamOutlined, 
   LeftOutlined,
 } from "@ant-design/icons";
@@ -23,9 +22,17 @@ import { useNavigate } from 'react-router-dom';
 import Footer from '../../components/common/Footer'; 
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import { getUserInfoAPI, updateUserInfoAPI } from '../../services/userService';
 dayjs.extend(customParseFormat);
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
+const { Option } = Select;
+
+const genderDisplayMap = {
+  MALE: "Nam",
+  FEMALE: "Nữ",
+  OTHER: "Khác"
+};
 
 const appointmentsData = [
   { id: 1, date: "12/11/2025", type: "Khám Da liễu", doctor: "BS. Phạm Anh Dũng ", timeSlot: "18:30 - 19:00", room: "Phòng 203" , avatarUrl: "/doctor1.png", diagnosis: "Viêm da cơ địa dị ứng,"},
@@ -42,63 +49,101 @@ const appointmentsData = [
 
 
 export default function PersonalPage() {
+  const navigate = useNavigate();
+  const [form] = Form.useForm();
+
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 4; 
 
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const currentAppointments = appointmentsData.slice(startIndex, endIndex);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
+  
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
 
-  const navigate = useNavigate();
-  const user = { 
-    name: "Nguyen Van A", 
-    email: "nguyenvana@gmail.com", 
-    dob: "01/01/1990",
-    phone: "0909 123 456",
-    bhyt: "DN 4 79 123 456789",
-    identifyNumber: "0791 23 004567",
-    gender: "Nam",
-    occupation: "Kỹ sư phần mềm",
-    ethnicity: "Kinh",
-    address: {
-      province: "TP. Hồ Chí Minh",
-      district: "Quận 1",
-      ward: "Phường Bến Nghé",
-      specific: "123 Đường Nguyễn Huệ"
+  const fetchUserProfile = async () => {
+    setLoading(true);
+    try {
+      const res = await getUserInfoAPI();
+      if (res.data?.success) {
+        setUserData(res.data.data);
+      }
+    } catch (error) {
+      console.error("Lỗi lấy thông tin:", error);
+      message.error("Không thể tải thông tin hồ sơ.");
+    } finally {
+      setLoading(false);
     }
   };
-  const fullAddress = `${user.address.specific}, ${user.address.ward}, ${user.address.district}, ${user.address.province}`;
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [form] = Form.useForm();
 
-const showModal = () => {
-    const dobDate = user.dob ? dayjs(user.dob, 'DD/MM/YYYY') : null;
+  const showModal = () => {
+    const dobDate = userData.dateOfBirth ? dayjs(userData.dateOfBirth, 'YYYY-MM-DD') : null;
+    
     form.setFieldsValue({
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      dob: dobDate,
-      bhyt: user.bhyt,
-      identifyNumber: user.identifyNumber,
-      gender: user.gender,
-      occupation: user.occupation,
-      ethnicity: user.ethnicity,
-      province: user.address.province,
-      district: user.address.district,
-      ward: user.address.ward,
-      specificAddress: user.address.specific,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      email: userData.email,
+      phoneCode: userData.phoneCode || '+84',
+      phoneNumber: userData.phoneNumber,
+      dateOfBirth: dobDate,
+      gender: userData.gender,
+      folk: userData.folk,
+      citizenCode: userData.citizenCode,
+      medicalInsurance: userData.medicalInsurance,
+      address: userData.address,
     });
     setIsModalOpen(true);
   };
 
-  const handleOk = () => {
-    console.log("Form values:", form.getFieldsValue());
-    setIsModalOpen(false);
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields();
+      setUpdating(true);
+
+      const payload = {
+        firstName: values.firstName,
+        lastName: values.lastName,
+        gender: values.gender,
+        dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null,
+        phoneCode: values.phoneCode,
+        phoneNumber: values.phoneNumber,
+        avatarUrl: userData.avatarUrl, 
+        isOnBoardingCompleted: true,
+        folk: values.folk,
+        citizenCode: values.citizenCode,
+        medicalInsurance: values.medicalInsurance,
+        address: values.address
+      };
+
+      const res = await updateUserInfoAPI(payload);
+      
+      if (res.data?.success) {
+        message.success("Cập nhật hồ sơ thành công!");
+        setUserData(res.data.data); 
+        setIsModalOpen(false);
+      }
+    } catch (error) {
+      console.error("Lỗi cập nhật:", error);
+      message.error(error.response?.data?.message || "Cập nhật thất bại. Vui lòng kiểm tra lại thông tin.");
+    } finally {
+      setUpdating(false);
+    }
   };
+
+
   const handleCancel = () => {
     setIsModalOpen(false);
   };
+
+  
   const renderInfoItem = (icon, label, value) => (
     <div style={{ marginBottom: 12 }}>
       <Space align="start">
@@ -112,9 +157,10 @@ const showModal = () => {
   );
 
   const handleSignOut = () => {
-    console.log("Đã đăng xuất!");
-    navigate('/');
-  };
+      localStorage.removeItem('accessToken');
+      message.success("Đã đăng xuất!");
+      navigate('/login');
+    };
   const menuItems = [
     {
       key: '1',
@@ -139,6 +185,18 @@ const showModal = () => {
   const selectedAppointment = appointmentsData.find(
       (apt) => apt.id === selectedAppointmentId
     );
+  
+  if (loading) {
+      return (
+          <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f5f7fa' }}>
+              <Spin size="large" tip="Đang tải hồ sơ..." />
+          </div>
+      );
+  }
+
+  if (!userData) return null;
+
+  const fullName = `${userData.lastName || ''} ${userData.firstName || ''}`.trim();
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
       <Header
@@ -152,7 +210,7 @@ const showModal = () => {
           position: 'sticky', top: 0, zIndex: 1000
         }}
       >
-<div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
           <img 
             src="/ASTCare1.png" 
             alt="ATSCare Logo" 
@@ -181,7 +239,7 @@ const showModal = () => {
         />
         <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.name}</span>
+            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{fullName}</span>
             <Avatar size={36} icon={<UserOutlined />} />
           </div>
         </Dropdown>
@@ -189,37 +247,25 @@ const showModal = () => {
 
       <Content style={{ padding: "40px 60px" }}>
         <Layout>
-          <Sider width={300} theme="light" style={{ borderRight: '1px solid #f0f0f0' }}>
-            <div style={{ padding: 24, textAlign: 'center' }}>
-              <Avatar size={120} icon={<UserOutlined />} />
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
-                gap: 8,
-                marginTop: 16 
-              }}>
-                <Title level={4} style={{ margin: 0 }}>{user.name}</Title>
-                <Button
-                  type="primary"
-                  shape="circle"
-                  icon={<EditOutlined />}
-                  onClick={showModal}
-                  size="large"
-                />
+          <Sider width={320} theme="light" style={{ borderRight: '1px solid #f0f0f0', padding: '20px 0' }}>
+            <div style={{ padding: '0 24px 24px 24px', textAlign: 'center', borderBottom: '1px solid #f0f0f0', marginBottom: 24 }}>
+              <Avatar size={100} src={userData.avatarUrl} icon={<UserOutlined />} style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}/>
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 16 }}>
+                <Title level={4} style={{ margin: 0 }}>{fullName}</Title>
+                <Button type="primary" shape="circle" icon={<EditOutlined />} onClick={showModal} size="middle" />
               </div>
+              <Tag color="blue" style={{ marginTop: 8 }}>{userData.role}</Tag>
             </div>
             
-            <div style={{ padding: '0 24px' }}>
-              {renderInfoItem(<ScheduleOutlined />, "Ngày sinh", user.dob)}
-              {renderInfoItem(<SmileOutlined />, "Giới tính", user.gender)}
-              {renderInfoItem(<PhoneOutlined />, "Số điện thoại", user.phone)}
-              {renderInfoItem(<MailOutlined />, "Email", user.email)}
-              {renderInfoItem(<HomeOutlined />, "Địa chỉ", fullAddress)}
-              {renderInfoItem(<WalletOutlined />, "Nghề nghiệp", user.occupation)}
-              {renderInfoItem(<UserOutlined />, "CCCD", user.identifyNumber)}
-              {renderInfoItem(<TeamOutlined />, "Dân tộc", user.ethnicity)}
-              {renderInfoItem(<IdcardOutlined />, "Mã BHYT", user.bhyt)}
+            <div style={{ padding: '0 30px' }}>
+              {renderInfoItem(<ScheduleOutlined />, "Ngày sinh", userData.dateOfBirth ? dayjs(userData.dateOfBirth).format('DD/MM/YYYY') : null)}
+              {renderInfoItem(<SmileOutlined />, "Giới tính", genderDisplayMap[userData.gender])}
+              {renderInfoItem(<PhoneOutlined />, "Số điện thoại", userData.phoneNumber ? `${userData.phoneCode} ${userData.phoneNumber}` : null)}
+              {renderInfoItem(<MailOutlined />, "Email", userData.email)}
+              {renderInfoItem(<UserOutlined />, "CCCD/CMND", userData.citizenCode)}
+              {renderInfoItem(<IdcardOutlined />, "Mã BHYT", userData.medicalInsurance)}
+              {renderInfoItem(<TeamOutlined />, "Dân tộc", userData.folk)}
+              {renderInfoItem(<HomeOutlined />, "Địa chỉ", userData.address)}
             </div>
           </Sider>
 
@@ -415,101 +461,92 @@ const showModal = () => {
       </Content>
 
       <Modal 
-        title="Hồ sơ cá nhân" 
+        title={<Title level={4}>Cập nhật hồ sơ cá nhân</Title>} 
         open={isModalOpen} 
         onOk={handleOk} 
         onCancel={handleCancel}
+        confirmLoading={updating}
         okText="Lưu thay đổi"
         cancelText="Hủy"
         width={800} 
+        centered
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 24 }}>
+        <Form form={form} layout="vertical" style={{ marginTop: 20 }}>
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="name" label="Họ và tên" rules={[{ required: true }]}>
-                <Input />
+              <Form.Item name="lastName" label="Họ" rules={[{ required: true, message: 'Vui lòng nhập họ!' }]}>
+                <Input placeholder="Nguyễn Văn" />
               </Form.Item>
             </Col>
             <Col span={12}>
-               <Form.Item name="dob" label="Ngày sinh" rules={[{ required: true }]}>
-                 <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
-               </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="phone" label="Số điện thoại" rules={[{ required: true }]}>
-                <Input />
+              <Form.Item name="firstName" label="Tên" rules={[{ required: true, message: 'Vui lòng nhập tên!' }]}>
+                <Input placeholder="A" />
               </Form.Item>
             </Col>
           </Row>
 
           <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="email" label="Email" tooltip="Email dùng để đăng nhập, không thể thay đổi.">
+                <Input disabled style={{ background: '#f5f5f5', color: '#888' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+                <Form.Item label="Số điện thoại" required>
+                    <Input.Group compact style={{ display: 'flex' }}>
+                        <Form.Item name="phoneCode" noStyle>
+                            <Select style={{ width: '30%' }}>
+                                <Option value="+84">+84</Option>
+                                <Option value="+1">+1</Option>
+                                <Option value="+81">+81</Option>
+                            </Select>
+                        </Form.Item>
+                        <Form.Item name="phoneNumber" noStyle rules={[{ required: true, message: 'Nhập số điện thoại!' }]}>
+                            <Input style={{ width: '70%' }} placeholder="Nhập SĐT" />
+                        </Form.Item>
+                    </Input.Group>
+                </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="dateOfBirth" label="Ngày sinh">
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày sinh" />
+              </Form.Item>
+            </Col>
             <Col span={12}>
               <Form.Item name="gender" label="Giới tính" rules={[{ required: true }]}>
                 <Select placeholder="Chọn giới tính">
-                  <Select.Option value="Nam">Nam</Select.Option>
-                  <Select.Option value="Nữ">Nữ</Select.Option>
-                  <Select.Option value="Khác">Khác</Select.Option>
+                  <Option value="MALE">Nam</Option>
+                  <Option value="FEMALE">Nữ</Option>
+                  <Option value="OTHER">Khác</Option>
                 </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="occupation" label="Nghề nghiệp">
-                <Input />
               </Form.Item>
             </Col>
           </Row>
 
           <Row gutter={16}>
-             <Col span={8}>
-              <Form.Item name="ethnicity" label="Dân tộc">
-                <Input />
-              </Form.Item>
-            </Col>
-             <Col span={8}>
-              <Form.Item name="identifyNumber" label="Số CCCD" rules={[{ required: true }]}>
-                <Input />
+            <Col span={8}>
+              <Form.Item name="citizenCode" label="Số CCCD/CMND">
+                <Input placeholder="Nhập mã định danh" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="bhyt" label="Mã BHYT" >
-                <Input />
+              <Form.Item name="medicalInsurance" label="Mã BHYT">
+                <Input placeholder="Mã bảo hiểm y tế" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="folk" label="Dân tộc">
+                <Input placeholder="Ví dụ: Kinh" />
               </Form.Item>
             </Col>
           </Row>
           
-          <Title level={5} style={{ marginTop: 8 }}>Địa chỉ thường trú</Title>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="province" label="Tỉnh/Thành phố">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="district" label="Quận/Huyện">
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="ward" label="Phường/Xã">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="specificAddress" label="Địa chỉ cụ thể (Số nhà, tên đường...)">
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item name="address" label="Địa chỉ liên hệ">
+            <Input.TextArea rows={2} placeholder="Nhập địa chỉ đầy đủ (Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố)" />
+          </Form.Item>
 
         </Form>
       </Modal>
