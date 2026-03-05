@@ -46,11 +46,11 @@ export default function AppointmentPage() {
     setLoading(true);
     try {
         const allRes = await getPatientAppointmentsAPI(user.id, {
-            sort: 'date', sortDirection: 'DESC', page: 1, take: 100 
+            sort: 'createdAt', sortDirection: 'ASC', page: 1, take: 10
         });
 
         if (allRes.data?.data) {
-            const allData = allRes.data.data;
+            const allData = allRes.data.data.data;
             
             const upcoming = allData.filter(apt => apt.status === 'SCHEDULED' || apt.status === 'PENDING');
             const past = allData.filter(apt => apt.status === 'EXAMINED' || apt.status === 'CANCELLED' || apt.status === 'LATE');
@@ -155,9 +155,9 @@ export default function AppointmentPage() {
       setSubmitting(true);
       try {
           const res = await cancelAppointmentAPI(aptId);
-          if(res.data?.isSuccess) { 
-              message.success("Đã hủy lịch khám thành công.");
-              fetchAppointments(); 
+          if(res.data?.data.isSuccess) { 
+            message.success("Đã hủy lịch khám thành công.");
+            fetchAppointments(); 
           }
       } catch (error) {
           console.error("Lỗi hủy lịch hẹn:", error);
@@ -211,7 +211,7 @@ export default function AppointmentPage() {
                   <Space align="start" size="middle">
                     <Avatar size={80} src={apt.avatarUrl} icon={<UserOutlined />} />
                     <div style={{ width: '100%' }}>
-                      <Text strong style={{ fontSize: 18, color: '#1677ff' }}>{apt.doctor}</Text>
+                      <Text strong style={{ fontSize: 18, color: '#1677ff' }}>{apt.doctorName}</Text>
                       <div style={{ marginBottom: 6 }}><Text type="secondary" style={{ fontStyle: 'italic' }}>{apt.type}</Text></div>
                       <Space direction="vertical" size={2}>
                         <Text type="secondary" style={{ fontSize: 13 }}><CalendarOutlined /> {dayjs(apt.date).format('DD/MM/YYYY')}</Text>
@@ -231,7 +231,7 @@ export default function AppointmentPage() {
                       border: '1px solid #d6e4ff', 
                       height: '100%', 
                     }}>
-                        {apt.notes && (
+                        {apt.description && (
                             <div style={{ marginBottom: (apt.files && apt.files.length > 0) ? 8 : 0 }}>
                                 <Space size={6} style={{ marginBottom: 2 }}>
                                     <FormOutlined style={{ color: '#1677ff', fontSize: 12 }} />
@@ -241,7 +241,7 @@ export default function AppointmentPage() {
                                   ellipsis={{ rows: 2, expandable: true, symbol: 'Xem thêm' }} 
                                   style={{ margin: 0, color: '#595959', fontSize: 13, paddingLeft: 20 }}
                                 >
-                                    {apt.notes}
+                                    {apt.description}
                                 </Paragraph>
                             </div>
                         )}
@@ -311,7 +311,7 @@ export default function AppointmentPage() {
               default: break;
             }
           }} />
-        <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow><div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}><span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.name}</span><Avatar size={36} icon={<UserOutlined />} /></div></Dropdown>
+        <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow><div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}><span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.firstName + ' ' + user.lastName}</span><Avatar size={36} icon={<UserOutlined />} /></div></Dropdown>
       </Header>
 
       <Content style={{ padding: "40px 60px" }}>

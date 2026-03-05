@@ -193,7 +193,7 @@ const featureCards = [
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <ClockCircleOutlined style={{ fontSize: 18, color: '#1677ff' }} />
-                      <Text>Thời gian: <Text strong>{upcomingApt.from?.substring(0, 5)} - {upcomingApt.to?.substring(0, 5)}</Text></Text>
+                      <Text>Thời gian: <Text strong>{upcomingApt.from?.substring(0, 5)}  {upcomingApt.to?.substring(0, 5)}</Text></Text>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <MedicineBoxOutlined style={{ fontSize: 18, color: '#1677ff' }} />
@@ -205,7 +205,7 @@ const featureCards = [
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <HomeOutlined style={{ fontSize: 18, color: '#1677ff' }} />
-                        <Text>Tại phòng: <Text strong>{upcomingApt.room}</Text></Text>
+                        <Text>Tại : <Text strong>{upcomingApt.room}</Text></Text>
                     </div>
                   </Space>
                 ) : (
@@ -227,7 +227,7 @@ const featureCards = [
               <Carousel autoplay autoplaySpeed={5000} dotPosition="bottom">
                 {hospitalIntroSlides.map((slide, index) => (
                   <div key={index}> 
-                    <div style={{ height: 250, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundImage: `url(/hospital.png)`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                    <div style={{ height: 270, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundImage: `url(/hospital.png)`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0.4)', zIndex: 1 }}></div>
                       <Paragraph style={{ position: 'relative', zIndex: 2, color: '#fff', fontSize: 18, textAlign: 'center', margin: 0, padding: '0 40px', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
                         {slide}

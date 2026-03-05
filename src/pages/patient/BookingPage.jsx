@@ -44,9 +44,9 @@ export default function BookingPage() {
   const [selectedDepartments, setSelectedDepartments] = useState([]);
 
   const [searchKeyword, setSearchKeyword] = useState('');
-
   const fetchDoctors = async () => {
-      setLoading(true);
+    setLoading(true);
+    // console.log("Fetching doctors with params:", { currentPage, pageSize, selectedDepartments, searchKeyword });
       try {
           const params = {
               page: currentPage,
@@ -65,15 +65,22 @@ export default function BookingPage() {
           }
 
           const res = await getDoctorsAPI(params);
+        //  console.log("API response for doctors:", res);
           
-          if (res.data) {
-              // Tùy theo response thực tế, thường sẽ nằm trong res.data.data hoặc res.data
-              const dataArray = res.data.data || res.data; 
+          if (res.data.data) {
+              let dataArray = [];
+              
+              if (Array.isArray(res.data.data)) {
+                  dataArray = res.data.data; 
+              } else if (Array.isArray(res.data.data.data)) {
+                  dataArray = res.data.data.data;
+              } else if (Array.isArray(res.data.data.items)) {
+                    dataArray = res.data.data.items;
+                }
+
               setDoctors(dataArray);
               
-              // Nếu backend trả về tổng số lượng để chia trang (total), bạn set vào đây. 
-              // Tạm thời giả lập total = 50 nếu API chưa trả về trường total
-              setTotalDoctors(res.data.total || 50); 
+              setTotalDoctors(res.data.data.total || res.data.data.totalItems || dataArray.length || 0); 
           }
       } catch (error) {
           console.error("Lỗi lấy danh sách bác sĩ:", error);
@@ -86,7 +93,7 @@ export default function BookingPage() {
   // --- SỬA: Gọi API mỗi khi page, pageSize hoặc filter thay đổi ---
   useEffect(() => {
       fetchDoctors();
-  }, [currentPage, pageSize, selectedDepartments, searchKeyword]);
+  }, [currentPage, pageSize, selectedDepartments, searchKeyword]);  
 
   const handleDepartmentChange = (checkedValues) => {
       setSelectedDepartments(checkedValues);
@@ -150,7 +157,7 @@ export default function BookingPage() {
         />
         <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.firstName}</span>
+            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.firstName + ' ' + user.lastName}</span>
             <Avatar size={36} icon={<UserOutlined />} />
           </div>
         </Dropdown>
@@ -160,6 +167,14 @@ export default function BookingPage() {
         <Layout style={{ background: '#f5f7fa' }}>
           
           <Sider width={280} theme="light" style={{ background: '#f5f7fa', paddingRight: 24 }}>
+            <div style={{ marginTop: 24 }}>
+              <Search 
+                    placeholder="Tìm kiếm theo tên bác sĩ..." 
+                    allowClear 
+                    onSearch={handleSearch} 
+                    style={{ width: 250, marginBottom: 16 }} 
+                />
+              </div>
             <div style={{ background: '#fff', padding: 16, borderRadius: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <Text strong style={{ fontSize: 16 }}>Lọc</Text>
@@ -180,7 +195,7 @@ export default function BookingPage() {
                     </Space>
                   </Checkbox.Group>
                 </Panel>
-                <Panel header={<Text strong>Giới tính bác sĩ</Text>} key="2">
+                {/* <Panel header={<Text strong>Giới tính bác sĩ</Text>} key="2">
                    
                   <Checkbox.Group>
                     <Space direction="vertical">
@@ -188,20 +203,17 @@ export default function BookingPage() {
                       <Checkbox value="FEMALE">Nữ</Checkbox>
                     </Space>
                   </Checkbox.Group>
-                </Panel>
+                </Panel> */}
               </Collapse>
             </div>
+            
+
           </Sider>
 
           <Content>
             <Title level={4} style={{ marginBottom: 16 }}>
               Danh sách Bác sĩ ({totalDoctors})
-              <Search 
-                    placeholder="Tìm kiếm theo tên bác sĩ..." 
-                    allowClear 
-                    onSearch={handleSearch} 
-                    style={{ width: 300 }} 
-                />
+
             </Title>
             <Spin spinning={loading} size="large">
             <List

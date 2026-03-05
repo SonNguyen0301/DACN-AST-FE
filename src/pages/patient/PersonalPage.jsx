@@ -127,7 +127,7 @@ export default function PersonalPage() {
       
       if (res.data?.success) {
         message.success("Cập nhật hồ sơ thành công!");
-        setUserData(res.data.data); 
+        fetchUserProfile();
         setIsModalOpen(false);
       }
     } catch (error) {
@@ -196,7 +196,7 @@ export default function PersonalPage() {
 
   if (!userData) return null;
 
-  const fullName = `${userData.lastName || ''} ${userData.firstName || ''}`.trim();
+  const fullName = `${userData.firstName || ''} ${userData.lastName || ''} `.trim();
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
       <Header
