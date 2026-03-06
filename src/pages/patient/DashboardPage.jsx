@@ -53,15 +53,16 @@ export default function PatientDashboardPage() {
         const profileRes = await getUserInfoAPI();
         const patientData = profileRes.data?.data;
 
-        if (patientData && patientData.isOnBoardingCompleted === false) {
+        if (patientData && (patientData.folk === null || patientData.dateOfBirth === null || patientData.citizenCode === null || patientData.address === null || patientData.medicalInsurance === null)) {
             Modal.warning({
                 title: 'Yêu cầu hoàn thiện hồ sơ',
-                content: 'Hồ sơ y tế của bạn chưa đầy đủ. Vui lòng cập nhật thông tin cá nhân (Ngày sinh, Giới tính, BHYT...) để có thể sử dụng tính năng Đặt lịch khám.',
+                content: 'Hồ sơ y tế của bạn chưa đầy đủ. Vui lòng cập nhật thông tin cá nhân (Ngày sinh, Giới tính, BHYT...) để có thể sử dụng các tính năng của ứng dụng.',
                 okText: 'Cập nhật ngay',
                 keyboard: false, 
                 maskClosable: false, 
                 onOk: () => {
-                    navigate('/patient/personal', { state: { openEditModal: true } }); 
+                  Modal.destroyAll();
+                  navigate('/patient/personal', { state: { openEditModal: true } }); 
                 }
             });
             setLoadingApt(false);

@@ -75,32 +75,54 @@ export default function DoctorProfilePage() {
           });
         }
 
-        const shiftRes = await getDoctorShiftsAPI({ doctorId: id, page: 1, take: 100, sortDirection: 'ASC' });
-        const shiftsData = shiftRes.data?.data?.data || shiftRes.data?.data || [];
+        const firstRes = await getDoctorShiftsAPI(id, { page: 1, take: 50, sortDirection: 'ASC' });
+        
+        let allShifts = firstRes.data?.data?.data || [];
+        const meta = firstRes.data?.data?.meta;
+
+        if (meta && meta.pageCount > 1) {
+            const fetchPromises = [];
+            
+            for (let i = 2; i <= meta.pageCount; i++) {
+                fetchPromises.push(
+                    getDoctorShiftsAPI(id, { page: i, take: 50, sortDirection: 'ASC' })
+                );
+            }
+
+            const nextResponses = await Promise.all(fetchPromises);
+            
+            nextResponses.forEach(res => {
+                const pageData = res.data?.data?.data || [];
+                allShifts = [...allShifts, ...pageData];
+            });
+        }
+
+        console.log(`Đã lấy thành công TOÀN BỘ ${allShifts.length} ca khám của bác sĩ!`);
         
         const map = {};
         let firstAvailableDate = null;
 
-        shiftsData.forEach(item => {
-          const shiftDetail = item.shift;
-          if (!shiftDetail) return;
+          allShifts.forEach(item => {
+            if (!item.date || !item.from || !item.to) return;
 
-          const dateObj = dayjs(shiftDetail.date);
-          const dStr = dateObj.format('DD-MM-YYYY');
-          if(!map[dStr]) map[dStr] = [];
-          
-          const startTimeStr = shiftDetail.from.substring(0, 5);
-          const endTimeStr = shiftDetail.to.substring(0, 5);
-          const startHour = parseInt(startTimeStr.substring(0, 2));
+            const dateObj = dayjs(item.date);
+            const dStr = dateObj.format('DD-MM-YYYY');
+            if(!map[dStr]) map[dStr] = [];
+            
+            const startTimeStr = item.from.substring(0, 5);
+            const endTimeStr = item.to.substring(0, 5);
+            const startHour = parseInt(startTimeStr.substring(0, 2));
 
-          map[dStr].push({
-            shiftId: item.shiftId,
-            status: item.status,
-            displayTime: `${startTimeStr} - ${endTimeStr}`,
-            startHour: startHour
-          });
+            const currentStatus = item.status || 'AVAILABLE';
 
-          if (!firstAvailableDate && item.status === 'AVAILABLE') {
+            map[dStr].push({
+              shiftId: item.id,
+              status: currentStatus,
+              displayTime: `${startTimeStr} - ${endTimeStr}`,
+              startHour: startHour
+            });
+
+          if (!firstAvailableDate && currentStatus === 'AVAILABLE') {
             firstAvailableDate = dateObj;
           }
         });
@@ -132,11 +154,10 @@ export default function DoctorProfilePage() {
     const evening = [];
     if (!slots) return { morning, afternoon, evening };
 
-    slots.forEach(slot => {
-      const startHour = parseInt(slot.split(':')[0]);
-      if (startHour < 12) morning.push(slot);
-      else if (startHour < 17) afternoon.push(slot);
-      else evening.push(slot);
+    slots.forEach(shift => {
+      if (shift.startHour < 12) morning.push(shift);
+      else if (shift.startHour < 17) afternoon.push(shift);
+      else evening.push(shift);
     });
     return { morning, afternoon, evening };
   };
@@ -196,8 +217,9 @@ export default function DoctorProfilePage() {
             message.error(res.data?.message || "Đặt lịch thất bại.");
         }
     } catch (error) {
-        console.error("Lỗi đặt lịch:", error);
-        message.error("Có lỗi xảy ra, vui lòng thử lại sau.");
+        console.error("Lỗi đặt lịch chi tiết:", error.response?.data || error);
+        const errorMsg = error.response?.data?.message || "Có lỗi hệ thống, vui lòng thử lại sau.";
+        message.error(`Lỗi: ${errorMsg}`);
     } finally {
         setBookingLoading(false);
     }

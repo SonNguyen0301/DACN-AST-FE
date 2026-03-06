@@ -41,6 +41,19 @@ export default function AppointmentPage() {
   const [editingAppointment, setEditingAppointment] = useState(null); 
   const [form] = Form.useForm();
 
+  const getValidImageUrl = (str) => {
+    if (!str) return "https://via.placeholder.com/60?text=L%E1%BB%97i"; 
+    
+    if (str.startsWith('http')) return str;
+
+    let cleanStr = str.replace(/[\r\n\s]+/g, '');
+    
+    if (!cleanStr.startsWith('data:image')) {
+        cleanStr = `data:image/png;base64,${cleanStr}`;
+    }
+    return cleanStr;
+  };
+
   const fetchAppointments = async () => {
     if (!user?.id) return;
     setLoading(true);
@@ -99,7 +112,7 @@ export default function AppointmentPage() {
           uid: `old-${index}`, 
           name: img.description || `Hình_anh_đính_kèm_${index+1}.png`,
           status: 'done',
-          url: img.Base64,
+          url: getValidImageUrl(img.Base64 || img.dataUrl),
       }));
       setFileList(existingFiles);
 
@@ -261,13 +274,15 @@ export default function AppointmentPage() {
                                                   key={idx}
                                                   width={60}
                                                   height={60}
-                                                  src={f.Base64} 
-                                                  alt={f.description || 'Hình ảnh triệu chứng'}
+                                                  src={getValidImageUrl(f.Base64 || f.dataUrl)} 
+                                                  alt={f.description || 'Hình ảnh đính kèm'}
+                                                  fallback="https://via.placeholder.com/60?text=L%E1%BB%97i"
                                                   style={{ 
                                                       borderRadius: 6, 
                                                       objectFit: 'cover', 
                                                       border: '1px solid #d9d9d9',
-                                                      cursor: 'pointer' 
+                                                      cursor: 'pointer',
+                                                      background: '#fff'
                                                   }}
                                               />
                                           ))}
