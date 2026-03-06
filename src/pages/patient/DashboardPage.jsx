@@ -12,7 +12,8 @@ import {
   Carousel,
   Dropdown,
   Spin,
-  Empty
+  Empty,
+  Modal
 } from "antd";
 import { 
   CalendarOutlined, 
@@ -33,6 +34,7 @@ import { useEffect, useState } from "react";
 import useAuth from "../../hooks/useAuth";
 import dayjs from "dayjs";
 import { getUpcomingAppointmentAPI } from "../../services/appointmentService";
+import { getUserInfoAPI } from "../../services/userService";
 
 const { Header, Content } = Layout;
 const { Paragraph, Text, Title } = Typography;
@@ -44,10 +46,28 @@ export default function PatientDashboardPage() {
   const [loadingApt, setLoadingApt] = useState(true);
 
   useEffect(() => {
-    const fetchUpcomingApt = async () => {
+    const checkProfileAndFetchApt = async () => {
       if (!user?.id) return;
-      setLoadingApt(true);
       try {
+        setLoadingApt(true);
+        const profileRes = await getUserInfoAPI();
+        const patientData = profileRes.data?.data;
+
+        if (patientData && patientData.isOnBoardingCompleted === false) {
+            Modal.warning({
+                title: 'Yêu cầu hoàn thiện hồ sơ',
+                content: 'Hồ sơ y tế của bạn chưa đầy đủ. Vui lòng cập nhật thông tin cá nhân (Ngày sinh, Giới tính, BHYT...) để có thể sử dụng tính năng Đặt lịch khám.',
+                okText: 'Cập nhật ngay',
+                keyboard: false, 
+                maskClosable: false, 
+                onOk: () => {
+                    navigate('/patient/personal', { state: { openEditModal: true } }); 
+                }
+            });
+            setLoadingApt(false);
+            return; 
+        }
+
         const res = await getUpcomingAppointmentAPI(user.id);
         if (res.data?.success && res.data?.data) {
           setUpcomingApt(res.data.data);
@@ -62,8 +82,8 @@ export default function PatientDashboardPage() {
       }
     };
 
-    fetchUpcomingApt();
-  }, [user]);
+    checkProfileAndFetchApt();
+  }, [user, navigate]);
 
   const hospitalIntroSlides = [
     "ATS-Care là nền tảng y tế thông minh giúp bệnh nhân dễ dàng đặt lịch, theo dõi sức khỏe và nhận chẩn đoán da liễu từ AI.",

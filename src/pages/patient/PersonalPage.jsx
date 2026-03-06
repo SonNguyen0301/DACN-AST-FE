@@ -18,7 +18,7 @@ import {
   LeftOutlined,
 } from "@ant-design/icons";
 import ChatBotIcon from "../../components/common/ChatBotIcon";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Footer from '../../components/common/Footer'; 
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
@@ -50,6 +50,8 @@ const appointmentsData = [
 
 export default function PersonalPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [form] = Form.useForm();
 
   const [userData, setUserData] = useState(null);
@@ -69,6 +71,14 @@ export default function PersonalPage() {
     fetchUserProfile();
   }, []);
 
+  useEffect(() => {
+      if (userData && location.state?.openEditModal) {
+          showModal(userData);
+          
+          window.history.replaceState({}, document.title)
+      }
+  }, [userData, location.state]);
+
   const fetchUserProfile = async () => {
     setLoading(true);
     try {
@@ -84,21 +94,23 @@ export default function PersonalPage() {
     }
   };
 
-  const showModal = () => {
-    const dobDate = userData.dateOfBirth ? dayjs(userData.dateOfBirth, 'YYYY-MM-DD') : null;
+  const showModal = (dataToEdit = userData) => {
+    if (!dataToEdit) return;
+
+    const dobDate = dataToEdit.dateOfBirth ? dayjs(dataToEdit.dateOfBirth, 'YYYY-MM-DD') : null;
     
     form.setFieldsValue({
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      email: userData.email,
-      phoneCode: userData.phoneCode || '+84',
-      phoneNumber: userData.phoneNumber,
+      firstName: dataToEdit.firstName,
+      lastName: dataToEdit.lastName,
+      email: dataToEdit.email,
+      phoneCode: dataToEdit.phoneCode || '+84',
+      phoneNumber: dataToEdit.phoneNumber,
       dateOfBirth: dobDate,
-      gender: userData.gender,
-      folk: userData.folk,
-      citizenCode: userData.citizenCode,
-      medicalInsurance: userData.medicalInsurance,
-      address: userData.address,
+      gender: dataToEdit.gender,
+      folk: dataToEdit.folk,
+      citizenCode: dataToEdit.citizenCode,
+      medicalInsurance: dataToEdit.medicalInsurance,
+      address: dataToEdit.address,
     });
     setIsModalOpen(true);
   };

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Card, Button,
   Space, Dropdown, Tabs, Tag, Popconfirm,
-  Modal, Form, Input, Upload,Row, Col, message, Spin
+  Modal, Form, Input, Upload,Row, Col, message, Spin, Image
 } from "antd";
 import { 
   UserOutlined, LogoutOutlined, CalendarOutlined,
@@ -99,7 +99,7 @@ export default function AppointmentPage() {
           uid: `old-${index}`, 
           name: img.description || `Hình_anh_đính_kèm_${index+1}.png`,
           status: 'done',
-          url: img.dataUrl,
+          url: img.Base64,
       }));
       setFileList(existingFiles);
 
@@ -246,22 +246,33 @@ export default function AppointmentPage() {
                             </div>
                         )}
 
-                        {apt.files && apt.files.length > 0 && (
+                        {apt.images && apt.images.length > 0 && (
                             <div style={{ marginTop: 8 }}>
                                 <Space size={6} style={{ marginBottom: 4 }}>
                                     <PaperClipOutlined style={{ color: '#1677ff', fontSize: 12 }} />
                                     <Text strong style={{ color: '#1677ff', fontSize: 12 }}>TỆP ĐÍNH KÈM:</Text>
                                 </Space>
+                                
                                 <div style={{ paddingLeft: 20 }}>
-                                  <Space size={[8, 8]} wrap>
-                                      {apt.files.map((f, idx) => (
-                                          <a key={idx} href={f.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                                              <Tag color="blue" style={{ cursor: 'pointer', margin: 0 }}>
-                                                {f.name}
-                                              </Tag>
-                                          </a>
-                                      ))}
-                                  </Space>
+                                  <Image.PreviewGroup>
+                                      <Space size={[8, 8]} wrap>
+                                          {apt.images.map((f, idx) => (
+                                              <Image
+                                                  key={idx}
+                                                  width={60}
+                                                  height={60}
+                                                  src={f.Base64} 
+                                                  alt={f.description || 'Hình ảnh triệu chứng'}
+                                                  style={{ 
+                                                      borderRadius: 6, 
+                                                      objectFit: 'cover', 
+                                                      border: '1px solid #d9d9d9',
+                                                      cursor: 'pointer' 
+                                                  }}
+                                              />
+                                          ))}
+                                      </Space>
+                                  </Image.PreviewGroup>
                                 </div>
                             </div>
                         )}

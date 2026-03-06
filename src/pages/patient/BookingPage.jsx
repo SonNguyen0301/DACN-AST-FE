@@ -1,7 +1,7 @@
 import { 
   Layout, Menu, Avatar, Typography, Card, Button,
   Space, List, Dropdown, Row, Col,
-  Collapse, Checkbox, Rate, Spin, message, Input 
+  Collapse, Checkbox, Spin, message, Input 
 } from "antd";
 import { 
   UserOutlined, 
@@ -245,8 +245,6 @@ export default function BookingPage() {
                                 {doctor.lastName} {doctor.firstName}
                             </Title>
                             <Space style={{ margin: '8px 0' }}>
-                                {/* API không có rating, tạm thời để mặc định 5 sao cho đẹp giao diện */}
-                                <Rate disabled defaultValue={5} style={{ fontSize: 14 }} />
                                 <Text type="secondary" style={{ marginLeft: 8 }}>Mã BS: {doctor.doctorCode}</Text>
                             </Space>
                             

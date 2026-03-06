@@ -1,8 +1,8 @@
 import axios from './api'; 
 
-const getPatientAppointmentsAPI = (userId, params) => {
-    return axios.get(`/appointments/${userId}`, { params });
-};
+    const getPatientAppointmentsAPI = (userId, params) => {
+        return axios.get(`/appointments/${userId}`, { params });
+    };
 
 const cancelAppointmentAPI = (appointmentId) => {
     return axios.patch(`/appointments/${appointmentId}/cancel`);

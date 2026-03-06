@@ -14,8 +14,8 @@ const requestOtpAPI = (email) => {
     return axios.post('/auth/request-otp', { email });
 };
 
-const verifyOtpAPI = ({ email, otp, sessionId }) => {
-    return axios.post('/auth/verify-otp', { email, otp, sessionId });
+const verifyOtpAPI = ({ email, otp, sessionId, type }) => {
+    return axios.post('/auth/verify-otp', { email, otp, sessionId, type });
 };
 
 const registerAPI = (data) => {

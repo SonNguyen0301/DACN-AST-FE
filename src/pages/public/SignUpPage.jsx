@@ -118,7 +118,8 @@ export default function SignUpPage() {
         const payload = {
             email: registerData.email,
             otp: values.otp,
-            sessionId: registerData.sessionId
+            sessionId: registerData.sessionId,
+            type: 'REGISTER'
         };
         
         const res = await verifyOtpAPI(payload);
