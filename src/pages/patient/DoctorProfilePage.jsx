@@ -1,8 +1,8 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Card, Button, Select,
-  Space, Dropdown, Row, Col, Tag, Tabs, Input, Upload, message, Calendar, Empty, Divider 
+  Space, Dropdown, Row, Col, Tag, Tabs, Input, Upload, message, Calendar, Empty, Divider , Spin
 } from "antd";
 import { 
   UserOutlined, LogoutOutlined, SafetyOutlined,
@@ -15,104 +15,214 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Footer from '../../components/common/Footer'; 
 import dayjs from 'dayjs'; 
 
+import { getDoctorInfoAPI, getDoctorShiftsAPI, bookAppointmentAPI } from '../../services/doctorService';
+import useAuth from '../../hooks/useAuth';
+
+
 const { Header, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 const { Dragger } = Upload;
 
-const detailedDoctorsData = [
-  { 
-    id: 1, 
-    name: "BS Nguyễn Hồ Vĩnh Phước", 
-    title: "Bác sĩ",
-    rating: 5, 
-    isVerified: true, 
-    experienceYears: 20,
-    specialty: "Nam khoa", 
-    role: "Giám đốc",
-    workplace: "Phòng khám nam khoa và Y học giới tính TPHCM",
-    address: "Căn 7.33 Tòa nhà Charmington 181 Cao Thắng, Quận 10",
-    avatarUrl: "/doctor1.png",
-    introduction: "Bác sĩ Nguyễn Hồ Vĩnh Phước là chuyên gia hàng đầu về Nam khoa. Bác sĩ đã có 20 năm kinh nghiệm...",
-    education: [
-      "Tốt nghiệp Đại học Y khoa Phạm Ngọc Thạch (TTĐT & BDCBYT).",
-      "2001: Tốt nghiệp Chuyên Khoa 1 tại Đại học Y Dược TP.HCM.",
-      "Tốt nghiệp Chuyên Khoa 2 tại Đại học Y Khoa Phạm Ngọc Thạch."
-    ],
-    experience: [
-      "Bác sĩ chuyên khoa II Lê Thị Minh Hồng công tác tại bệnh viện Nhi Đồng 2.",
-      "Hiện là Phó Giám đốc Bệnh viện Nhi Đồng 2."
-    ]
-  },
-];
 
-const slots_morning = ["07:00 - 07:30", "07:30 - 08:00", "08:00 - 08:30", "08:30 - 09:00", "09:00 - 09:30", "09:30 - 10:00", "10:00 - 10:30", "10:30 - 11:00"];
-const slots_afternoon = ["13:00 - 13:30", "13:30 - 14:00", "14:00 - 14:30", "14:30 - 15:00", "15:00 - 15:30", "15:30 - 16:00", "16:00 - 16:30", "16:30 - 17:00"];
-
-const bookingSchedule = [
-  { id: 1, day: "Thứ 6", date: "14-11-2025", timeSlots: [...slots_morning] },
-  { id: 2, day: "Thứ 7", date: "15-11-2025", timeSlots: [...slots_morning, ...slots_afternoon] }, 
-  { id: 3, day: "Thứ 2", date: "17-11-2025", timeSlots: slots_afternoon },
-  { id: 4, day: "Thứ 3", date: "18-11-2025", timeSlots: slots_morning },
-  { id: 5, day: "Thứ 4", date: "19-11-2025", timeSlots: slots_morning },
-  { id: 6, day: "Thứ 5", date: "20-11-2025", timeSlots: slots_afternoon },
-  { id: 7, day: "Thứ 6", date: "21-11-2025", timeSlots: slots_morning },
-];
 
 export default function DoctorProfilePage() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const user = { name: "Nguyen Van A" }; 
+  const { user, logout } = useAuth(); 
 
-  const [selectedDateStr, setSelectedDateStr] = useState(bookingSchedule[0].date); 
-  const [selectedTime, setSelectedTime] = useState(null);
-  const [notes, setNotes] = useState("");
+  const [doctor, setDoctor] = useState(null);
+  const [loadingDoctor, setLoadingDoctor] = useState(true);
 
-  const doctor = detailedDoctorsData.find(d => d.id === parseInt(id));
+  const [scheduleMap, setScheduleMap] = useState({});
+  const [loadingShifts, setLoadingShifts] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(false);
 
-  const currentSchedule = bookingSchedule.find(d => d.date === selectedDateStr);
+  const [calendarValue, setCalendarValue] = useState(dayjs());
+  const [selectedDateStr, setSelectedDateStr] = useState(null); 
+  const [selectedShift, setSelectedShift] = useState(null); 
   
+  const [notes, setNotes] = useState("");
+  const [fileList, setFileList] = useState([]); 
+
+  useEffect(() => {
+    const fetchDoctorAndShifts = async () => {
+      if (!id) return;
+      setLoadingDoctor(true);
+      setLoadingShifts(true);
+      
+      try {
+        const docRes = await getDoctorInfoAPI(id);
+        if (docRes.data?.data) {
+          const d = docRes.data.data;
+         
+          setDoctor({
+            id: d.id,
+            name: `${d.lastName} ${d.firstName}`,
+            title: "Bác sĩ", 
+            rating: 5,
+            isVerified: true,
+            experienceYears: d.experience, 
+            specialty: d.department,
+            role: d.role,
+            workplace: "Đang cập nhật...", 
+            address: "Đang cập nhật...", 
+            avatarUrl: d.avatarUrl || "/doctor_default.png",
+            introduction: d.description || "Bác sĩ chưa cập nhật thông tin giới thiệu.",
+            education: ["Đang cập nhật..."], 
+            experience: [d.experience || "Nhiều năm kinh nghiệm"] 
+          });
+        }
+
+        const firstRes = await getDoctorShiftsAPI(id, { page: 1, take: 50, sortDirection: 'ASC' });
+        
+        let allShifts = firstRes.data?.data?.data || [];
+        const meta = firstRes.data?.data?.meta;
+
+        if (meta && meta.pageCount > 1) {
+            const fetchPromises = [];
+            
+            for (let i = 2; i <= meta.pageCount; i++) {
+                fetchPromises.push(
+                    getDoctorShiftsAPI(id, { page: i, take: 50, sortDirection: 'ASC' })
+                );
+            }
+
+            const nextResponses = await Promise.all(fetchPromises);
+            
+            nextResponses.forEach(res => {
+                const pageData = res.data?.data?.data || [];
+                allShifts = [...allShifts, ...pageData];
+            });
+        }
+
+        console.log(`Đã lấy thành công TOÀN BỘ ${allShifts.length} ca khám của bác sĩ!`);
+        
+        const map = {};
+        let firstAvailableDate = null;
+
+          allShifts.forEach(item => {
+            if (!item.date || !item.from || !item.to) return;
+
+            const dateObj = dayjs(item.date);
+            const dStr = dateObj.format('DD-MM-YYYY');
+            if(!map[dStr]) map[dStr] = [];
+            
+            const startTimeStr = item.from.substring(0, 5);
+            const endTimeStr = item.to.substring(0, 5);
+            const startHour = parseInt(startTimeStr.substring(0, 2));
+
+            const currentStatus = item.status || 'AVAILABLE';
+
+            map[dStr].push({
+              shiftId: item.id,
+              status: currentStatus,
+              displayTime: `${startTimeStr} - ${endTimeStr}`,
+              startHour: startHour
+            });
+
+          if (!firstAvailableDate && currentStatus === 'AVAILABLE') {
+            firstAvailableDate = dateObj;
+          }
+        });
+
+        setScheduleMap(map);
+
+        if (firstAvailableDate) {
+          setCalendarValue(firstAvailableDate);
+          setSelectedDateStr(firstAvailableDate.format('DD-MM-YYYY'));
+        }
+
+      } catch (error) {
+        console.error("Lỗi lấy dữ liệu:", error);
+        message.error("Không thể tải thông tin lúc này.");
+      } finally {
+        setLoadingDoctor(false);
+        setLoadingShifts(false);
+      }
+    };
+
+    fetchDoctorAndShifts();
+  }, [id]);
+  
+  const currentScheduleSlots = selectedDateStr ? scheduleMap[selectedDateStr] : [];
+
   const categorizeSlots = (slots) => {
     const morning = [];
     const afternoon = [];
     const evening = [];
     if (!slots) return { morning, afternoon, evening };
 
-    slots.forEach(slot => {
-      const startHour = parseInt(slot.split(':')[0]);
-      if (startHour < 12) morning.push(slot);
-      else if (startHour < 17) afternoon.push(slot);
-      else evening.push(slot);
+    slots.forEach(shift => {
+      if (shift.startHour < 12) morning.push(shift);
+      else if (shift.startHour < 17) afternoon.push(shift);
+      else evening.push(shift);
     });
     return { morning, afternoon, evening };
   };
 
-  const { morning, afternoon, evening } = categorizeSlots(currentSchedule?.timeSlots);
+  const { morning, afternoon, evening } = categorizeSlots(currentScheduleSlots);
 
   const onDateSelect = (value) => {
+    setCalendarValue(value);
     const dateStr = value.format('DD-MM-YYYY');
-    const hasSchedule = bookingSchedule.some(d => d.date === dateStr);
-    if (hasSchedule) {
-      setSelectedDateStr(dateStr);
-      setSelectedTime(null); 
-    } else {
-      message.info("Bác sĩ không có lịch khám vào ngày này.");
-    }
+    if (scheduleMap[dateStr] && scheduleMap[dateStr].length > 0) {
+        setSelectedDateStr(dateStr);
+        setSelectedShift(null); 
+      } else {
+        message.info("Bác sĩ không có lịch khám vào ngày này.");
+        setSelectedDateStr(null);
+        setSelectedShift(null);
+      }
   };
 
   const disabledDate = (current) => {
     const dateStr = current.format('DD-MM-YYYY');
-    return !bookingSchedule.some(d => d.date === dateStr);
+    return current.isBefore(dayjs().startOf('day')) || !scheduleMap[dateStr] || scheduleMap[dateStr].length === 0;
   };
 
-  const handleSignOut = () => { console.log("Đã đăng xuất!"); };
+  const handleSignOut = () => { logout(); navigate('/login'); };
   
-  const handleConfirmBooking = () => {
-    message.loading({ content: 'Đang xử lý đặt lịch...', key: 'booking' });
-    setTimeout(() => {
-      message.success({ content: 'Đặt lịch thành công!', key: 'booking', duration: 2 });
-    }, 1500);
+  const handleConfirmBooking = async () => {
+    if (!user?.id) {
+            message.warning("Vui lòng đăng nhập để đặt lịch.");
+            return;
+        }
+        if (!selectedShift) {
+            message.warning("Vui lòng chọn khung giờ khám.");
+            return;
+        }
+    setBookingLoading(true);
+    try {
+        const formData = new FormData();
+        formData.append('doctorId', id);
+        formData.append('shiftId', selectedShift.shiftId);
+        formData.append('patientId', user.id); 
+        
+        if (notes) formData.append('description', notes);
+
+        fileList.forEach(file => {
+            if (file.originFileObj) {
+                formData.append('images', file.originFileObj);
+            }
+        });
+
+        const res = await bookAppointmentAPI(formData);
+        
+        if (res.data?.success) {
+            message.success("Đặt lịch khám thành công!");
+            navigate('/patient/appointments'); 
+        } else {
+            message.error(res.data?.message || "Đặt lịch thất bại.");
+        }
+    } catch (error) {
+        console.error("Lỗi đặt lịch chi tiết:", error.response?.data || error);
+        const errorMsg = error.response?.data?.message || "Có lỗi hệ thống, vui lòng thử lại sau.";
+        message.error(`Lỗi: ${errorMsg}`);
+    } finally {
+        setBookingLoading(false);
+    }
   };
 
   const menuItems = [
@@ -121,36 +231,45 @@ export default function DoctorProfilePage() {
   ];
 
   const uploadProps = {
-    name: 'file', multiple: true, action: 'https://www.mocky.io/v2/5cc8019d300000980a055e76', 
+    name: 'file', 
+    multiple: true, 
+    maxCount: 5,
+    beforeUpload: () => false, 
+    fileList: fileList,
+    onChange: (info) => {
+        setFileList(info.fileList);
+    }
   };
 
-  // Helper render danh sách giờ
   const renderSlotSection = (title, icon, slots) => {
     if (!slots || slots.length === 0) return null;
     return (
       <div style={{ marginBottom: 16 }}>
         <Text strong style={{ display: 'block', marginBottom: 8 }}>{icon} {title}</Text>
         <Row gutter={[8, 8]}>
-          {slots.map(time => (
-            <Col key={time} span={6} md={8} lg={6}> 
-              <Button
-                block
-                size="large"
-                type={time === selectedTime ? 'primary' : 'default'}
-                onClick={() => setSelectedTime(time)}
-              >
-                {time}
-              </Button>
-            </Col>
-          ))}
+          {slots.map(shift => {
+            const isAvailable = shift.status === 'AVAILABLE';
+            return (
+                <Col key={shift.shiftId} span={6} md={8} lg={6}> 
+                <Button
+                    block
+                    size="large"
+                    type={shift.shiftId === selectedShift?.shiftId ? 'primary' : 'default'}
+                    onClick={() => setSelectedShift(shift)}
+                    disabled={!isAvailable} 
+                    style={{ textDecoration: !isAvailable ? 'line-through' : 'none' }}
+                >
+                    {shift.displayTime}
+                </Button>
+                </Col>
+            );
+          })}
         </Row>
       </div>
     );
   };
 
   if (!doctor) return <div style={{padding: 50, textAlign: 'center'}}>Không tìm thấy bác sĩ</div>;
-
-  const defaultCalendarDate = dayjs("2025-11-14"); 
 
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
@@ -198,130 +317,138 @@ export default function DoctorProfilePage() {
           Quay lại danh sách
         </Button>
 
-        <Card style={{ borderRadius: 12, marginBottom: 24 }}>
-          <Row gutter={24}>
-            <Col flex="120px">
-              <Avatar size={120} src={doctor.avatarUrl} icon={<UserOutlined />} />
-            </Col>
-            <Col flex="auto">
-              <Title level={3} style={{ margin: 0 }}>{doctor.name}</Title>
-              <Space style={{ marginTop: 8 }}>
-                <Tag color="blue">{doctor.title}</Tag>
-                {doctor.isVerified && <Tag color="green" icon={<SafetyOutlined />}>Đã xác minh</Tag>}
-                <Text>{doctor.experienceYears} năm kinh nghiệm</Text>
-              </Space>
-              <div style={{ marginTop: 12 }}>
-                <Text strong>Chuyên khoa:</Text> <Text>{doctor.specialty}</Text> <br/>
-                <Text strong>Nơi công tác:</Text> <Text>{doctor.workplace}</Text>
-              </div>
-            </Col>
-          </Row>
-          <div style={{ borderTop: '1px solid #f0f0f0', margin: '24px 0 12px 0' }} />
-          <Tabs defaultActiveKey="1">
-            <TabPane tab={<Space><BookOutlined /> Giới thiệu</Space>} key="1">
-              <Paragraph style={{ maxWidth: 800 }}>{doctor.introduction}</Paragraph>
-            </TabPane>
-            <TabPane tab={<Space><ReadOutlined /> Đào tạo</Space>} key="2">
-              <ul>{doctor.education.map((e, i) => <li key={i}>{e}</li>)}</ul>
-            </TabPane>
-            <TabPane tab={<Space><TeamOutlined /> Kinh nghiệm</Space>} key="3">
-              <ul>{doctor.experience.map((e, i) => <li key={i}>{e}</li>)}</ul>
-            </TabPane>
-          </Tabs>
-        </Card>
+
+        <Spin spinning={loadingDoctor}>
+            {doctor ? (
+                <Card style={{ borderRadius: 12, marginBottom: 24 }}>
+                <Row gutter={24}>
+                    <Col flex="120px">
+                    <Avatar size={120} src={doctor.avatarUrl} icon={<UserOutlined />} />
+                    </Col>
+                    <Col flex="auto">
+                    <Title level={3} style={{ margin: 0 }}>{doctor.name}</Title>
+                    <Space style={{ marginTop: 8 }}>
+                        <Tag color="blue">{doctor.title}</Tag>
+                        {doctor.isVerified && <Tag color="green" icon={<SafetyOutlined />}>Đã xác minh</Tag>}
+                        <Text>{doctor.experienceYears}</Text>
+                    </Space>
+                    <div style={{ marginTop: 12 }}>
+                        <Text strong>Chuyên khoa:</Text> <Text>{doctor.specialty}</Text> <br/>
+                        <Text strong>Nơi công tác:</Text> <Text>{doctor.workplace}</Text>
+                    </div>
+                    </Col>
+                </Row>
+                <div style={{ borderTop: '1px solid #f0f0f0', margin: '24px 0 12px 0' }} />
+                <Tabs defaultActiveKey="1">
+                    <TabPane tab={<Space><BookOutlined /> Giới thiệu</Space>} key="1">
+                    <Paragraph style={{ maxWidth: 800 }}>{doctor.introduction}</Paragraph>
+                    </TabPane>
+                    <TabPane tab={<Space><ReadOutlined /> Đào tạo</Space>} key="2">
+                    <ul>{doctor.education.map((e, i) => <li key={i}>{e}</li>)}</ul>
+                    </TabPane>
+                    <TabPane tab={<Space><TeamOutlined /> Kinh nghiệm</Space>} key="3">
+                    <ul>{doctor.experience.map((e, i) => <li key={i}>{e}</li>)}</ul>
+                    </TabPane>
+                </Tabs>
+                </Card>
+            ) : (
+                <Empty description="Không tìm thấy dữ liệu bác sĩ" />
+            )}
+        </Spin>
 
         <Row gutter={24}>
-          
           <Col span={17}>
             <Card title={<Title level={4} style={{margin:0}}>1. Chọn lịch khám</Title>} style={{ borderRadius: 12, marginBottom: 24 }}>
               
-              <Row gutter={24}>
-                <Col span={12} style={{ borderRight: '1px solid #f0f0f0' }}>
-                   <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 4 }}>
-                    <Calendar 
-                      fullscreen={false} 
-                      defaultValue={defaultCalendarDate}
-                      disabledDate={disabledDate}
-                      onSelect={onDateSelect}
-                      headerRender={({ value, onChange }) => {
-                        const start = 0;
-                        const end = 12;
-                        const monthOptions = [];
+              <Spin spinning={loadingShifts}>
+                <Row gutter={24}>
+                    <Col span={12} style={{ borderRight: '1px solid #f0f0f0' }}>
+                    <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 4 }}>
+                        <Calendar 
+                        fullscreen={false} 
+                        value={calendarValue}
+                        disabledDate={disabledDate}
+                        onSelect={onDateSelect}
+                        headerRender={({ value, onChange }) => {
+                            const start = 0;
+                            const end = 12;
+                            const monthOptions = [];
 
-                        for (let i = start; i < end; i++) {
-                          monthOptions.push(
-                            <Select.Option key={i} value={i}>
-                              Tháng {i + 1}
-                            </Select.Option>,
-                          );
-                        }
+                            for (let i = start; i < end; i++) {
+                            monthOptions.push(
+                                <Select.Option key={i} value={i}>
+                                Tháng {i + 1}
+                                </Select.Option>,
+                            );
+                            }
 
-                        const year = value.year();
-                        const month = value.month();
-                        const yearOptions = [];
-                        
-                        for (let i = year - 1; i < year + 3; i++) {
-                          yearOptions.push(
-                            <Select.Option key={i} value={i}>
-                              {i}
-                            </Select.Option>,
-                          );
-                        }
+                            const year = value.year();
+                            const month = value.month();
+                            const yearOptions = [];
+                            
+                            for (let i = year - 1; i < year + 3; i++) {
+                            yearOptions.push(
+                                <Select.Option key={i} value={i}>
+                                {i}
+                                </Select.Option>,
+                            );
+                            }
 
-                        return (
-                          <div style={{ padding: 8, display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 8 }}>
-                            <Select
-                              size="small"
-                              dropdownMatchSelectWidth={false}
-                              value={month}
-                              onChange={(newMonth) => {
-                                const now = value.clone().month(newMonth);
-                                onChange(now);
-                              }}
-                            >
-                              {monthOptions}
-                            </Select>
+                            return (
+                            <div style={{ padding: 8, display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 8 }}>
+                                <Select
+                                size="small"
+                                dropdownMatchSelectWidth={false}
+                                value={month}
+                                onChange={(newMonth) => {
+                                    const now = value.clone().month(newMonth);
+                                    onChange(now);
+                                }}
+                                >
+                                {monthOptions}
+                                </Select>
 
-                            <Select
-                              size="small"
-                              dropdownMatchSelectWidth={false}
-                              value={year}
-                              onChange={(newYear) => {
-                                const now = value.clone().year(newYear);
-                                onChange(now);
-                              }}
-                            >
-                              {yearOptions}
-                            </Select>
-                          </div>
-                        );
-                      }}
-                    />
-                   </div>
-                </Col>
-
-                <Col span={12}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <Text strong style={{ fontSize: 16 }}>
-                       Lịch khám ngày: <span style={{ color: '#1677ff' }}>{selectedDateStr}</span>
-                    </Text>
-                  </div>
-
-                  {currentSchedule ? (
-                    <div style={{ maxHeight: 320, overflowY: 'auto', paddingRight: 4 }}>
-                      {renderSlotSection("Buổi Sáng", <SunOutlined style={{ color: '#faad14' }}/>, morning)}
-                      {morning.length > 0 && (afternoon.length > 0 || evening.length > 0) && <Divider style={{ margin: '12px 0' }} />}
-                      
-                      {renderSlotSection("Buổi Chiều", <CloudOutlined style={{ color: '#1890ff' }}/>, afternoon)}
-                      {afternoon.length > 0 && evening.length > 0 && <Divider style={{ margin: '12px 0' }} />}
-
-                      {renderSlotSection("Buổi Tối", <MoonOutlined style={{ color: '#722ed1' }}/>, evening)}
+                                <Select
+                                size="small"
+                                dropdownMatchSelectWidth={false}
+                                value={year}
+                                onChange={(newYear) => {
+                                    const now = value.clone().year(newYear);
+                                    onChange(now);
+                                }}
+                                >
+                                {yearOptions}
+                                </Select>
+                            </div>
+                            );
+                        }}
+                        />
                     </div>
-                  ) : (
-                    <Empty description="Vui lòng chọn ngày có lịch khám trên lịch" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                  )}
-                </Col>
-              </Row>
+                    </Col>
+
+                    <Col span={12}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                        <Text strong style={{ fontSize: 16 }}>
+                            Lịch khám ngày: <span style={{ color: '#1677ff' }}>{selectedDateStr || "Chưa chọn"}</span>
+                        </Text>
+                    </div>
+
+                    {currentScheduleSlots && currentScheduleSlots.length > 0 ? (
+                        <div style={{ maxHeight: 320, overflowY: 'auto', paddingRight: 4 }}>
+                        {renderSlotSection("Buổi Sáng", <SunOutlined style={{ color: '#faad14' }}/>, morning)}
+                        {morning.length > 0 && (afternoon.length > 0 || evening.length > 0) && <Divider style={{ margin: '12px 0' }} />}
+                        
+                        {renderSlotSection("Buổi Chiều", <CloudOutlined style={{ color: '#1890ff' }}/>, afternoon)}
+                        {afternoon.length > 0 && evening.length > 0 && <Divider style={{ margin: '12px 0' }} />}
+
+                        {renderSlotSection("Buổi Tối", <MoonOutlined style={{ color: '#722ed1' }}/>, evening)}
+                        </div>
+                    ) : (
+                        <Empty description="Không có ca khám vào ngày này" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                    )}
+                    </Col>
+                </Row>
+              </Spin>
 
             </Card>
 
@@ -354,24 +481,26 @@ export default function DoctorProfilePage() {
               <Space direction="vertical" style={{ width: '100%' }} size="middle">
                 
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center', borderBottom: '1px solid #f0f0f0', paddingBottom: 12 }}>
-                   <Avatar size={48} src={doctor.avatarUrl} />
+                   <Avatar size={48} src={doctor?.avatarUrl || "/doctor_default.png"} />
                    <div>
-                      <Text strong>{doctor.name}</Text><br/>
-                      <Text type="secondary" style={{fontSize: 12}}>{doctor.workplace}</Text>
+                      <Text strong>{doctor?.name || "..."}</Text><br/>
+                      <Text type="secondary" style={{fontSize: 12}}>{doctor?.workplace || "..."}</Text>
                    </div>
                 </div>
 
                 <div>
                   <Row justify="space-between" style={{ marginBottom: 8 }}>
                     <Text type="secondary"><CalendarOutlined /> Ngày khám:</Text>
-                    {currentSchedule ? (
-                      <Text strong>{currentSchedule.date}-2025 ({currentSchedule.day})</Text> 
+                    {selectedDateStr ? (
+                      <Text strong>{selectedDateStr}</Text> 
                     ) : <Text type="danger">Chưa chọn</Text>}
                   </Row>
                   <Row justify="space-between" align="middle">
                     <Text type="secondary"><ClockCircleOutlined /> Khung giờ:</Text>
-                    {selectedTime ? (
-                      <Tag color="blue" style={{ margin: 0, fontSize: 14, padding: '4px 8px' }}>{selectedTime}</Tag>
+                    {selectedShift ? (
+                      <Tag color="blue" style={{ margin: 0, fontSize: 14, padding: '4px 8px' }}>
+                        {selectedShift.displayTime}
+                      </Tag>
                     ) : (
                       <Text type="danger">Chưa chọn</Text>
                     )}
@@ -382,7 +511,8 @@ export default function DoctorProfilePage() {
                   type="primary" 
                   block 
                   size="large"
-                  disabled={!selectedTime || !currentSchedule} 
+                  loading={bookingLoading}
+                  disabled={!selectedShift || !doctor} 
                   onClick={handleConfirmBooking}
                   style={{ height: 48, fontWeight: 'bold', fontSize: 16, marginTop: 8 }}
                 >

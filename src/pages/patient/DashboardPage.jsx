@@ -12,7 +12,8 @@ import {
   Carousel,
   Dropdown,
   Spin,
-  Empty
+  Empty,
+  Modal
 } from "antd";
 import { 
   CalendarOutlined, 
@@ -33,6 +34,7 @@ import { useEffect, useState } from "react";
 import useAuth from "../../hooks/useAuth";
 import dayjs from "dayjs";
 import { getUpcomingAppointmentAPI } from "../../services/appointmentService";
+import { getUserInfoAPI } from "../../services/userService";
 
 const { Header, Content } = Layout;
 const { Paragraph, Text, Title } = Typography;
@@ -44,10 +46,29 @@ export default function PatientDashboardPage() {
   const [loadingApt, setLoadingApt] = useState(true);
 
   useEffect(() => {
-    const fetchUpcomingApt = async () => {
+    const checkProfileAndFetchApt = async () => {
       if (!user?.id) return;
-      setLoadingApt(true);
       try {
+        setLoadingApt(true);
+        const profileRes = await getUserInfoAPI();
+        const patientData = profileRes.data?.data;
+
+        if (patientData && (patientData.folk === null || patientData.dateOfBirth === null || patientData.citizenCode === null || patientData.address === null || patientData.medicalInsurance === null)) {
+            Modal.warning({
+                title: 'Yêu cầu hoàn thiện hồ sơ',
+                content: 'Hồ sơ y tế của bạn chưa đầy đủ. Vui lòng cập nhật thông tin cá nhân (Ngày sinh, Giới tính, BHYT...) để có thể sử dụng các tính năng của ứng dụng.',
+                okText: 'Cập nhật ngay',
+                keyboard: false, 
+                maskClosable: false, 
+                onOk: () => {
+                  Modal.destroyAll();
+                  navigate('/patient/personal', { state: { openEditModal: true } }); 
+                }
+            });
+            setLoadingApt(false);
+            return; 
+        }
+
         const res = await getUpcomingAppointmentAPI(user.id);
         if (res.data?.success && res.data?.data) {
           setUpcomingApt(res.data.data);
@@ -62,8 +83,8 @@ export default function PatientDashboardPage() {
       }
     };
 
-    fetchUpcomingApt();
-  }, [user]);
+    checkProfileAndFetchApt();
+  }, [user, navigate]);
 
   const hospitalIntroSlides = [
     "ATS-Care là nền tảng y tế thông minh giúp bệnh nhân dễ dàng đặt lịch, theo dõi sức khỏe và nhận chẩn đoán da liễu từ AI.",
@@ -193,7 +214,7 @@ const featureCards = [
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <ClockCircleOutlined style={{ fontSize: 18, color: '#1677ff' }} />
-                      <Text>Thời gian: <Text strong>{upcomingApt.from?.substring(0, 5)} - {upcomingApt.to?.substring(0, 5)}</Text></Text>
+                      <Text>Thời gian: <Text strong>{upcomingApt.from?.substring(0, 5)}  {upcomingApt.to?.substring(0, 5)}</Text></Text>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <MedicineBoxOutlined style={{ fontSize: 18, color: '#1677ff' }} />
@@ -205,7 +226,7 @@ const featureCards = [
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <HomeOutlined style={{ fontSize: 18, color: '#1677ff' }} />
-                        <Text>Tại phòng: <Text strong>{upcomingApt.room}</Text></Text>
+                        <Text>Tại : <Text strong>{upcomingApt.room}</Text></Text>
                     </div>
                   </Space>
                 ) : (
@@ -227,7 +248,7 @@ const featureCards = [
               <Carousel autoplay autoplaySpeed={5000} dotPosition="bottom">
                 {hospitalIntroSlides.map((slide, index) => (
                   <div key={index}> 
-                    <div style={{ height: 250, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundImage: `url(/hospital.png)`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                    <div style={{ height: 270, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundImage: `url(/hospital.png)`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
                       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0.4)', zIndex: 1 }}></div>
                       <Paragraph style={{ position: 'relative', zIndex: 2, color: '#fff', fontSize: 18, textAlign: 'center', margin: 0, padding: '0 40px', textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
                         {slide}

@@ -106,7 +106,7 @@ export default function SignUpPage() {
         }
     } catch (error) {
         message.error(error.response?.data?.message || "Lỗi gửi OTP");
-        setCurrentStep(1);
+        // setCurrentStep(1);
     } finally {
         setLoading(false);
     }
@@ -118,7 +118,8 @@ export default function SignUpPage() {
         const payload = {
             email: registerData.email,
             otp: values.otp,
-            sessionId: registerData.sessionId
+            sessionId: registerData.sessionId,
+            type: 'REGISTER'
         };
         
         const res = await verifyOtpAPI(payload);
@@ -129,7 +130,7 @@ export default function SignUpPage() {
         }
     } catch (error) {
         const errorMsg = error.response?.data?.message || "Lỗi xác thực";
-        setCurrentStep(2);
+        // setCurrentStep(2);
         if (errorMsg === 'OTP is expired') {
             message.error("Mã OTP đã hết hạn. Vui lòng lấy mã mới.");
             setCurrentStep(0); 

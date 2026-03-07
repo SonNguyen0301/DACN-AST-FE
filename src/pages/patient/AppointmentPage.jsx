@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Card, Button,
   Space, Dropdown, Tabs, Tag, Popconfirm,
-  Modal, Form, Input, Upload,Row, Col, message, Spin
+  Modal, Form, Input, Upload,Row, Col, message, Spin, Image
 } from "antd";
 import { 
   UserOutlined, LogoutOutlined, CalendarOutlined,
@@ -41,16 +41,29 @@ export default function AppointmentPage() {
   const [editingAppointment, setEditingAppointment] = useState(null); 
   const [form] = Form.useForm();
 
+  const getValidImageUrl = (str) => {
+    if (!str) return "https://via.placeholder.com/60?text=L%E1%BB%97i"; 
+    
+    if (str.startsWith('http')) return str;
+
+    let cleanStr = str.replace(/[\r\n\s]+/g, '');
+    
+    if (!cleanStr.startsWith('data:image')) {
+        cleanStr = `data:image/png;base64,${cleanStr}`;
+    }
+    return cleanStr;
+  };
+
   const fetchAppointments = async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
         const allRes = await getPatientAppointmentsAPI(user.id, {
-            sort: 'date', sortDirection: 'DESC', page: 1, take: 100 
+            sort: 'createdAt', sortDirection: 'ASC', page: 1, take: 10
         });
 
         if (allRes.data?.data) {
-            const allData = allRes.data.data;
+            const allData = allRes.data.data.data;
             
             const upcoming = allData.filter(apt => apt.status === 'SCHEDULED' || apt.status === 'PENDING');
             const past = allData.filter(apt => apt.status === 'EXAMINED' || apt.status === 'CANCELLED' || apt.status === 'LATE');
@@ -99,7 +112,7 @@ export default function AppointmentPage() {
           uid: `old-${index}`, 
           name: img.description || `Hình_anh_đính_kèm_${index+1}.png`,
           status: 'done',
-          url: img.dataUrl,
+          url: getValidImageUrl(img.Base64 || img.dataUrl),
       }));
       setFileList(existingFiles);
 
@@ -155,9 +168,9 @@ export default function AppointmentPage() {
       setSubmitting(true);
       try {
           const res = await cancelAppointmentAPI(aptId);
-          if(res.data?.isSuccess) { 
-              message.success("Đã hủy lịch khám thành công.");
-              fetchAppointments(); 
+          if(res.data?.data.isSuccess) { 
+            message.success("Đã hủy lịch khám thành công.");
+            fetchAppointments(); 
           }
       } catch (error) {
           console.error("Lỗi hủy lịch hẹn:", error);
@@ -211,7 +224,7 @@ export default function AppointmentPage() {
                   <Space align="start" size="middle">
                     <Avatar size={80} src={apt.avatarUrl} icon={<UserOutlined />} />
                     <div style={{ width: '100%' }}>
-                      <Text strong style={{ fontSize: 18, color: '#1677ff' }}>{apt.doctor}</Text>
+                      <Text strong style={{ fontSize: 18, color: '#1677ff' }}>{apt.doctorName}</Text>
                       <div style={{ marginBottom: 6 }}><Text type="secondary" style={{ fontStyle: 'italic' }}>{apt.type}</Text></div>
                       <Space direction="vertical" size={2}>
                         <Text type="secondary" style={{ fontSize: 13 }}><CalendarOutlined /> {dayjs(apt.date).format('DD/MM/YYYY')}</Text>
@@ -231,7 +244,7 @@ export default function AppointmentPage() {
                       border: '1px solid #d6e4ff', 
                       height: '100%', 
                     }}>
-                        {apt.notes && (
+                        {apt.description && (
                             <div style={{ marginBottom: (apt.files && apt.files.length > 0) ? 8 : 0 }}>
                                 <Space size={6} style={{ marginBottom: 2 }}>
                                     <FormOutlined style={{ color: '#1677ff', fontSize: 12 }} />
@@ -241,27 +254,40 @@ export default function AppointmentPage() {
                                   ellipsis={{ rows: 2, expandable: true, symbol: 'Xem thêm' }} 
                                   style={{ margin: 0, color: '#595959', fontSize: 13, paddingLeft: 20 }}
                                 >
-                                    {apt.notes}
+                                    {apt.description}
                                 </Paragraph>
                             </div>
                         )}
 
-                        {apt.files && apt.files.length > 0 && (
+                        {apt.images && apt.images.length > 0 && (
                             <div style={{ marginTop: 8 }}>
                                 <Space size={6} style={{ marginBottom: 4 }}>
                                     <PaperClipOutlined style={{ color: '#1677ff', fontSize: 12 }} />
                                     <Text strong style={{ color: '#1677ff', fontSize: 12 }}>TỆP ĐÍNH KÈM:</Text>
                                 </Space>
+                                
                                 <div style={{ paddingLeft: 20 }}>
-                                  <Space size={[8, 8]} wrap>
-                                      {apt.files.map((f, idx) => (
-                                          <a key={idx} href={f.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-                                              <Tag color="blue" style={{ cursor: 'pointer', margin: 0 }}>
-                                                {f.name}
-                                              </Tag>
-                                          </a>
-                                      ))}
-                                  </Space>
+                                  <Image.PreviewGroup>
+                                      <Space size={[8, 8]} wrap>
+                                          {apt.images.map((f, idx) => (
+                                              <Image
+                                                  key={idx}
+                                                  width={60}
+                                                  height={60}
+                                                  src={getValidImageUrl(f.Base64 || f.dataUrl)} 
+                                                  alt={f.description || 'Hình ảnh đính kèm'}
+                                                  fallback="https://via.placeholder.com/60?text=L%E1%BB%97i"
+                                                  style={{ 
+                                                      borderRadius: 6, 
+                                                      objectFit: 'cover', 
+                                                      border: '1px solid #d9d9d9',
+                                                      cursor: 'pointer',
+                                                      background: '#fff'
+                                                  }}
+                                              />
+                                          ))}
+                                      </Space>
+                                  </Image.PreviewGroup>
                                 </div>
                             </div>
                         )}
@@ -311,7 +337,7 @@ export default function AppointmentPage() {
               default: break;
             }
           }} />
-        <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow><div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}><span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.name}</span><Avatar size={36} icon={<UserOutlined />} /></div></Dropdown>
+        <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow><div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}><span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.firstName + ' ' + user.lastName}</span><Avatar size={36} icon={<UserOutlined />} /></div></Dropdown>
       </Header>
 
       <Content style={{ padding: "40px 60px" }}>

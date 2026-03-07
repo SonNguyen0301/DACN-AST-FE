@@ -8,9 +8,26 @@ import { jwtDecode } from "jwt-decode";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [chatToken, setChatToken] = useState(null); // <--- Thêm state cho chat token
-    const [user, setUser] = useState(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(() => {
+        return !!localStorage.getItem('accessToken');
+    });
+
+    const [chatToken, setChatToken] = useState(() => {
+        return localStorage.getItem('chatToken') || null;
+    });
+    
+    const [user, setUser] = useState(() => {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            try {
+                return jwtDecode(token); 
+            } catch (error) {
+                console.error("Token lỗi khi reload:", error);
+                return null;
+            }
+        }
+        return null;
+    });
 
     const login = async (email) => {
         try {
