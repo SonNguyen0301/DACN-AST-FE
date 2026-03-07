@@ -1,7 +1,7 @@
 import { 
   Layout, Menu, Avatar, Typography, Card, Button,
   Space, List, Dropdown, Row, Col,
-  Collapse, Checkbox, Spin, message, Input 
+  Collapse, Checkbox, Spin, message, Input, Radio
 } from "antd";
 import { 
   UserOutlined, 
@@ -9,7 +9,9 @@ import {
   CalendarOutlined,
   ReloadOutlined,
   InfoCircleOutlined,
-  MedicineBoxOutlined
+  MedicineBoxOutlined,
+  AppstoreOutlined,       
+  UnorderedListOutlined  
 } from "@ant-design/icons";
 import ChatBotIcon from "../../components/common/ChatBotIcon";
 import { useNavigate } from 'react-router-dom';
@@ -44,9 +46,11 @@ export default function BookingPage() {
   const [selectedDepartments, setSelectedDepartments] = useState([]);
 
   const [searchKeyword, setSearchKeyword] = useState('');
+
+  const [viewMode, setViewMode] = useState('list');
+
   const fetchDoctors = async () => {
     setLoading(true);
-    // console.log("Fetching doctors with params:", { currentPage, pageSize, selectedDepartments, searchKeyword });
       try {
           const params = {
               page: currentPage,
@@ -90,7 +94,6 @@ export default function BookingPage() {
       }
   };
 
-  // --- SỬA: Gọi API mỗi khi page, pageSize hoặc filter thay đổi ---
   useEffect(() => {
       fetchDoctors();
   }, [currentPage, pageSize, selectedDepartments, searchKeyword]);  
@@ -211,13 +214,19 @@ export default function BookingPage() {
           </Sider>
 
           <Content>
-            <Title level={4} style={{ marginBottom: 16 }}>
-              Danh sách Bác sĩ ({totalDoctors})
-
-            </Title>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Title level={4} style={{ marginBottom: 16 }}>
+                Danh sách Bác sĩ ({totalDoctors})
+              </Title>
+              <Radio.Group value={viewMode} onChange={(e) => setViewMode(e.target.value)} buttonStyle="solid">
+                  <Radio.Button value="list"><UnorderedListOutlined /> Danh sách</Radio.Button>
+                  <Radio.Button value="grid"><AppstoreOutlined /> Lưới</Radio.Button>
+                </Radio.Group>
+              </div>
+            
             <Spin spinning={loading} size="large">
             <List
-              grid={{ gutter: 16, column: 1 }} 
+              grid={viewMode === 'list' ? { gutter: 16, column: 1 } : { gutter: 16, xs: 1, sm: 2, md: 2, lg: 3, xl: 3, xxl: 4 }} 
               dataSource={doctors}
               pagination={{
                     current: currentPage,
@@ -230,11 +239,14 @@ export default function BookingPage() {
                     style: { textAlign: 'center', marginTop: 30 } 
                 }}
               renderItem={(doctor) => (
-                <List.Item>
+                <List.Item style={{ height: viewMode === 'grid' ? '100%' : 'auto' }}>
                   <Card 
-                    style={{ width: '100%', borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
+                    style={{ width: '100%', borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", height: '100%' }}
+                    styles={{ body: { height: '100%' } }}
                     variant="borderless"
+                    hoverable
                   >
+                    {viewMode === 'list' ? (
                     <Row gutter={16}>
                       <Col span={4} style={{ textAlign: 'center' }}>
                         <Avatar size={160} src={doctor.avatarUrl} icon={<UserOutlined />} />
@@ -276,6 +288,40 @@ export default function BookingPage() {
 
                       </Col>
                     </Row>
+                    ) : (
+                        // --- THÊM MỚI: GIAO DIỆN DẠNG LƯỚI (MỚI) ---
+                        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', textAlign: 'center' }}>
+                            <Avatar size={100} src={doctor.avatarUrl} icon={<UserOutlined />} style={{ marginBottom: 16 }} />
+                            
+                            <Title level={5} style={{ color: '#1677ff', margin: 0, fontSize: 18, minHeight: 44 }}>
+                                {doctor.lastName} {doctor.firstName}
+                            </Title>
+                            
+                            <Text type="secondary" style={{ fontSize: 13, marginBottom: 8 }}>Mã BS: {doctor.doctorCode}</Text>
+                            
+                            <Text strong style={{ fontSize: 14, marginBottom: 8 }}>
+                                <MedicineBoxOutlined style={{ color: '#1677ff', marginRight: 4 }}/> 
+                                {doctor.department}
+                            </Text>
+
+                            <Paragraph 
+                                type="secondary" 
+                                style={{ fontSize: 13, marginBottom: 16, flex: 1 }} 
+                                ellipsis={{ rows: 2 }} // Giới hạn 2 dòng để Card không bị lệch chiều cao
+                            >
+                                {doctor.experience || "Nhiều năm kinh nghiệm trong nghề."}
+                            </Paragraph>
+
+                            <Button 
+                                type="primary" 
+                                icon={<CalendarOutlined />}
+                                onClick={() => navigate(`/patient/booking/${doctor.id}`)}
+                                style={{ width: '100%', borderRadius: 8 }}
+                            >
+                                Đặt khám
+                            </Button>
+                        </div>
+                    )}
                   </Card>
                 </List.Item>
               )}
