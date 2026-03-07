@@ -289,7 +289,6 @@ export default function BookingPage() {
                       </Col>
                     </Row>
                     ) : (
-                        // --- THÊM MỚI: GIAO DIỆN DẠNG LƯỚI (MỚI) ---
                         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', textAlign: 'center' }}>
                             <Avatar size={100} src={doctor.avatarUrl} icon={<UserOutlined />} style={{ marginBottom: 16 }} />
                             
@@ -307,7 +306,7 @@ export default function BookingPage() {
                             <Paragraph 
                                 type="secondary" 
                                 style={{ fontSize: 13, marginBottom: 16, flex: 1 }} 
-                                ellipsis={{ rows: 2 }} // Giới hạn 2 dòng để Card không bị lệch chiều cao
+                                ellipsis={{ rows: 2 }} 
                             >
                                 {doctor.experience || "Nhiều năm kinh nghiệm trong nghề."}
                             </Paragraph>
