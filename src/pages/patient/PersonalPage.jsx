@@ -22,7 +22,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Footer from '../../components/common/Footer'; 
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { getUserInfoAPI, updateUserInfoAPI } from '../../services/userService';
+import { getUserInfoAPI, updateUserInfoAPI, getHistoryConsultationsAPI, getConsultationDetailAPI } from '../../services/userService';
 dayjs.extend(customParseFormat);
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
@@ -33,19 +33,6 @@ const genderDisplayMap = {
   FEMALE: "Nữ",
   OTHER: "Khác"
 };
-
-const appointmentsData = [
-  { id: 1, date: "12/11/2025", type: "Khám Da liễu", doctor: "BS. Phạm Anh Dũng ", timeSlot: "18:30 - 19:00", room: "Phòng 203" , avatarUrl: "/doctor1.png", diagnosis: "Viêm da cơ địa dị ứng,"},
-  { id: 2, date: "15/08/2025", type: "Khám Tổng quát", doctor: "BS. Trần Thị Hoa", timeSlot: "09:00 - 09:30", room: "Phòng 101", avatarUrl: "/doctor2.png" , diagnosis: "Sức khỏe bình thường"},
-  { id: 3, date: "01/03/2025", type: "Khám Tim mạch", doctor: "BS. Lê Minh Tuấn", timeSlot: "14:00 - 14:30", room: "Phòng 305", avatarUrl: "/doctor3.png" , diagnosis: "Rối loạn nhịp tim nhẹ"},
-  { id: 4, date: "20/02/2025", type: "Nhi khoa", doctor: "BS. Nguyễn Văn A", timeSlot: "08:00 - 08:30", room: "Phòng 402", avatarUrl: "/doctor4.png", diagnosis: "Sốt siêu vi" }, 
-  { id: 5, date: "01/03/2025", type: "Khám Tim mạch", doctor: "BS. Lê Minh Tuấn", timeSlot: "14:00 - 14:30", room: "Phòng 305", avatarUrl: "/doctor4.png" , diagnosis: "Tăng huyết áp"},
-  { id: 6, date: "01/03/2025", type: "Khám Tim mạch", doctor: "BS. Lê Minh Tuấn", timeSlot: "14:00 - 14:30", room: "Phòng 305", avatarUrl: "/doctor5.png" , diagnosis: "Thiếu máu cơ tim"},
-  { id: 7, date: "01/03/2025", type: "Khám Tim mạch", doctor: "BS. Lê Minh Tuấn", timeSlot: "14:00 - 14:30", room: "Phòng 305", avatarUrl: "/doctor3.png" , diagnosis: "Hở van tim nhẹ"},
-  { id: 8, date: "01/03/2025", type: "Khám Tim mạch", doctor: "BS. Lê Minh Tuấn", timeSlot: "14:00 - 14:30", room: "Phòng 305" , avatarUrl: "/doctor2.png", diagnosis: "Theo dõi sau điều trị"},
-  { id: 9, date: "01/03/2025", type: "Khám Tim mạch", doctor: "BS. Lê Minh Tuấn", timeSlot: "14:00 - 14:30", room: "Phòng 305" , avatarUrl: "/doctor4.png", diagnosis: "Kiểm tra định kỳ"},
-  { id: 10, date: "05/04/2025", type: "Răng Hàm Mặt", doctor: "BS. Hoàng Thị C", timeSlot: "10:00 - 10:30", room: "Phòng 105" , avatarUrl: "/doctor1.png", diagnosis: "Viêm nướu"},
-];
 
 
 export default function PersonalPage() {
@@ -60,23 +47,31 @@ export default function PersonalPage() {
   const [updating, setUpdating] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [consultations, setConsultations] = useState([]);
+  const [loadingConsultations, setLoadingConsultations] = useState(false);
+  const [totalConsultations, setTotalConsultations] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 4; 
 
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const currentAppointments = appointmentsData.slice(startIndex, endIndex);
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
+  const [selectedConsultation, setSelectedConsultation] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   
+
   useEffect(() => {
     fetchUserProfile();
   }, []);
 
   useEffect(() => {
+    if (userData?.id) {
+        fetchUserConsulations();
+    }
+  }, [userData?.id, currentPage]);
+
+  useEffect(() => {
       if (userData && location.state?.openEditModal) {
         setIsForceUpdate(true);
         showModal(userData);  
-        window.history.replaceState({}, document.title);
+        navigate(location.pathname, { replace: true, state: {} });
       }
   }, [userData, location.state]);
 
@@ -93,6 +88,43 @@ export default function PersonalPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchUserConsulations = async () => {
+    setLoadingConsultations(true);
+    try {
+      const res = await getHistoryConsultationsAPI(userData.id, { 
+          page: currentPage, 
+          take: pageSize,
+          sortDirection: 'DESC' 
+      });
+      if (res.data?.success) {
+        setConsultations(res.data.data.data || []);
+        setTotalConsultations(res.data.data.meta?.itemCount || 0);
+      }
+    } catch (error) {
+      console.error("Lỗi lấy lịch sử tư vấn:", error);
+      message.error("Không thể tải danh sách hồ sơ khám bệnh.");
+    } finally {
+        setLoadingConsultations(false);
+    }
+  };
+
+  const handleViewDetail = async (id) => {
+      setSelectedConsultation(id);
+      setLoadingDetail(true);
+      try {
+          const res = await getConsultationDetailAPI(id);
+          if (res.data?.success) {
+              setSelectedConsultation(res.data.data);
+          }
+      } catch (error) {
+          console.error("Lỗi lấy chi tiết:", error);
+          message.error("Không thể tải chi tiết hồ sơ.");
+          setSelectedConsultation(null);
+      } finally {
+          setLoadingDetail(false);
+      }
   };
 
   const showModal = (dataToEdit = userData) => {
@@ -197,10 +229,7 @@ export default function PersonalPage() {
       danger: true,
     }
   ];
-  const selectedAppointment = appointmentsData.find(
-      (apt) => apt.id === selectedAppointmentId
-    );
-  
+
   if (loading) {
       return (
           <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f5f7fa' }}>
@@ -267,7 +296,7 @@ export default function PersonalPage() {
               <Avatar size={100} src={userData.avatarUrl} icon={<UserOutlined />} style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}/>
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 16 }}>
                 <Title level={4} style={{ margin: 0 }}>{fullName}</Title>
-                <Button type="primary" shape="circle" icon={<EditOutlined />} onClick={showModal} size="middle" />
+                <Button type="primary" shape="circle" icon={<EditOutlined />} onClick={() => showModal(userData)} size="middle" />
               </div>
               <Tag color="blue" style={{ marginTop: 8 }}>{userData.role}</Tag>
             </div>
@@ -286,7 +315,7 @@ export default function PersonalPage() {
 
           <Content style={{ padding: "30px 40px", position: 'relative' }}>
             
-            {selectedAppointmentId === null ? (
+            {selectedConsultation === null ? (
               
               <>
                 <div style={{ 
@@ -329,76 +358,78 @@ export default function PersonalPage() {
                   </Space>
                 </div>
 
+                <Spin spinning={loadingConsultations}>
                 <Space direction="vertical" style={{ width: '100%',minHeight: 650 }} size="large">
-                  {currentAppointments.map(apt => (
-                    <Card 
-                      key={apt.id} 
-                      hoverable
-                      variant="borderless" 
-                      style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", transition: 'all 0.3s' }}
-                    >
-                    <Row gutter={24} align="middle">
-                        <Col xs={24} md={10}>
-                          <Space align="start">
-                            <Avatar size={64} src={apt.avatarUrl} icon={<UserOutlined />} />
-                            <div>
-                              <Text strong style={{ fontSize: 16, color: '#1677ff' }}>{apt.doctor}</Text>
-                              <div style={{ marginBottom: 6, marginTop: 6 }}><Tag color="blue" >{apt.type}</Tag></div>
+                  {consultations.length === 0 && !loadingConsultations ? (
+                        <div style={{ textAlign: 'center', marginTop: 50, color: '#999' }}>Chưa có hồ sơ khám bệnh nào.</div>
+                    ) : (
+                        consultations.map(apt => (
+                            <Card 
+                            key={apt.id} 
+                            hoverable
+                            variant="borderless" 
+                            style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", transition: 'all 0.3s', border: '1px solid #f0f0f0' }}
+                            >
+                            <Row gutter={24} align="middle">
+                                <Col xs={24} md={10}>
+                                    <Space align="start">
+                                    <Avatar size={64} icon={<UserOutlined />} />
+                                    <div>
+                                        <Text strong style={{ fontSize: 16, color: '#1677ff' }}>{apt.doctorName}</Text>
+                                        <div style={{ marginBottom: 6, marginTop: 6 }}><Tag color="blue" >{apt.department}</Tag></div>
 
-                              <Space direction="vertical" size={0}>
-                                <Space size="small" split={<Text type="secondary">|</Text>}>
-                                    <Text type="secondary" style={{ fontSize: 14 }}><CalendarOutlined /> {apt.date}</Text>
-                                    <Text type="secondary" style={{ fontSize: 14 }}><ScheduleOutlined /> {apt.timeSlot}</Text>
-                                    <Text type="secondary" style={{ fontSize: 14 }}><HomeOutlined /> {apt.room}</Text>  
-                                </Space>
-                              </Space>
-                            </div>
-                          </Space>
-                        </Col>
-                        <Col xs={24} md={10}>
-                             <div style={{ 
-                                background: '#f5f7fa', 
-                                padding: '10px 16px', 
-                                borderRadius: 8, 
-                                borderLeft: '4px solid #1677ff',
-                                height: '100%',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'center'
-                             }}>
-                                <Text strong style={{ fontSize: 12, color: '#888', textTransform: 'uppercase', marginBottom: 4 }}>
-                                    Chẩn đoán sơ bộ:
-                                </Text>
-                                <Text strong style={{ color: '#333', fontSize: 15 }}>
-                                    {apt.diagnosis}
-                                </Text>
-                             </div>
-                        </Col>
-                        <Col xs={24} md={4} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                          <Button 
-                            type="primary" 
-                            shape="round"
-                            onClick={() => setSelectedAppointmentId(apt.id)}
-                            style={{ minWidth: 110 }}
-                          >
-                            Xem chi tiết
-                          </Button>
-                        </Col>
-
-                      </Row>
-                    </Card>
-                  ))}
+                                        <Space direction="vertical" size={0}>
+                                        <Space size="small" split={<Text type="secondary">|</Text>}>
+                                            <Text type="secondary" style={{ fontSize: 14 }}><CalendarOutlined /> {dayjs(apt.date).format('DD/MM/YYYY')}</Text>
+                                            <Text type="secondary" style={{ fontSize: 14 }}><ScheduleOutlined /> {apt.from?.substring(0,5)} - {apt.to?.substring(0,5)}</Text>
+                                            <Text type="secondary" style={{ fontSize: 14 }}><HomeOutlined /> {apt.room}</Text>  
+                                        </Space>
+                                        </Space>
+                                    </div>
+                                    </Space>
+                                </Col>
+                                <Col xs={24} md={10}>
+                                    <div style={{ 
+                                    background: '#f5f7fa', padding: '10px 16px', borderRadius: 8, 
+                                    borderLeft: '4px solid #1677ff', height: '100%',
+                                    display: 'flex', flexDirection: 'column', justifyContent: 'center'
+                                    }}>
+                                    <Text strong style={{ fontSize: 12, color: '#888', textTransform: 'uppercase', marginBottom: 4 }}>
+                                        Chẩn đoán sơ bộ:
+                                    </Text>
+                                    <Text strong style={{ color: '#333', fontSize: 15 }}>
+                                        {apt.diseases && apt.diseases.length > 0 ? apt.diseases.join(', ') : 'Chưa cập nhật'}
+                                    </Text>
+                                    </div>
+                                </Col>
+                                <Col xs={24} md={4} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                    <Button 
+                                    type="primary" 
+                                    shape="round"
+                                    onClick={() => handleViewDetail(apt.id)}
+                                    style={{ minWidth: 110 }}
+                                    >
+                                    Xem chi tiết
+                                    </Button>
+                                </Col>
+                            </Row>
+                            </Card>
+                        ))
+                    )}
                 </Space>
 
-                <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
-                  <Pagination
-                    current={currentPage}
-                    pageSize={pageSize}
-                    total={appointmentsData.length}
-                    onChange={(page) => setCurrentPage(page)}
-                    showSizeChanger={false} 
-                  />
-                </div>
+                {totalConsultations > 0 && (
+                        <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
+                            <Pagination
+                                current={currentPage}
+                                pageSize={pageSize}
+                                total={totalConsultations}
+                                onChange={(page) => setCurrentPage(page)}
+                                showSizeChanger={false} 
+                            />
+                        </div>
+                    )}
+                </Spin>
               </>
 
             ) : (
@@ -408,69 +439,72 @@ export default function PersonalPage() {
                   type="link" 
                   icon={<LeftOutlined />} 
                   style={{ padding: 0, marginBottom: 16 }}
-                  onClick={() => setSelectedAppointmentId(null)} 
+                  onClick={() => setSelectedConsultation(null)} 
                 >
                   Quay lại danh sách
                 </Button>
+                <Spin spinning={loadingDetail}>
+                {selectedConsultation && (
+                        <Card variant="borderless" style={{ border: '1px solid #f0f0f0' }}>
+                        <Title level={4} style={{marginTop: 0, marginBottom: 24}}>
+                            Chi tiết hồ sơ khám bệnh
+                        </Title>
+                        <Descriptions bordered column={1} labelStyle={{ width: '30%', background: '#fafafa', fontWeight: 500 }}>
+                            <Descriptions.Item label="Bác sĩ">
+                            <Space>
+                                <Avatar icon={<UserOutlined />} />
+                                <Text strong style={{ fontSize: 16, color: '#1677ff' }}>{selectedConsultation.doctorName}</Text>
+                            </Space>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Chuyên khoa">{selectedConsultation.department}</Descriptions.Item>
+                            <Descriptions.Item label="Ngày khám">{dayjs(selectedConsultation.date).format('DD/MM/YYYY')}</Descriptions.Item>
+                            <Descriptions.Item label="Giờ khám">{selectedConsultation.from?.substring(0,5)} - {selectedConsultation.to?.substring(0,5)}</Descriptions.Item>
+                            <Descriptions.Item label="Phòng khám">{selectedConsultation.room}</Descriptions.Item>
+                            
+                            <Descriptions.Item label="Kết luận bác sĩ">
+                            <Text strong>Chẩn đoán: {selectedConsultation.diseases?.join(', ') || 'Chưa cập nhật'}</Text>
+                            <br />
+                            <Text type="primary" style={{ whiteSpace: 'pre-wrap' }}>
+                                Mô tả triệu chứng: {selectedConsultation.symptoms || 'Không có mô tả'}
+                            </Text>
+                            </Descriptions.Item>
 
-                <Card>
-                  <Title level={4} style={{marginTop: 0, marginBottom: 24}}>
-                    Chi tiết hồ sơ khám bệnh
-                  </Title>
-                  <Descriptions bordered column={1} labelStyle={{ width: '30%' }}>
-                    <Descriptions.Item label="Bác sĩ">
-                      <Space>
-                        <Avatar src={selectedAppointment.avatarUrl} icon={<UserOutlined />} />
-                        <Text strong style={{ fontSize: 16, color: '#1677ff' }}>{selectedAppointment.doctor}</Text>
-                      </Space>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Chuyên khoa">{selectedAppointment.type}</Descriptions.Item>
-                    <Descriptions.Item label="Ngày khám">{selectedAppointment.date}</Descriptions.Item>
-                    <Descriptions.Item label="Giờ khám">{selectedAppointment.timeSlot}</Descriptions.Item>
-                    <Descriptions.Item label="Phòng khám">{selectedAppointment.room}</Descriptions.Item>
-                    
-                    <Descriptions.Item label="Kết luận bác sĩ">
-                      <Text strong>Chẩn đoán: Rách da cẳng tay phải (S51.8).</Text>
-                      <br />
-                      <Text type="primary">
-                        Mô tả: Vết thương hở dài khoảng 4cm do tai nạn sinh hoạt.
-                        <br />
-                        Xử lý: Đã làm sạch, gây tê tại chỗ và khâu 5 mũi (chỉ không tiêu). Vết khâu khô, mép lành.
-                      </Text>
-                    </Descriptions.Item>
+                            <Descriptions.Item label="Đơn thuốc">
+                                <Text style={{ whiteSpace: 'pre-wrap' }}>
+                                    {selectedConsultation.prescription || 'Không có đơn thuốc'}
+                                </Text>
+                            </Descriptions.Item>
 
-                    <Descriptions.Item label="Đơn thuốc">
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <Text>1. Zinnat 500mg (Kháng sinh): <Text type="primary">Sáng 1 viên, Tối 1 viên (Sau ăn)</Text></Text>
-                        <Text>2. Alpha Choay (Kháng viêm): <Text type="primary">Sáng 2 viên, Tối 2 viên (Ngậm)</Text></Text>
-                        <Text>3. Paracetamol 500mg (Giảm đau): <Text type="primary">Uống 1 viên khi đau (cách 4-6h)</Text></Text>
-                        <Text>4. Povidine 10% (Sát khuẩn): <Text type="primary">Rửa vết thương ngày 1 lần</Text></Text>
-                      </div>
-                    </Descriptions.Item>
+                            <Descriptions.Item label="Lời khuyên">
+                            <Text type="primary" style={{ whiteSpace: 'pre-wrap' }}>{selectedConsultation.advices || 'Không có lời khuyên'}</Text>
+                            </Descriptions.Item>
 
-                    <Descriptions.Item label="Lời khuyên">
-                      <Text type="primary">Kiêng gà, trứng, tránh làm ẩm vết thương, nên tái khám 19/11/2025</Text>
-                    </Descriptions.Item>
-
-                    <Descriptions.Item label="Tệp đính kèm">
-                      <Image.PreviewGroup>
-                        <Space size="middle">
-                          <Image
-                            width={200} 
-                            src="/vet_thuong.png" 
-                          />
-                          <Image
-                            width={200}
-                            src="/vet_thuong.png"
-                          />
-                        </Space>
-                      </Image.PreviewGroup>
-                    </Descriptions.Item>
-                  </Descriptions> 
-                </Card>
+                            <Descriptions.Item label="Tệp đính kèm">
+                                {selectedConsultation.images && selectedConsultation.images.length > 0 ? (
+                                    <Image.PreviewGroup>
+                                        <Space size="middle" wrap>
+                                            {selectedConsultation.images.map((img, idx) => (
+                                                <Image
+                                                    key={idx}
+                                                    width={150} 
+                                                    height={150}
+                                                    src={img.base64} 
+                                                    fallback="https://via.placeholder.com/150?text=L%E1%BB%97i"
+                                                    style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #d9d9d9' }}
+                                                />
+                                            ))}
+                                        </Space>
+                                    </Image.PreviewGroup>
+                                ) : (
+                                    <Text type="secondary">Không có hình ảnh đính kèm</Text>
+                                )}
+                            </Descriptions.Item>
+                        </Descriptions> 
+                        </Card>
+                    )}
+                </Spin>
               </>
             )}
-
           </Content>
         </Layout>
       </Content>
@@ -507,7 +541,7 @@ export default function PersonalPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="email" label="Email" tooltip="Email dùng để đăng nhập, không thể thay đổi.">
-                <Input disabled style={{ background: '#f5f5f5', color: '#888' }} />
+                <Input readOnly style={{ background: '#f5f5f5', color: '#595959', cursor: 'not-allowed' }} />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -541,7 +575,7 @@ export default function PersonalPage() {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="dateOfBirth" label="Ngày sinh">
+              <Form.Item name="dateOfBirth" label="Ngày sinh" rules={[{ required: true, message: 'Vui lòng chọn ngày sinh!' }]}>
                 <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày sinh" />
               </Form.Item>
             </Col>

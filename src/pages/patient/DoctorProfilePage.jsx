@@ -96,43 +96,41 @@ export default function DoctorProfilePage() {
                 allShifts = [...allShifts, ...pageData];
             });
         }
-
-        console.log(`Đã lấy thành công TOÀN BỘ ${allShifts.length} ca khám của bác sĩ!`);
         
         const map = {};
-        let firstAvailableDate = null;
 
-          allShifts.forEach(item => {
-            if (!item.date || !item.from || !item.to) return;
+        allShifts.forEach(item => {
+            if (!item.shift.date || !item.shift.from || !item.shift.to) return;
 
-            const dateObj = dayjs(item.date);
+            const dateObj = dayjs(item.shift.date);
             const dStr = dateObj.format('DD-MM-YYYY');
             if(!map[dStr]) map[dStr] = [];
             
-            const startTimeStr = item.from.substring(0, 5);
-            const endTimeStr = item.to.substring(0, 5);
+            const startTimeStr = item.shift.from.substring(0, 5);
+            const endTimeStr = item.shift.to.substring(0, 5);
             const startHour = parseInt(startTimeStr.substring(0, 2));
 
             const currentStatus = item.status || 'AVAILABLE';
 
             map[dStr].push({
-              shiftId: item.id,
+              shiftId: item.shiftId,
               status: currentStatus,
               displayTime: `${startTimeStr} - ${endTimeStr}`,
               startHour: startHour
             });
-
-          if (!firstAvailableDate && currentStatus === 'AVAILABLE') {
-            firstAvailableDate = dateObj;
-          }
         });
+        
+          const today = dayjs();
+          setCalendarValue(today); 
 
+          const todayStr = today.format('DD-MM-YYYY');
+          
+          if (map[todayStr] && map[todayStr].length > 0) {
+            setSelectedDateStr(todayStr);
+          } else {
+            setSelectedDateStr(null);
+          }
         setScheduleMap(map);
-
-        if (firstAvailableDate) {
-          setCalendarValue(firstAvailableDate);
-          setSelectedDateStr(firstAvailableDate.format('DD-MM-YYYY'));
-        }
 
       } catch (error) {
         console.error("Lỗi lấy dữ liệu:", error);
