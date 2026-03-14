@@ -57,6 +57,7 @@ export default function ExaminationPage() {
   const [resultForm] = Form.useForm();
 
   const [viewState, setViewState] = useState('input'); 
+  const [useAI, setUseAI] = useState(true);
 
   const patientData = location.state?.patient || {
     key: '1',
@@ -89,22 +90,42 @@ export default function ExaminationPage() {
     advice: "Nên sử dụng thuốc bôi Corticoid liều thấp kết hợp dưỡng ẩm. Tránh tiếp xúc với hóa chất lạ."
   };
 
-  const onFinishInput = (values) => {
-    console.log('Input Values:', values);
-    setViewState('loading');
-    
-    setTimeout(() => {
-        setViewState('result');
-        message.success("AI đã hoàn tất phân tích!");
-        
-        resultForm.setFieldsValue({
-            finalDiagnosis: mockAIResult.diagnoses[0].name,
-            doctorAdvice: mockAIResult.advice,
-            currentCondition: "Tổn thương sưng đỏ, có dấu hiệu lan rộng nhẹ."
-        });
-    }, 2000);
+  const handleAIAssist = () => {
+    form.validateFields().then(values => {
+          console.log('Input Values (AI Assist):', values);
+          setUseAI(true);
+          setViewState('loading');
+          
+          setTimeout(() => {
+              setViewState('result');
+              message.success("AI đã hoàn tất phân tích!");
+              
+              resultForm.setFieldsValue({
+                  finalDiagnosis: mockAIResult.diagnoses[0].name,
+                  doctorAdvice: mockAIResult.advice,
+                  currentCondition: "Tổn thương sưng đỏ, có dấu hiệu lan rộng nhẹ."
+              });
+          }, 2000);
+      }).catch(info => {
+          console.log('Validate Failed:', info);
+      });
   };
 
+  const handleManualDiagnose = () => {
+      form.validateFields().then(values => {
+          console.log('Input Values (Manual):', values);
+          setUseAI(false);
+          setViewState('result');
+          
+          resultForm.resetFields(); 
+
+          resultForm.setFieldsValue({
+              currentCondition: values.description || ""
+          });
+      }).catch(info => {
+          console.log('Validate Failed:', info);
+      });
+  };
   const onFinishResult = (values) => {
       console.log('Final Result:', values);
       message.success("Đã lưu hồ sơ khám bệnh và gửi toa thuốc!");
@@ -170,7 +191,6 @@ export default function ExaminationPage() {
              <Form 
                 form={form} 
                 layout="vertical" 
-                onFinish={onFinishInput} 
                 initialValues={{
                     gender: patientData.gender,
                     age: patientData.age,
@@ -220,9 +240,10 @@ export default function ExaminationPage() {
                                 <Dragger multiple listType="picture" height={200}><p className="ant-upload-drag-icon"><InboxOutlined style={{ color: '#1677ff' }} /></p><p className="ant-upload-text">Kéo thả hoặc click để tải ảnh lên</p><p className="ant-upload-hint">Hỗ trợ định dạng: JPG, PNG.</p></Dragger>
                             </Form.Item>
                             <Divider />
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16 }}>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
                                 <Button size="large">Lưu nháp</Button>
-                                <Button type="primary" size="large" icon={<RobotOutlined />} htmlType="submit">Hoàn tất & AI hỗ trợ chẩn đoán</Button>
+                                <Button size="large" onClick={handleManualDiagnose}>Tự chẩn đoán (Bỏ qua AI)</Button>
+                                <Button type="primary" size="large" icon={<RobotOutlined />} onClick={handleAIAssist}>Hoàn tất & AI hỗ trợ chẩn đoán</Button>
                             </div>
                         </Card>
                     </Col>
@@ -232,7 +253,7 @@ export default function ExaminationPage() {
 
         {viewState === 'result' && (
             <Row gutter={[24, 24]}>
-                
+                {useAI && (
                 <Col xs={24} lg={10}>
                     <Card 
                         title={<><RobotOutlined style={{ color: '#1677ff', marginRight: 8 }} /> Kết quả phân tích AI</>}
@@ -282,8 +303,8 @@ export default function ExaminationPage() {
                         </div>
                     </Card>
                 </Col>
-
-                <Col xs={24} lg={14}>
+                )}
+                <Col xs={24} lg={useAI ? 14 : 24}>
                     <Card 
                         title={<><FileProtectOutlined style={{ color: '#52c41a', marginRight: 8 }} /> Kết luận & Kê đơn của Bác sĩ</>}
                         style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
@@ -293,11 +314,11 @@ export default function ExaminationPage() {
                             layout="vertical"
                             onFinish={onFinishResult}
                         >
-                            <Form.Item label="Chẩn đoán xác định (Bác sĩ chốt)" name="finalDiagnosis" rules={[{ required: true }]}>
+                            <Form.Item label="Chẩn đoán xác định" name="finalDiagnosis" rules={[{ required: true }]}>
                                 <Input size="large" style={{ fontWeight: 600, color: '#1677ff' }} />
                             </Form.Item>
 
-                            <Form.Item label="Mô tả tình trạng bệnh (Hiện tại)" name="currentCondition">
+                            <Form.Item label="Mô tả tình trạng bệnh" name="currentCondition">
                                 <TextArea rows={2} />
                             </Form.Item>
 

@@ -112,19 +112,6 @@ export default function PersonalPage() {
 
   const handleViewDetail = async (id) => {
       setSelectedConsultation(id);
-      setLoadingDetail(true);
-      try {
-          const res = await getConsultationDetailAPI(id);
-          if (res.data?.success) {
-              setSelectedConsultation(res.data.data);
-          }
-      } catch (error) {
-          console.error("Lỗi lấy chi tiết:", error);
-          message.error("Không thể tải chi tiết hồ sơ.");
-          setSelectedConsultation(null);
-      } finally {
-          setLoadingDetail(false);
-      }
   };
 
   const showModal = (dataToEdit = userData) => {
@@ -406,7 +393,7 @@ export default function PersonalPage() {
                                     <Button 
                                     type="primary" 
                                     shape="round"
-                                    onClick={() => handleViewDetail(apt.id)}
+                                    onClick={() => handleViewDetail(apt)}
                                     style={{ minWidth: 110 }}
                                     >
                                     Xem chi tiết

@@ -13,6 +13,7 @@ import {
   Button, 
   Input, 
   DatePicker, 
+  TimePicker,
   Select, 
   Dropdown, 
   Tooltip,
@@ -32,7 +33,8 @@ import {
   ManOutlined,
   WomanOutlined,
   FileImageOutlined,
-  MedicineBoxOutlined
+  MedicineBoxOutlined,
+  ExclamationCircleOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
@@ -41,16 +43,8 @@ import Footer from "../../components/common/Footer";
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 const { Option } = Select;
-
-export default function DoctorAppointmentPage() {
-  const navigate = useNavigate();
-  const [searchText, setSearchText] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterDate, setFilterDate] = useState(dayjs());
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPatient, setSelectedPatient] = useState(null);
-
+const { confirm } = Modal;
+const { RangePicker } = DatePicker; 
   const initialData = [
     {
       key: '1',
@@ -129,11 +123,27 @@ export default function DoctorAppointmentPage() {
       },
   ];
 
+export default function DoctorAppointmentPage() {
+  const navigate = useNavigate();
+  const [searchText, setSearchText] = useState('');
+  const [filterStatus, setFilterStatus] = useState('pending');
+
+  const [dateRange, setDateRange] = useState([dayjs().startOf('month'), dayjs()]);
+  const [timeRange, setTimeRange] = useState(null);
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+
+  
   const [dataSource, setDataSource] = useState(initialData);
+
 
   const handleSearch = (val) => setSearchText(val.toLowerCase());
   const handleStatusChange = (val) => setFilterStatus(val);
-  const handleDateChange = (date) => setFilterDate(date);
+  const handleDateRangeChange = (dates) => {
+    setDateRange(dates);
+  };
+  const handleTimeRangeChange = (times) => setTimeRange(times);
 
   const handleViewDetail = (record) => {
     setSelectedPatient(record);
@@ -144,12 +154,64 @@ export default function DoctorAppointmentPage() {
     setIsModalOpen(false);
     setSelectedPatient(null);
   };
-
   const filteredData = dataSource.filter(item => {
-    const matchName = item.patientName.toLowerCase().includes(searchText) || item.phone.includes(searchText);
-    const matchStatus = filterStatus === 'all' || item.status === filterStatus;
-    return matchName && matchStatus; 
-  });
+  
+      const matchName = item.patientName.toLowerCase().includes(searchText) || item.phone.includes(searchText);
+      
+      const matchStatus = filterStatus === 'all' || item.status === filterStatus;
+      
+      let matchDate = true;
+      if (dateRange && dateRange[0] && dateRange[1]) {
+          const itemDate = dayjs(item.date);
+          matchDate = itemDate.isBetween(dateRange[0], dateRange[1], 'day', '[]'); 
+      }
+  
+      let matchTime = true;
+      if (timeRange && timeRange[0] && timeRange[1]) {
+          const timeString = item.time.split(' - ')[0]; 
+          const appointmentTime = dayjs(timeString, 'HH:mm');
+          
+          const filterStart = dayjs().hour(timeRange[0].hour()).minute(timeRange[0].minute());
+          const filterEnd = dayjs().hour(timeRange[1].hour()).minute(timeRange[1].minute());
+          const targetTime = dayjs().hour(appointmentTime.hour()).minute(appointmentTime.minute());
+  
+          matchTime = targetTime.isBetween(filterStart, filterEnd, null, '[]');
+      }
+      return matchName && matchTime && matchStatus && matchDate; 
+    });
+  
+  const handleStartConsultation = () => {
+      const currentStartTime = selectedPatient.time.split(' - ')[0];
+
+      const hasEarlierPendingAppointment = dataSource.some(appt => {
+          if (appt.status === 'pending' && appt.key !== selectedPatient.key) {
+              const apptStartTime = appt.time.split(' - ')[0];
+              return apptStartTime < currentStartTime;
+          }
+          return false;
+      });
+
+      if (hasEarlierPendingAppointment) {
+          confirm({
+              title: 'Xác nhận đôn lịch khám',
+              icon: <ExclamationCircleOutlined />,
+              content: 'Có vẻ như vẫn còn bệnh nhân khác đang chờ khám trước ca này. Bạn có chắc chắn muốn bỏ qua thứ tự và bắt đầu khám cho bệnh nhân này ngay không?',
+              okText: 'Xác nhận khám',
+              cancelText: 'Hủy',
+              centered: true,
+              onOk() {
+                  proceedToConsultation();
+              },
+          });
+      } else {
+          proceedToConsultation();
+      }
+  };
+
+  const proceedToConsultation = () => {
+      handleCloseModal();
+      navigate('/doctor/consulting', { state: { patient: selectedPatient } });
+  }
 
   const columns = [
     {
@@ -269,22 +331,47 @@ export default function DoctorAppointmentPage() {
         </div>
 
         <Card variant="borderless" style={{ borderRadius: 12, marginBottom: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-            <Row gutter={[16, 16]} align="middle">
+            <Row gutter={[16, 16]} align="bottom">
                 <Col xs={24} md={6}>
-                    <DatePicker defaultValue={dayjs()} format="DD/MM/YYYY" onChange={handleDateChange} style={{ width: '100%' }} allowClear={false} />
-                </Col>
-                <Col xs={24} md={8}>
-                    <Input placeholder="Tìm theo tên hoặc SĐT..." prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />} onChange={(e) => handleSearch(e.target.value)} allowClear />
+                    <Text strong style={{ display: 'block', marginBottom: 4 }}>Khoảng thời gian:</Text>
+                    <RangePicker 
+                        value={dateRange}
+                        format="DD/MM/YYYY"
+                        onChange={handleDateRangeChange}
+                        style={{ width: '100%' }}
+                        allowClear={false}
+                    />
                 </Col>
                 <Col xs={24} md={6}>
-                      <Select defaultValue="all" style={{ width: '100%' }} onChange={handleStatusChange} suffixIcon={<FilterOutlined />}>
-                        <Option value="all">Tất cả trạng thái</Option>
+                    <Text strong style={{ display: 'block', marginBottom: 4 }}>Khoảng giờ hẹn:</Text>
+                    <TimePicker.RangePicker 
+                        format="HH:mm"
+                        minuteStep={15}
+                        onChange={handleTimeRangeChange}
+                        placeholder={['Từ giờ', 'Đến giờ']}
+                        style={{ width: '100%' }}
+                    />
+                </Col>
+                <Col xs={24} md={6}>
+                    <Text strong style={{ display: 'block', marginBottom: 4 }}>Từ khóa:</Text>
+                    <Input 
+                        placeholder="Tìm theo tên hoặc SĐT..." 
+                        prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />} 
+                        onChange={(e) => handleSearch(e.target.value)} 
+                        allowClear 
+                    />
+                </Col>
+
+                <Col xs={24} md={4}>
+                    <Text strong style={{ display: 'block', marginBottom: 4 }}>Trạng thái:</Text>
+                    <Select defaultValue="pending" style={{ width: '100%' }} onChange={handleStatusChange} suffixIcon={<FilterOutlined />}>
                         <Option value="pending">Chờ khám</Option>
                         <Option value="completed">Đã khám xong</Option>
                     </Select>
                 </Col>
-                <Col xs={24} md={4} style={{ textAlign: 'right' }}>
-                    <Button type="primary" icon={<FilterOutlined />}>Lọc dữ liệu</Button>
+
+                <Col xs={24} md={2} style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
+                    <Button type="primary" icon={<FilterOutlined />} style={{ marginTop: 22 }}>Lọc</Button>
                 </Col>
             </Row>
         </Card>
@@ -318,10 +405,7 @@ export default function DoctorAppointmentPage() {
                 Đóng
             </Button>,
             selectedPatient?.status === 'pending' && (
-                <Button key="start" type="primary" onClick={() => {
-                    handleCloseModal();
-                    navigate('/doctor/consulting', { state: { patient: selectedPatient } });
-                }}>
+                <Button key="start" type="primary" onClick={handleStartConsultation}>
                     Bắt đầu khám
                 </Button>
             )

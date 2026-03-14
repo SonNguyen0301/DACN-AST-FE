@@ -60,6 +60,7 @@ export default function PatientDashboardPage() {
                 okText: 'Cập nhật ngay',
                 keyboard: false, 
                 maskClosable: false, 
+                centered: true,
                 onOk: () => {
                   Modal.destroyAll();
                   navigate('/patient/personal', { state: { openEditModal: true } }); 

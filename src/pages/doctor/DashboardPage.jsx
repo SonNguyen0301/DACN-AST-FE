@@ -15,7 +15,9 @@ import {
   Button,
   Popover, 
   Segmented, 
-  Space
+  Space,
+  Empty,
+  Modal
 } from "antd";
 import { 
   UserOutlined, 
@@ -51,6 +53,14 @@ export default function DoctorDashboardPage() {
     { name: 'Vảy nến', value: 10 },
     { name: 'Khác', value: 5 },
   ];
+
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+
+  const canceledPatients = [
+    { id: 1, name: "Hoàng Thị M", time: "14:00 - 14:30" },
+    { id: 2, name: "Đinh Văn N", time: "15:30 - 16:00" },
+  ];
+
   const COLORS = ['#1677ff', '#52c41a', '#faad14', '#ff4d4f', '#9e9e9e'];
 
   const [viewMode, setViewMode] = useState('month'); 
@@ -58,17 +68,44 @@ export default function DoctorDashboardPage() {
   
   const user = { name: "BS. CK2 Trần Thị Hoa", role: "doctor" };
 
-  const waitingPatients = [
-    { id: 1, name: "Nguyễn Văn A", time: "09:00 - 09:30", status: "processing", reason: "Dị ứng da mặt" },
-    { id: 2, name: "Trần Thị B", time: "09:30 - 10:00", status: "waiting", reason: "Tái khám mụn" },
-    { id: 3, name: "Lê Văn C", time: "10:00 - 10:30", status: "waiting", reason: "Ngứa phát ban" },
-    { id: 4, name: "Phạm Thị D", time: "10:30 - 11:00" , status: "waiting", reason: "Tư vấn thẩm mỹ" },
-    { id: 5, name: "Đào Văn E", time: "13:00 - 11:30", status: "waiting", reason: "Viêm da cơ địa" },
-    { id: 6, name: "Ngô F", time: "11:30 - 12:00", status: "waiting", reason: "Nấm da chân" },
-    { id: 7, name: "Vũ Thị G", time: "13:00 - 13:30", status: "waiting", reason: "Khám tổng quát" },
-    { id: 8, name: "Trịnh Văn H", time: "13:30 - 14:00", status: "waiting", reason: "Mụn trứng cá" },
-  ];
+  const getWaitingPatients = (date) => {
+    const dateStr = date.format('YYYY-MM-DD');
+    const todayStr = dayjs().format('YYYY-MM-DD');
 
+    if (dateStr === todayStr) {
+        return [
+            { id: 1, name: "Nguyễn Văn A", time: "09:00 - 09:30", status: "processing", reason: "Dị ứng da mặt" },
+            { id: 2, name: "Trần Thị B", time: "09:30 - 10:00", status: "waiting", reason: "Tái khám mụn" },
+            { id: 3, name: "Lê Văn C", time: "10:00 - 10:30", status: "waiting", reason: "Ngứa phát ban" },
+            { id: 4, name: "Phạm Thị D", time: "10:30 - 11:00" , status: "waiting", reason: "Tư vấn thẩm mỹ" },
+            { id: 5, name: "Đào Văn E", time: "11:00 - 11:30", status: "waiting", reason: "Viêm da cơ địa" },
+            { id: 6, name: "Ngô F", time: "11:30 - 12:00", status: "waiting", reason: "Nấm da chân" },
+            { id: 7, name: "Vũ Thị G", time: "13:00 - 13:30", status: "waiting", reason: "Khám tổng quát" },
+            { id: 8, name: "Trịnh Văn H", time: "13:30 - 14:00", status: "waiting", reason: "Mụn trứng cá" },
+            { id: 9, name: "Lý Thị I", time: "14:00 - 14:30", status: "waiting", reason: "Rụng tóc" },
+            { id: 10, name: "Hoàng Văn K", time: "14:30 - 15:00", status: "waiting", reason: "Khám da liễu" },
+        ];
+    }
+
+    const day = date.date();
+    if (day % 2 === 0) { 
+        return [
+            { id: 11, name: "Nguyễn Văn M", time: "08:00 - 08:30", status: "waiting", reason: "Khám viêm da" },
+            { id: 12, name: "Dương Thị N", time: "09:30 - 10:00", status: "waiting", reason: "Tái khám nấm da" },
+            { id: 13, name: "Bạch Xuân L", time: "14:00 - 14:30", status: "waiting", reason: "Dị ứng phấn hoa" }
+            
+        ];
+    } else if (day % 3 === 0) { 
+        return [
+            { id: 13, name: "Bạch Xuân L", time: "14:00 - 14:30", status: "waiting", reason: "Dị ứng phấn hoa" }
+        ];
+    }
+    
+    return []; 
+};
+
+const currentWaitingPatients = getWaitingPatients(currentDate);
+const isTodaySelected = currentDate.isSame(dayjs(), 'day');
 
 const statsData = [
     { 
@@ -78,7 +115,8 @@ const statsData = [
       icon: <ClockCircleOutlined />, 
       color: "#1677ff", 
       bg: "#e6f4ff", 
-      progress: 65, 
+      progress: Math.round((5/8) * 100), 
+      progressDetail: "Đã khám: 5/8 ca", 
     },
     { 
       title: "Bệnh nhân tuần này", 
@@ -103,37 +141,29 @@ const statsData = [
       subText: "So với tháng trước"
     },
     { 
-      title: "Lịch hủy / Vắng mặt", 
+      title: "Lịch bị hủy", 
       value: 2, 
       suffix: "ca",
       icon: <UserDeleteOutlined />, 
-      color: "#ff4d4f", // Màu đỏ
+      color: "#ff4d4f", 
       bg: "#fff1f0", 
-      subText: "Trống lịch lúc 14:00 và 15:30"
+      subText: "Trống lịch lúc 14:00 và 15:30",
+      clickable: true, 
+      onClick: () => setIsCancelModalOpen(true)
     },
   ];
 
   const getListData = (value) => {
-    const dateString = value.format('YYYY-MM-DD');
-    let listData = [];
-    switch (dateString) {
-      case '2026-01-08': 
-        listData = [
-            { type: 'success', content: '09:00 - Nguyễn Văn A' }, 
-            { type: 'success', content: '10:30 - Trần Thị B' }
-        ]; break;
-      case '2026-01-14': 
-        listData = [
-            { type: 'warning', content: '08:30 - Đào Văn E' }, 
-            { type: 'warning', content: '15:00 - Ngô F' }
-        ]; break;
-      case '2026-01-11':  
-        listData = [
-            { type: 'success', content: '09:30 - Phạm Thị D' }, 
-        ]; break;
-      default:
-    }
-    return listData || [];
+    const patients = getWaitingPatients(value);
+    return patients.map(p => {
+        let type = 'success'; 
+        if (p.status === 'processing' || p.status === 'waiting') type = 'warning';
+        return { 
+            type, 
+            content: `${p.time.split(' - ')[0]} - ${p.name}`, 
+            reason: p.reason 
+        };
+    });
   };
 
   const renderAppointmentItem = (item, index) => {
@@ -186,10 +216,11 @@ const statsData = [
 
   const dateCellRender = (value) => {
     const listData = getListData(value);
-
+    const hasMore = listData.length > 3;
+    const displayData = hasMore ? listData.slice(0, 2) : listData;
     return (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {listData.map((item, index) => {
+        {displayData.map((item, index) => {
           const patientName = item.content.includes('-') ? item.content.split('-')[1].trim() : item.content;
           
           const popoverContent = (
@@ -235,7 +266,6 @@ const statsData = [
                     alignItems: 'center', 
                     gap: 6, 
                     cursor: 'pointer',
-                    padding: '4px 6px',
                     borderRadius: 6,
                     backgroundColor: 'transparent',
                     transition: 'all 0.2s',
@@ -253,6 +283,11 @@ const statsData = [
             </li>
           );
         })}
+        {hasMore && (
+           <li style={{ textAlign: 'center', marginTop: -4 }}>
+               <Text type="secondary" style={{ fontSize: 16, lineHeight: 1 }}>.........</Text>
+           </li>
+        )}
       </ul>
     );
   };
@@ -342,6 +377,24 @@ const statsData = [
 
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1; 
+          border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #c1c1c1; 
+          border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #a8a8a8; 
+        }
+      `}</style>
+
       <Header style={{ background: "#fff", padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", position: 'sticky', top: 0, zIndex: 1000 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => navigate('/doctor/dashboard')}>
             <img src="/ASTCare1.png" alt="ATSCare Logo" style={{ height: '40px', objectFit: 'contain' }} />
@@ -384,7 +437,10 @@ const statsData = [
               <Row gutter={[24, 24]}>
                   {statsData.map((stat, index) => (
                       <Col xs={24} sm={12} key={index}>
-                          <Card variant="borderless" style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: '100%' }}>
+                          <Card variant="borderless" style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: '100%',cursor: stat.clickable ? 'pointer' : 'default' }} 
+                                onClick={stat.onClick ? stat.onClick : undefined} 
+                                hoverable={stat.clickable}
+                            >
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                   <div style={{ flex: 1 }}>
                                       <Text type="secondary" style={{ fontSize: 14 }}>{stat.title}</Text>
@@ -395,13 +451,20 @@ const statsData = [
                                       </div>
 
                                       <div style={{ marginTop: 8 }}>
-                                          {stat.progress && (
-                                              <>
-                                                  <Progress percent={stat.progress} showInfo={false} size="small" strokeColor={stat.color} />
-                                                  <Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                                                      {stat.subText}
+                                          {stat.progress !== undefined && (
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, marginTop: 8 }}>
+                                                  <Progress 
+                                                      percent={stat.progress} 
+                                                      showInfo={false} 
+                                                      size="small" 
+                                                      strokeColor={stat.color} 
+                                                      style={{ margin: 0, flex: 1 }} 
+                                                  />
+                                                  <Text type="secondary" style={{ whiteSpace: 'nowrap' }}>
+                                                      {stat.progressDetail}
                                                   </Text>
-                                              </>
+          
+                                              </div>
                                           )}
 
                                           {stat.trend && (
@@ -423,15 +486,23 @@ const statsData = [
                                           )}
                                       </div>
                                   </div>
-
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginLeft: 12 }}>
                                   <div style={{ 
                                       width: 48, height: 48, 
                                       background: stat.bg, borderRadius: 12, 
                                       display: 'flex', alignItems: 'center', justifyContent: 'center', 
                                       fontSize: 24, color: stat.color,
-                                      marginLeft: 12
+                                      marginLeft: 12,
+                                      marginBottom: 24
                                   }}>
                                       {stat.icon}
+                                  </div>
+                                  {stat.progress !== undefined && (
+                                          <Text  strong style={{ color: stat.color, marginTop: 6, fontSize: 14 }}>
+                                              {stat.progress}%
+                                          </Text>
+                                      )}
                                   </div>
                               </div>
                           </Card>
@@ -445,7 +516,7 @@ const statsData = [
                         title="Tỷ lệ bệnh lý tháng 11" 
                         variant="borderless" 
                         style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: '100%' }}
-                        styles={{ body: { padding: 0 } }} // Bỏ padding body để căn chỉnh đẹp hơn
+                        styles={{ body: { padding: 0 } }} 
                     >
                          <div style={{ width: '100%', height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <ResponsiveContainer width="100%" height="100%">
@@ -473,9 +544,9 @@ const statsData = [
                 </Row>
         </div>
 
-        <Row gutter={[24, 24]}>
+        <Row gutter={[24, 24]} style={{ display: 'flex', alignItems: 'stretch' }}>
             
-            <Col xs={24} lg={16}>
+            <Col xs={24} lg={16} style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <Space>
                         <Title level={4} style={{ margin: 0 }}>Lịch làm việc</Title>
@@ -493,7 +564,7 @@ const statsData = [
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Badge status="success" /><Text style={{ fontSize: 12 }}>Đã khám</Text></div>
                     </div>
                 </div>
-                <Card variant="borderless" style={{ borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }} styles={{ body: { padding: 0 } }}>
+                <Card variant="borderless" style={{ borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }} styles={{ body: { padding: 0, height: '100%' } }}>
                     {viewMode === 'month' ? (
                         <Calendar 
                             cellRender={dateCellRender} 
@@ -508,18 +579,24 @@ const statsData = [
                 </Card>
             </Col>
 
-            <Col xs={24} lg={8}>
-                <div style={{ height: 44 }}></div> 
+            <Col xs={24} lg={8} style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ height: 32, marginBottom: 16 }}></div>
                 <Card 
-                    title={<div style={{display: 'flex', alignItems: 'center', gap: 8}}><ClockCircleOutlined style={{color: '#1677ff'}}/> <span>Hàng đợi hôm nay</span></div>}
+                    title={
+                      <div style={{display: 'flex', alignItems: 'center', gap: 8}}><ClockCircleOutlined style={{color: '#1677ff'}}/> 
+                      <span>{isTodaySelected ? "Hàng đợi hôm nay" : `Hàng đợi ngày ${currentDate.format('DD/MM/YYYY')}`}</span>
+                      </div>
+                    }
                     variant="borderless"
                     extra={<a href="#" onClick={() => navigate('/doctor/appointments')}>Xem tất cả</a>}
-                    style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", marginBottom: 24 }}
-                    styles={{ body: { padding: '0 16px 16px' } }}
+                    style={{flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
+                    styles={{ body: { padding: '0 16px 16px 16px', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }, header: { borderBottom: '1px solid #f0f0f0' } }}
                 >
+                  <div className="custom-scrollbar" style={{ maxHeight: '750px', overflowY: 'auto', paddingRight: 8,  }}>
+                        {currentWaitingPatients.length > 0 ? (
                     <List
                         itemLayout="horizontal"
-                        dataSource={waitingPatients}
+                        dataSource={currentWaitingPatients}
                         renderItem={(item) => (
                             <List.Item > 
                                 <List.Item.Meta
@@ -535,13 +612,54 @@ const statsData = [
                             </List.Item>
                         )}
                     />
+                    ) : (
+                      <Empty 
+                          description="Không có lịch hẹn nào" 
+                          image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                          style={{ margin: '40px 0' }}
+                      />
+                    )}
+                  </div>
                 </Card>
-
-              
-
             </Col>
         </Row>
       </Content>
+
+      <Modal
+        title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <UserDeleteOutlined style={{ color: '#ff4d4f', fontSize: 20 }} /> 
+                <span style={{ fontSize: 18 }}>Danh sách ca khám bị hủy</span>
+            </div>
+        }
+        open={isCancelModalOpen}
+        onCancel={() => setIsCancelModalOpen(false)}
+        footer={[
+            <Button key="close" onClick={() => setIsCancelModalOpen(false)}>
+                Đóng
+            </Button>
+        ]}
+        centered
+      >
+        <List
+            itemLayout="horizontal"
+            dataSource={canceledPatients}
+            renderItem={(item) => (
+                <List.Item>
+                    <List.Item.Meta
+                        avatar={<Avatar style={{ backgroundColor: '#fff1f0', color: '#ff4d4f' }}>{item.name[0]}</Avatar>}
+                        title={<Text strong>{item.name}</Text>}
+                        description={
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
+                                <Text type="secondary" style={{ fontSize: 13 }}><ClockCircleOutlined /> Khung giờ: {item.time}</Text>
+                            </div>
+                        }
+                    />
+                </List.Item>
+            )}
+        />
+      </Modal>
+
       <Footer />
       
     </Layout>
