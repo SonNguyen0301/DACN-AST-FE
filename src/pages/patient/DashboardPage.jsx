@@ -58,8 +58,9 @@ export default function PatientDashboardPage() {
                 title: 'Yêu cầu hoàn thiện hồ sơ',
                 content: 'Hồ sơ y tế của bạn chưa đầy đủ. Vui lòng cập nhật thông tin cá nhân (Ngày sinh, Giới tính, BHYT...) để có thể sử dụng các tính năng của ứng dụng.',
                 okText: 'Cập nhật ngay',
-                keyboard: false, 
-                maskClosable: false, 
+                // keyboard: false, 
+                // maskClosable: false, 
+                cancelText : 'Để sau',
                 centered: true,
                 onOk: () => {
                   Modal.destroyAll();

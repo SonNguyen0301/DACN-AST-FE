@@ -31,6 +31,9 @@ export default function AppointmentPage() {
 
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [pastAppointments, setPastAppointments] = useState([]);
+  const [examinedAppointments, setExaminedAppointments] = useState([]);
+  const [examiningAppointments, setExaminingAppointments] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -53,10 +56,14 @@ export default function AppointmentPage() {
             const allData = allRes.data.data.data;
             
             const upcoming = allData.filter(apt => apt.status === 'SCHEDULED' || apt.status === 'PENDING');
-            const past = allData.filter(apt => apt.status === 'EXAMINED' || apt.status === 'CANCELLED' || apt.status === 'LATE');
+            const past = allData.filter(apt => apt.status === 'CANCELLED');
+            const examined = allData.filter(apt => apt.status === 'EXAMINED');
+            const examining = allData.filter(apt => apt.status === 'EXAMINING');
 
             setUpcomingAppointments(upcoming.reverse());
             setPastAppointments(past);
+            setExaminedAppointments(examined);
+            setExaminingAppointments(examining);
         }
     } catch (error) {
         console.error("Lỗi lấy lịch hẹn:", error);
@@ -97,9 +104,10 @@ export default function AppointmentPage() {
       
       const existingFiles = (apt.images || []).map((img, index) => ({
           uid: `old-${index}`, 
-          // name: img.description || `Hình_anh_đính_kèm_${index+1}.png`,
+          name: `Hình_anh_đính_kèm_${index+1}.png`, 
           status: 'done',
           url: img.base64,
+          thumbUrl: img.base64,
       }));
       setFileList(existingFiles);
       setIsEditModalOpen(true);
@@ -116,6 +124,18 @@ export default function AppointmentPage() {
             fileList.forEach(file => {
                 if (file.originFileObj) {
                     formData.append('images', file.originFileObj);
+                } else if (file.url || file.thumbUrl) {
+                    const dataUrl = file.url || file.thumbUrl;
+                    const arr = dataUrl.split(',');
+                    const mime = arr[0].match(/:(.*?);/)[1];
+                    const bstr = atob(arr[1]);
+                    let n = bstr.length;
+                    const u8arr = new Uint8Array(n);
+                    while(n--){
+                        u8arr[n] = bstr.charCodeAt(n);
+                    }
+                    const newFile = new File([u8arr], file.name, {type:mime});
+                    formData.append('images', newFile);
                 }
             });
 
@@ -142,12 +162,26 @@ export default function AppointmentPage() {
     };
     
     const uploadProps = {
-        name: 'file', multiple: true, maxCount: 5,
+        name: 'file', multiple: true, maxCount: 5, accept: '.png,.jpg,.jpeg', listType: 'picture',
         beforeUpload: () => false, 
         fileList: fileList,
         onChange(info) { 
             setFileList(info.fileList); 
         },
+        onPreview: async (file) => { 
+            let src = file.url || file.thumbUrl;
+            if (!src) {
+              src = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file.originFileObj);
+                reader.onload = () => resolve(reader.result);
+              });
+            }
+            const image = new window.Image();
+            image.src = src;
+            const imgWindow = window.open(src);
+            imgWindow?.document.write(image.outerHTML);
+        }
     };
 
     const handleCancelAppointment = async (aptId) => {
@@ -333,8 +367,14 @@ export default function AppointmentPage() {
             <TabPane tab={`Lịch hẹn sắp tới (${upcomingAppointments.length})`} key="1">
               {renderAppointmentList(upcomingAppointments, true)}
             </TabPane>
-            <TabPane tab={`Lịch sử khám (${pastAppointments.length})`} key="2">
+            <TabPane tab={`Đã hủy (${pastAppointments.length})`} key="2">
               {renderAppointmentList(pastAppointments, false)}
+            </TabPane>
+            <TabPane tab={`Đã khám (${examinedAppointments.length})`} key="3">
+              {renderAppointmentList(examinedAppointments, false)}
+            </TabPane>
+            <TabPane tab={`Đang khám (${examiningAppointments.length})`} key="4">
+              {renderAppointmentList(examiningAppointments, false)}
             </TabPane>
           </Tabs>
         </Card>
@@ -352,7 +392,7 @@ export default function AppointmentPage() {
             <Dragger {...uploadProps}>
               <p className="ant-upload-drag-icon"><InboxOutlined /></p>
               <p className="ant-upload-text">Chọn tệp tin hoặc kéo thả vào đây</p>
-              <p className="ant-upload-hint">Hỗ trợ ảnh định dạng PNG, JPG</p>
+              <p className="ant-upload-hint">Hỗ trợ ảnh định dạng PNG, JPG, JPEG</p>
             </Dragger>
           </Form.Item>
         </Form>

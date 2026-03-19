@@ -56,6 +56,14 @@ export default function DoctorDashboardPage() {
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+
+  const handlePatientClick = (patient) => {
+      setSelectedPatient(patient);
+      setIsDetailModalOpen(true);
+  };
+
   const canceledPatients = [
     { id: 1, name: "Hoàng Thị M", time: "14:00 - 14:30" },
     { id: 2, name: "Đinh Văn N", time: "15:30 - 16:00" },
@@ -598,7 +606,17 @@ const statsData = [
                         itemLayout="horizontal"
                         dataSource={currentWaitingPatients}
                         renderItem={(item) => (
-                            <List.Item > 
+                            <List.Item 
+                                onClick={() => handlePatientClick(item)}
+                                style={{ 
+                                    cursor: 'pointer', 
+                                    padding: '12px', 
+                                    borderRadius: '8px',
+                                    transition: 'background-color 0.3s'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f7fa'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                              > 
                                 <List.Item.Meta
                                     avatar={<Avatar style={{ backgroundColor: item.status === 'processing' ? '#1677ff' : '#fde3cf', color: item.status === 'processing' ? '#fff' : '#f56a00' }}>{item.name[0]}</Avatar>}
                                     title={<Text strong>{item.name}</Text>}
@@ -658,6 +676,73 @@ const statsData = [
                 </List.Item>
             )}
         />
+      </Modal>
+
+      <Modal
+        title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <ClockCircleOutlined style={{ color: '#1677ff', fontSize: 20 }} /> 
+                <span style={{ fontSize: 18 }}>Chi tiết ca khám</span>
+            </div>
+        }
+        open={isDetailModalOpen}
+        onCancel={() => setIsDetailModalOpen(false)}
+        footer={[
+            <Button key="close" onClick={() => setIsDetailModalOpen(false)}>
+                Đóng
+            </Button>,
+            <Button 
+                key="examine" 
+                type="primary" 
+                onClick={() => {
+                    setIsDetailModalOpen(false);
+                    // Có thể truyền dữ liệu sang trang khám nếu cần
+                    navigate('/doctor/consulting', { state: { patient: selectedPatient } }); 
+                }}
+            >
+                Bắt đầu khám
+            </Button>
+        ]}
+        centered
+        width={500}
+      >
+        {selectedPatient && (
+            <div style={{ marginTop: 20 }}>
+                <div style={{ display: 'flex', gap: 16, marginBottom: 24, alignItems: 'center' }}>
+                    <Avatar 
+                        size={64} 
+                        style={{ backgroundColor: selectedPatient.status === 'processing' ? '#1677ff' : '#fde3cf', color: selectedPatient.status === 'processing' ? '#fff' : '#f56a00' }}
+                    >
+                        {selectedPatient.name[0]}
+                    </Avatar>
+                    <div>
+                        <Title level={4} style={{ margin: 0 }}>{selectedPatient.name}</Title>
+                        <Space direction="vertical" size={2} style={{ marginTop: 4 }}>
+                            <Text type="secondary" style={{ fontSize: 13 }}>Nam - 32 tuổi (Dữ liệu giả định)</Text>
+                        </Space>
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, background: '#f5f7fa', padding: '16px', borderRadius: '8px' }}>
+                    <Row>
+                        <Col span={8}><Text type="secondary">Trạng thái:</Text></Col>
+                        <Col span={16}>{renderStatusTag(selectedPatient.status)}</Col>
+                    </Row>
+                    <Row>
+                        <Col span={8}><Text type="secondary">Thời gian hẹn:</Text></Col>
+                        <Col span={16}><Text strong>{selectedPatient.time}</Text> ({currentDate.format('DD/MM/YYYY')})</Col>
+                    </Row>
+                    <Row>
+                        <Col span={8}><Text type="secondary">Lý do khám:</Text></Col>
+                        <Col span={16}><Text>{selectedPatient.reason}</Text></Col>
+                    </Row>
+                    <Row>
+                        <Col span={8}><Text type="secondary">Ghi chú thêm:</Text></Col>
+                        <Col span={16}><Text type="secondary" style={{ fontStyle: 'italic' }}>Bệnh nhân chưa cung cấp thêm thông tin chi tiết.</Text></Col>
+                    </Row>
+                </div>
+            </div>
+        )}
       </Modal>
 
       <Footer />

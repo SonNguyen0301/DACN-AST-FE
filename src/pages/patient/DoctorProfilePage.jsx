@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Card, Button, Select,
-  Space, Dropdown, Row, Col, Tag, Tabs, Input, Upload, message, Calendar, Empty, Divider , Spin
+  Space, Dropdown, Row, Col, Tag, Tabs, Input, Upload, message, Calendar, Empty, Divider , Spin, Modal
 } from "antd";
 import { 
   UserOutlined, LogoutOutlined, SafetyOutlined,
@@ -16,6 +16,7 @@ import Footer from '../../components/common/Footer';
 import dayjs from 'dayjs'; 
 
 import { getDoctorInfoAPI, getDoctorShiftsAPI, bookAppointmentAPI } from '../../services/doctorService';
+import { getUserInfoAPI } from '../../services/userService';
 import useAuth from '../../hooks/useAuth';
 
 
@@ -154,7 +155,7 @@ export default function DoctorProfilePage() {
 
     slots.forEach(shift => {
       if (shift.startHour < 12) morning.push(shift);
-      else if (shift.startHour < 17) afternoon.push(shift);
+      else if (shift.startHour < 18) afternoon.push(shift);
       else evening.push(shift);
     });
     return { morning, afternoon, evening };
@@ -183,16 +184,36 @@ export default function DoctorProfilePage() {
   const handleSignOut = () => { logout(); navigate('/login'); };
   
   const handleConfirmBooking = async () => {
+    
     if (!user?.id) {
             message.warning("Vui lòng đăng nhập để đặt lịch.");
             return;
         }
-        if (!selectedShift) {
-            message.warning("Vui lòng chọn khung giờ khám.");
-            return;
-        }
+    if (!selectedShift) {
+        message.warning("Vui lòng chọn khung giờ khám.");
+        return;
+    }
     setBookingLoading(true);
     try {
+      const profileRes = await getUserInfoAPI();
+      const patientData = profileRes.data?.data;
+
+      if (patientData && (patientData.folk === null || patientData.dateOfBirth === null || patientData.citizenCode === null || patientData.address === null || patientData.medicalInsurance === null)) {
+        Modal.warning({
+            title: 'Yêu cầu hoàn thiện hồ sơ',
+            content: 'Hồ sơ y tế của bạn chưa đầy đủ. Vui lòng cập nhật thông tin cá nhân (Ngày sinh, Giới tính, BHYT...) để có thể sử dụng các tính năng của ứng dụng.',
+            okText: 'Cập nhật ngay',
+            // keyboard: false, 
+            // maskClosable: false, 
+            cancelText : 'Để sau',
+            centered: true,
+            onOk: () => {
+              Modal.destroyAll();
+              navigate('/patient/personal', { state: { openEditModal: true } }); 
+            }
+        });
+      } else {
+        
         const formData = new FormData();
         formData.append('doctorId', id);
         formData.append('shiftId', selectedShift.shiftId);
@@ -214,6 +235,7 @@ export default function DoctorProfilePage() {
         } else {
             message.error(res.data?.message || "Đặt lịch thất bại.");
         }
+      }
     } catch (error) {
         console.error("Lỗi đặt lịch chi tiết:", error.response?.data || error);
         const errorMsg = error.response?.data?.message || "Có lỗi hệ thống, vui lòng thử lại sau.";
@@ -232,6 +254,7 @@ export default function DoctorProfilePage() {
     name: 'file', 
     multiple: true, 
     maxCount: 5,
+    accept: '.png,.jpg,.jpeg',
     beforeUpload: () => false, 
     fileList: fileList,
     onChange: (info) => {
@@ -359,14 +382,15 @@ export default function DoctorProfilePage() {
             <Card title={<Title level={4} style={{margin:0}}>1. Chọn lịch khám</Title>} style={{ borderRadius: 12, marginBottom: 24 }}>
               
               <Spin spinning={loadingShifts}>
-                <Row gutter={24}>
-                    <Col span={12} style={{ borderRight: '1px solid #f0f0f0' }}>
-                    <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 4 }}>
+                <Row gutter={24} style={{ display: 'flex', alignItems: 'stretch' }}>
+                    <Col span={12} style={{ borderRight: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 4 , flex: 1, display: 'flex', flexDirection: 'column'}}>
                         <Calendar 
                         fullscreen={false} 
                         value={calendarValue}
                         disabledDate={disabledDate}
                         onSelect={onDateSelect}
+                        style={{ flex: 1 }}
                         headerRender={({ value, onChange }) => {
                             const start = 0;
                             const end = 12;
@@ -432,7 +456,7 @@ export default function DoctorProfilePage() {
                     </div>
 
                     {currentScheduleSlots && currentScheduleSlots.length > 0 ? (
-                        <div style={{ maxHeight: 320, overflowY: 'auto', paddingRight: 4 }}>
+                        <div style={{ maxHeight: 480, overflowY: 'auto', paddingRight: 4 }}>
                         {renderSlotSection("Buổi Sáng", <SunOutlined style={{ color: '#faad14' }}/>, morning)}
                         {morning.length > 0 && (afternoon.length > 0 || evening.length > 0) && <Divider style={{ margin: '12px 0' }} />}
                         
@@ -462,10 +486,11 @@ export default function DoctorProfilePage() {
                   />
                </div>
                <div>
-                  <Text strong>Tệp đính kèm (0/5):</Text>
+                  <Text strong>Tệp đính kèm ({fileList.length}/5):</Text>
                   <Dragger {...uploadProps} style={{ marginTop: 8, background: '#fafafa' }}>
                     <p className="ant-upload-drag-icon"><InboxOutlined /></p>
                     <p className="ant-upload-text">Chọn tệp tin hoặc kéo thả vào đây</p>
+                    <p className="ant-upload-hint">Hỗ trợ ảnh định dạng PNG, JPG, JPEG</p>
                   </Dragger>
                </div>
             </Card>

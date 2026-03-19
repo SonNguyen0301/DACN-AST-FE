@@ -38,7 +38,6 @@ const genderDisplayMap = {
 export default function PersonalPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isForceUpdate, setIsForceUpdate] = useState(false);
 
   const [form] = Form.useForm();
 
@@ -69,7 +68,6 @@ export default function PersonalPage() {
 
   useEffect(() => {
       if (userData && location.state?.openEditModal) {
-        setIsForceUpdate(true);
         showModal(userData);  
         navigate(location.pathname, { replace: true, state: {} });
       }
@@ -161,7 +159,6 @@ export default function PersonalPage() {
         message.success("Cập nhật hồ sơ thành công!");
         fetchUserProfile();
         setIsModalOpen(false);
-        setIsForceUpdate(false);
       }
     } catch (error) {
       console.error("Lỗi cập nhật:", error);
@@ -174,7 +171,6 @@ export default function PersonalPage() {
 
   const handleCancel = () => {
     setIsModalOpen(false);
-    setIsForceUpdate(false);
   };
 
   
@@ -504,10 +500,10 @@ export default function PersonalPage() {
         confirmLoading={updating}
         okText="Lưu thay đổi"
         cancelText="Hủy"
-        cancelButtonProps={{ style: { display: isForceUpdate ? 'none' : 'inline-block' } }} 
-        closable={!isForceUpdate} 
-        maskClosable={!isForceUpdate} 
-        keyboard={!isForceUpdate} 
+        // cancelButtonProps={{ style: { display: isForceUpdate ? 'none' : 'inline-block' } }} 
+        // closable={!isForceUpdate} 
+        // maskClosable={!isForceUpdate} 
+        // keyboard={!isForceUpdate} 
         width={800} 
         centered
       >
@@ -562,12 +558,12 @@ export default function PersonalPage() {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="dateOfBirth" label="Ngày sinh" rules={[{ required: true, message: 'Vui lòng chọn ngày sinh!' }]}>
+              <Form.Item name="dateOfBirth" label="Ngày sinh" rules={[{ message: 'Vui lòng chọn ngày sinh!' }]}>
                 <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày sinh" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="gender" label="Giới tính" rules={[{ required: true, message: 'Vui lòng chọn giới tính!' }]}>
+              <Form.Item name="gender" label="Giới tính" rules={[{  message: 'Vui lòng chọn giới tính!' }]}>
                 <Select placeholder="Chọn giới tính">
                   <Option value="MALE">Nam</Option>
                   <Option value="FEMALE">Nữ</Option>
@@ -579,23 +575,23 @@ export default function PersonalPage() {
 
           <Row gutter={16}>
             <Col span={8}>
-              <Form.Item name="citizenCode" label="Số CCCD/CMND" rules={[{ required: true, message: 'Vui lòng nhập số CCCD/CMND!' }]}>
+              <Form.Item name="citizenCode" label="Số CCCD/CMND" rules={[{  message: 'Vui lòng nhập số CCCD/CMND!' }]}>
                 <Input placeholder="Nhập mã định danh" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="medicalInsurance" label="Mã BHYT" rules={[{ required: true, message: 'Vui lòng nhập mã BHYT!' }]}>
+              <Form.Item name="medicalInsurance" label="Mã BHYT" rules={[{  message: 'Vui lòng nhập mã BHYT!' }]}>
                 <Input placeholder="Mã bảo hiểm y tế" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="folk" label="Dân tộc" rules={[{ required: true, message: 'Vui lòng nhập dân tộc!' }]}>
+              <Form.Item name="folk" label="Dân tộc" rules={[{  message: 'Vui lòng nhập dân tộc!' }]}>
                 <Input placeholder="Ví dụ: Kinh" />
               </Form.Item>
             </Col>
           </Row>
           
-          <Form.Item name="address" label="Địa chỉ liên hệ" rules={[{ required: true, message: 'Vui lòng nhập địa chỉ liên hệ!' }]}>
+          <Form.Item name="address" label="Địa chỉ liên hệ" rules={[{  message: 'Vui lòng nhập địa chỉ liên hệ!' }]}>
             <Input.TextArea rows={2} placeholder="Nhập địa chỉ đầy đủ (Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố)" />
           </Form.Item>
 

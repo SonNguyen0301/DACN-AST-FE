@@ -9,6 +9,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 
+import { jwtDecode } from "jwt-decode";
 
 const { Header, Content } = Layout;
 const { Title, Text, Link } = Typography;
@@ -36,12 +37,23 @@ export default function LoginPage() {
 const onFinish = async (values) => {
     console.log('Form values:', values);
     
-    const res = await login(values.email);
+    const res = await login(values.email, values.password);
 
     if (res.success) {
       message.success('Đăng nhập thành công!');
+
+      const decodedUser = jwtDecode(localStorage.getItem('accessToken'));
       
-      navigate('/patient/dashboard'); 
+      if (decodedUser.role === 'PATIENT') {
+        navigate('/patient/dashboard');
+      } else if (decodedUser.role === 'DOCTOR') {
+        navigate('/doctor/dashboard');
+      } else if (decodedUser.role === 'ADMIN') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/staff/dashboard'); 
+      }
+
     } else {
       message.error(res.message || 'Đăng nhập thất bại, vui lòng thử lại.');
     }
