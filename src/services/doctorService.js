@@ -17,4 +17,7 @@ const bookAppointmentAPI = (formData) => {
     return axios.post('/shifts/book', formData);
 };
 
-export { getDoctorsAPI, getDoctorInfoAPI, getDoctorShiftsAPI, bookAppointmentAPI };
+const getDoctorAppointmentsAPI = (params) => {
+    return axios.get('/doctors/personal-appointment', { params });
+};
+export { getDoctorsAPI, getDoctorInfoAPI, getDoctorShiftsAPI, bookAppointmentAPI, getDoctorAppointmentsAPI };

@@ -25,6 +25,18 @@ const { TextArea } = Input;
 const { Dragger } = Upload; 
 
 
+const formatFileName = (fileName) => {
+  if (!fileName) return '';
+  const parts = fileName.split('.');
+  
+  if (parts.length >= 3) {
+    const extension = parts.pop(); 
+    parts.pop(); 
+    return `${parts.join('.')}.${extension}`;
+  }
+  
+  return fileName; 
+}
 export default function AppointmentPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth(); 
@@ -104,7 +116,7 @@ export default function AppointmentPage() {
       
       const existingFiles = (apt.images || []).map((img, index) => ({
           uid: `old-${index}`, 
-          name: `Hình_anh_đính_kèm_${index+1}.png`, 
+          name: formatFileName(img.fileName), 
           status: 'done',
           url: img.base64,
           thumbUrl: img.base64,

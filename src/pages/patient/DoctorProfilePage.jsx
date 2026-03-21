@@ -221,11 +221,16 @@ export default function DoctorProfilePage() {
         
         if (notes) formData.append('description', notes);
 
-        fileList.forEach(file => {
-            if (file.originFileObj) {
-                formData.append('images', file.originFileObj);
-            }
-        });
+        if (fileList && fileList.length > 0) {
+            fileList.forEach(file => {
+                if (file.originFileObj) {
+                    formData.append('images', file.originFileObj, file.name);
+                } 
+                else if (file instanceof File) {
+                    formData.append('images', file, file.name);
+                }
+            });
+        }
 
         const res = await bookAppointmentAPI(formData);
         
@@ -254,11 +259,34 @@ export default function DoctorProfilePage() {
     name: 'file', 
     multiple: true, 
     maxCount: 5,
-    accept: '.png,.jpg,.jpeg',
-    beforeUpload: () => false, 
+    accept: 'image/png, image/jpeg, image/jpg', 
+    
+    beforeUpload: (file) => {
+        const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+        if (!isJpgOrPng) {
+            message.error('Bạn chỉ có thể tải lên file JPG/PNG!');
+            return Upload.LIST_IGNORE; 
+        }
+        return false; 
+    },
+    
     fileList: fileList,
     onChange: (info) => {
         setFileList(info.fileList);
+    },
+    onPreview: async (file) => {
+        let src = file.url || file.thumbUrl;
+        if (!src && file.originFileObj) {
+            src = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file.originFileObj);
+                reader.onload = () => resolve(reader.result);
+            });
+        }
+        const image = new window.Image();
+        image.src = src;
+        const imgWindow = window.open(src);
+        imgWindow?.document.write(image.outerHTML);
     }
   };
 

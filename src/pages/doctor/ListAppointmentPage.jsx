@@ -1,4 +1,4 @@
-import  { useState } from 'react';
+import  { useState, useEffect } from 'react';
 import { 
   Layout, 
   Menu, 
@@ -21,6 +21,7 @@ import {
   Image,        
   Descriptions,  
   Divider,
+  message
 } from "antd";
 import { 
   UserOutlined, 
@@ -39,111 +40,106 @@ import {
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
 import Footer from "../../components/common/Footer"; 
+import { getDoctorAppointmentsAPI } from '../../services/doctorService';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { confirm } = Modal;
 const { RangePicker } = DatePicker; 
-  const initialData = [
-    {
-      key: '1',
-      time: '08:00 - 08:30',
-      patientName: 'Nguyễn Văn A',
-      gender: 'male',
-      age: 32,
-      phone: '0909123456',
-      reason: 'Đau đầu, chóng mặt kéo dài',
-      detailedSymptoms: 'Xuất hiện các nốt đỏ ngứa quanh vùng cổ và lan xuống ngực. Đã bôi thuốc mỡ nhưng không giảm. Cảm giác nóng rát khi ra nắng.',
-      history: 'Dị ứng hải sản, Tiền sử viêm da cơ địa.',
-      images: [
-        'https://dalieuhanoi.com/wp-content/uploads/2023/07/viem-da-co-dia-o-tay-1.jpg',  
-        'https://dalieuhanoi.com/wp-content/uploads/2023/07/viem-da-co-dia-o-tay-2.jpg'
-      ],
-      status: 'pending',
-      avatar: null
-    },
-    {
-      key: '2',
-      time: '08:30 - 09:00',
-      patientName: 'Trần Thị B',
-      gender: 'female',
-      age: 28,
-      phone: '0912345678',
-      reason: 'Nổi mẩn đỏ vùng mặt',
-      detailedSymptoms: 'Da mặt nổi nhiều mụn li ti, sưng đỏ sau khi sử dụng mỹ phẩm mới. Ngứa nhiều vào ban đêm.',
-      history: 'Da nhạy cảm, chưa có tiền sử bệnh lý đặc biệt.',
-      images: [
-        'https://example.com/rash1.jpg',  
-      ],
-      status: 'completed',
-      avatar: null
-    },
-    {
-        key: '3',
-        time: '09:00 - 09:30',
-        patientName: 'Lê Văn C',
-        gender: 'male',
-        age: 45,
-        phone: '0987654321',
-        reason: 'Tái khám viêm da cơ địa',
-        detailedSymptoms: 'Tái khám theo lịch hẹn. Tình trạng đã đỡ 80%, chỉ còn hơi khô da.',
-        history: 'Đang điều trị theo đơn thuốc đợt 1.',
-        images: [], 
-        status: 'completed',
-        avatar: null
-      },
-      {
-        key: '4',
-        time: '09:30 - 10:00',
-        patientName: 'Phạm Thị D',
-        gender: 'female',
-        age: 50,
-        phone: '0933445566',
-        reason: 'Đau khớp gối khi vận động',
-        detailedSymptoms: 'Khớp gối lục cục khi leo cầu thang, đau âm ỉ khi trời lạnh.',
-        history: 'Thoái hóa khớp nhẹ.',
-        images: [],
-        status: 'pending',
-        avatar: null
-      },
-      {
-        key: '5',
-        time: '10:00 - 10:30',
-        patientName: 'Hoàng Văn E',
-        gender: 'male',
-        age: 22,
-        phone: '0977889900',
-        reason: 'Tư vấn thẩm mỹ sẹo',
-        detailedSymptoms: 'Muốn tư vấn liệu trình laser trị sẹo rỗ do mụn để lại.',
-        history: 'Đã trị hết mụn trứng cá.',
-        images: ['https://example.com/seo1.jpg'],
-        status: 'pending',
-        avatar: null
-      },
-  ];
+ 
 
 export default function DoctorAppointmentPage() {
   const navigate = useNavigate();
+
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState('pending');
-
   const [dateRange, setDateRange] = useState([dayjs().startOf('month'), dayjs()]);
   const [timeRange, setTimeRange] = useState(null);
+
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
 
   
-  const [dataSource, setDataSource] = useState(initialData);
+  const fetchAppointments = async (page = 1) => {
+      setLoading(true);
+      try {
+          const params = {
+              page: page,
+              take: pagination.pageSize,
+              sort: 'date',
+              sortDirection: 'DESC',
+              startDate: dateRange && dateRange[0] ? dateRange[0].format('YYYY-MM-DD') : dayjs().startOf('month').format('YYYY-MM-DD'),
+              endDate: dateRange && dateRange[1] ? dateRange[1].format('YYYY-MM-DD') : dayjs().endOf('month').format('YYYY-MM-DD'),
+          };
+
+          if (searchText) params.keyword = searchText;
+          if (filterStatus !== 'all') params.status = filterStatus;
+          
+          if (timeRange && timeRange[0] && timeRange[1]) {
+              params.from = timeRange[0].format('HH:mmZ'); 
+              params.to = timeRange[1].format('HH:mmZ');
+          }
+
+          const res = await getDoctorAppointmentsAPI(params); 
+          
+          if (res.data?.success) {
+              const rawData = res.data.data.data;
+              
+              const mappedData = rawData.map((item, index) => {
+                  const fromTime = item.from ? item.from.substring(0, 5) : '';
+                  const toTime = item.to ? item.to.substring(0, 5) : '';
+                  
+                  const imageUrls = item.images ? Object.values(item.images) : [];
+
+                  return {
+                      key: item.id || index, 
+                      time: `${fromTime} - ${toTime}`,
+                      date: item.date,
+                      patientName: item.patientName,
+                      gender: item.gender === 'MALE' ? 'male' : (item.gender === 'FEMALE' ? 'female' : 'other'),
+                      age: item.dateOfBirth ? dayjs().diff(dayjs(item.dateOfBirth), 'year') : 'N/A',
+                      phone: item.phoneNumber,
+                      reason: item.description || 'Không có ghi chú',
+                      detailedSymptoms: item.description || 'Không có mô tả chi tiết.',
+                      history: item.previousDiseases?.length ? item.previousDiseases.join(', ') : 'Không có ghi nhận.',
+                      images: imageUrls,
+                      status: item.status, 
+                      rawTime: item.from 
+                  };
+              });
+
+              setAppointments(mappedData);
+              setPagination(prev => ({
+                  ...prev,
+                  current: res.data.data.meta.page,
+                  total: res.data.data.meta.itemCount
+              }));
+          }
+      } catch (error) {
+          console.error("Lỗi lấy danh sách khám:", error);
+          message.error("Không thể tải danh sách đặt khám.");
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  useEffect(() => {
+      fetchAppointments();
+  }, []);
 
 
   const handleSearch = (val) => setSearchText(val.toLowerCase());
   const handleStatusChange = (val) => setFilterStatus(val);
-  const handleDateRangeChange = (dates) => {
-    setDateRange(dates);
-  };
+  const handleDateRangeChange = (dates) => setDateRange(dates);
   const handleTimeRangeChange = (times) => setTimeRange(times);
+
+  const handleFilterClick = () => fetchAppointments(1);
+  const handleTableChange = (newPagination) => fetchAppointments(newPagination.current);
 
   const handleViewDetail = (record) => {
     setSelectedPatient(record);
@@ -154,36 +150,12 @@ export default function DoctorAppointmentPage() {
     setIsModalOpen(false);
     setSelectedPatient(null);
   };
-  const filteredData = dataSource.filter(item => {
-  
-      const matchName = item.patientName.toLowerCase().includes(searchText) || item.phone.includes(searchText);
-      
-      const matchStatus = filterStatus === 'all' || item.status === filterStatus;
-      
-      let matchDate = true;
-      if (dateRange && dateRange[0] && dateRange[1]) {
-          const itemDate = dayjs(item.date);
-          matchDate = itemDate.isBetween(dateRange[0], dateRange[1], 'day', '[]'); 
-      }
-  
-      let matchTime = true;
-      if (timeRange && timeRange[0] && timeRange[1]) {
-          const timeString = item.time.split(' - ')[0]; 
-          const appointmentTime = dayjs(timeString, 'HH:mm');
-          
-          const filterStart = dayjs().hour(timeRange[0].hour()).minute(timeRange[0].minute());
-          const filterEnd = dayjs().hour(timeRange[1].hour()).minute(timeRange[1].minute());
-          const targetTime = dayjs().hour(appointmentTime.hour()).minute(appointmentTime.minute());
-  
-          matchTime = targetTime.isBetween(filterStart, filterEnd, null, '[]');
-      }
-      return matchName && matchTime && matchStatus && matchDate; 
-    });
-  
+
+
   const handleStartConsultation = () => {
       const currentStartTime = selectedPatient.time.split(' - ')[0];
 
-      const hasEarlierPendingAppointment = dataSource.some(appt => {
+      const hasEarlierPendingAppointment = appointments.some(appt => {
           if (appt.status === 'pending' && appt.key !== selectedPatient.key) {
               const apptStartTime = appt.time.split(' - ')[0];
               return apptStartTime < currentStartTime;
@@ -242,7 +214,7 @@ export default function DoctorAppointmentPage() {
       ),
     },
     {
-      title: 'Lý do khám / Triệu chứng',
+      title: ' Triệu chứng',
       dataIndex: 'reason',
       key: 'reason',
       render: (text) => <Text>{text}</Text>,
@@ -254,12 +226,15 @@ export default function DoctorAppointmentPage() {
       width: 150,
       render: (status) => {
         let color = 'default';
-        let label = 'Không rõ';
+        let label = status;
         switch (status) {
-          case 'pending': color = 'warning'; label = 'Chờ khám'; break;
-          case 'completed': color = 'success'; label = 'Đã khám'; break;
+          case 'SCHEDULED': color = 'processing'; label = 'Đã đặt lịch'; break;
+          case 'EXAMINING': color = 'warning'; label = 'Đang khám'; break;
+          case 'EXAMINED': color = 'success'; label = 'Đã khám xong'; break;
+          case 'CANCELLED': color = 'error'; label = 'Đã hủy'; break;
+          case 'LATE': color = 'default'; label = 'Đến trễ'; break;
         }
-        return <Tag color={color} style={{ minWidth: 80, textAlign: 'center' }}>{label.toUpperCase()}</Tag>;
+        return <Tag color={color} style={{ minWidth: 90, textAlign: 'center' }}>{label.toUpperCase()}</Tag>;
       }
     },
     {
@@ -273,7 +248,10 @@ export default function DoctorAppointmentPage() {
                 type="default" 
                 size="small" 
                 icon={<EyeOutlined />} 
-                onClick={() => handleViewDetail(record)}  
+                onClick={(e) => {
+                    e.stopPropagation(); 
+                    handleViewDetail(record);
+                }}  
             >
               Chi tiết
             </Button>
@@ -358,20 +336,23 @@ export default function DoctorAppointmentPage() {
                         placeholder="Tìm theo tên hoặc SĐT..." 
                         prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />} 
                         onChange={(e) => handleSearch(e.target.value)} 
+                        onPressEnter={handleFilterClick}
                         allowClear 
                     />
                 </Col>
 
                 <Col xs={24} md={4}>
                     <Text strong style={{ display: 'block', marginBottom: 4 }}>Trạng thái:</Text>
-                    <Select defaultValue="pending" style={{ width: '100%' }} onChange={handleStatusChange} suffixIcon={<FilterOutlined />}>
-                        <Option value="pending">Chờ khám</Option>
-                        <Option value="completed">Đã khám xong</Option>
+                    <Select defaultValue="SCHEDULED" style={{ width: '100%' }} onChange={handleStatusChange} suffixIcon={<FilterOutlined />}>
+                        <Option value="SCHEDULED">Đã đặt lịch</Option>
+                        <Option value="EXAMINING">Đang khám</Option>
+                        <Option value="EXAMINED">Đã khám xong</Option>
+                        <Option value="CANCELLED">Đã hủy</Option>
                     </Select>
                 </Col>
 
                 <Col xs={24} md={2} style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
-                    <Button type="primary" icon={<FilterOutlined />} style={{ marginTop: 22 }}>Lọc</Button>
+                    <Button type="primary" icon={<FilterOutlined />} style={{ marginTop: 22 }} onClick={handleFilterClick} loading={loading}>Lọc</Button>
                 </Col>
             </Row>
         </Card>
@@ -379,7 +360,7 @@ export default function DoctorAppointmentPage() {
         <Card variant="borderless" style={{ borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }} styles={{ body: { padding: 0 } }}>
              <Table 
                 columns={columns} 
-                dataSource={filteredData} 
+                dataSource={appointments} 
                 pagination={{ pageSize: 10 }}
                 onRow={(record) => ({
                     style: { cursor: 'pointer' },
@@ -404,7 +385,7 @@ export default function DoctorAppointmentPage() {
             <Button key="close" onClick={handleCloseModal}>
                 Đóng
             </Button>,
-            selectedPatient?.status === 'pending' && (
+            (selectedPatient?.status === 'SCHEDULED' || selectedPatient?.status === 'EXAMINING') && (
                 <Button key="start" type="primary" onClick={handleStartConsultation}>
                     Bắt đầu khám
                 </Button>
@@ -416,12 +397,12 @@ export default function DoctorAppointmentPage() {
         {selectedPatient && (
             <div style={{ marginTop: 20 }}>
                 <div style={{ display: 'flex', gap: 20, marginBottom: 24 }}>
-                    <Avatar size={80} icon={<UserOutlined />} style={{ backgroundColor: selectedPatient.gender === 'male' ? '#1677ff' : '#eb2f96' }} />
+                    <Avatar size={80} icon={<UserOutlined />} style={{ backgroundColor: selectedPatient.gender === 'MALE' ? '#1677ff' : '#eb2f96' }} />
                     <div>
                         <Title level={4} style={{ margin: 0 }}>{selectedPatient.patientName}</Title>
                         <Space direction="vertical" size={2} style={{ marginTop: 8 }}>
-                            <Text type="secondary"><UserOutlined /> Giới tính: {selectedPatient.gender === 'male' ? 'Nam' : 'Nữ'} - {selectedPatient.age} tuổi</Text>
-                            <Text type="secondary"><PhoneOutlined /> SĐT: {selectedPatient.phone}</Text>
+                            <Text type="secondary"><UserOutlined /> Giới tính: {selectedPatient.gender === 'MALE' ? 'Nam' : 'Nữ'}</Text>
+                            <Text type="secondary"><PhoneOutlined /> SĐT: {selectedPatient.phoneNumber}</Text>
                             <Text type="secondary"><CalendarOutlined /> Giờ hẹn: <Tag color="blue">{selectedPatient.time}</Tag></Text>
                         </Space>
                     </div>
@@ -430,14 +411,11 @@ export default function DoctorAppointmentPage() {
                 <Divider />
 
                 <Descriptions title="Thông tin y tế" column={1} bordered size="small">
-                    <Descriptions.Item label="Lý do khám">
-                        <Text strong>{selectedPatient.reason}</Text>
-                    </Descriptions.Item>
                     <Descriptions.Item label="Mô tả chi tiết">
-                        {selectedPatient.detailedSymptoms || "Bệnh nhân chưa cung cấp mô tả chi tiết."}
+                        {selectedPatient.description || "Bệnh nhân chưa cung cấp mô tả chi tiết."}
                     </Descriptions.Item>
                     <Descriptions.Item label="Tiền sử bệnh">
-                         {selectedPatient.history || "Không có ghi nhận."}
+                         {selectedPatient.previousDiseases || "Không có ghi nhận."}
                     </Descriptions.Item>
                 </Descriptions>
 
