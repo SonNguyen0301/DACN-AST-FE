@@ -17,7 +17,8 @@ import {
   Segmented, 
   Space,
   Empty,
-  Modal
+  Modal,
+  Spin
 } from "antd";
 import { 
   UserOutlined, 
@@ -40,6 +41,8 @@ import Footer from "../../components/common/Footer";
 import { useState } from 'react';
 import dayjs from 'dayjs';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useEffect } from "react";
+import { getAppointmentCalendarAPI, getAppointmentsByDateAPI } from "../../services/doctorService";
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 
@@ -73,46 +76,88 @@ export default function DoctorDashboardPage() {
 
   const [viewMode, setViewMode] = useState('month'); 
   const [currentDate, setCurrentDate] = useState(dayjs());
+
+  const [calendarMap, setCalendarMap] = useState({});
+  const [loadingCalendar, setLoadingCalendar] = useState(false);
+
+  useEffect(() => {
+    const fetchCalendarData = async () => {
+        if (!user?.id) return; 
+        
+        setLoadingCalendar(true);
+        try {
+            const startDate = currentDate.startOf(viewMode).format('YYYY-MM-DD');
+            const endDate = currentDate.endOf(viewMode).format('YYYY-MM-DD');
+            
+            const params = {
+                startDate,
+                endDate,
+                option: viewMode.toUpperCase(), 
+                batch: 3
+            };
+
+            const res = await getAppointmentCalendarAPI(user.id, params);
+            
+            if (res.data?.success) {
+                const map = {};
+                res.data.data.forEach(dayItem => {
+                    const dateStr = dayjs(dayItem.date).format('YYYY-MM-DD');
+                    map[dateStr] = dayItem;
+                });
+                setCalendarMap(map);
+            }
+        } catch (error) {
+            console.error("Lỗi lấy dữ liệu calendar:", error);
+        } finally {
+            setLoadingCalendar(false);
+        }
+    };
+
+    fetchCalendarData();
+  }, [viewMode, currentDate.startOf(viewMode).format('YYYY-MM-DD'), user?.id]);
+
+  const [waitingPatients, setWaitingPatients] = useState([]);
+  const [loadingWaiting, setLoadingWaiting] = useState(false);
+
+  useEffect(() => {
+      const fetchAppointmentsByDate = async () => {
+          if (!user?.id) return;
+          setLoadingWaiting(true);
+          try {
+              const dateStr = currentDate.format('YYYY-MM-DD');
+              
+              const res = await getAppointmentsByDateAPI(user.id, dateStr);
+
+              if (res.data?.success && res.data.data?.appointments) {
+                  const mappedData = res.data.data.appointments.map(apt => {
+                      const fromStr = apt.from ? apt.from.substring(0, 5) : '';
+                      const toStr = apt.to ? apt.to.substring(0, 5) : '';
+                      return {
+                          id: apt.id,
+                          name: apt.patientName,
+                          time: `${fromStr} - ${toStr}`,
+                          status: apt.status,
+                          reason: apt.description || 'Không có ghi chú',
+                          raw: apt 
+                      };
+                  });
+                  setWaitingPatients(mappedData);
+              } else {
+                  setWaitingPatients([]);
+              }
+          } catch (error) {
+              console.error("Lỗi lấy danh sách khám theo ngày:", error);
+              setWaitingPatients([]);
+          } finally {
+              setLoadingWaiting(false);
+          }
+      };
+
+      fetchAppointmentsByDate();
+  }, [currentDate, user?.id]);
   
   const user = { name: "BS. CK2 Trần Thị Hoa", role: "doctor" };
 
-  const getWaitingPatients = (date) => {
-    const dateStr = date.format('YYYY-MM-DD');
-    const todayStr = dayjs().format('YYYY-MM-DD');
-
-    if (dateStr === todayStr) {
-        return [
-            { id: 1, name: "Nguyễn Văn A", time: "09:00 - 09:30", status: "processing", reason: "Dị ứng da mặt" },
-            { id: 2, name: "Trần Thị B", time: "09:30 - 10:00", status: "waiting", reason: "Tái khám mụn" },
-            { id: 3, name: "Lê Văn C", time: "10:00 - 10:30", status: "waiting", reason: "Ngứa phát ban" },
-            { id: 4, name: "Phạm Thị D", time: "10:30 - 11:00" , status: "waiting", reason: "Tư vấn thẩm mỹ" },
-            { id: 5, name: "Đào Văn E", time: "11:00 - 11:30", status: "waiting", reason: "Viêm da cơ địa" },
-            { id: 6, name: "Ngô F", time: "11:30 - 12:00", status: "waiting", reason: "Nấm da chân" },
-            { id: 7, name: "Vũ Thị G", time: "13:00 - 13:30", status: "waiting", reason: "Khám tổng quát" },
-            { id: 8, name: "Trịnh Văn H", time: "13:30 - 14:00", status: "waiting", reason: "Mụn trứng cá" },
-            { id: 9, name: "Lý Thị I", time: "14:00 - 14:30", status: "waiting", reason: "Rụng tóc" },
-            { id: 10, name: "Hoàng Văn K", time: "14:30 - 15:00", status: "waiting", reason: "Khám da liễu" },
-        ];
-    }
-
-    const day = date.date();
-    if (day % 2 === 0) { 
-        return [
-            { id: 11, name: "Nguyễn Văn M", time: "08:00 - 08:30", status: "waiting", reason: "Khám viêm da" },
-            { id: 12, name: "Dương Thị N", time: "09:30 - 10:00", status: "waiting", reason: "Tái khám nấm da" },
-            { id: 13, name: "Bạch Xuân L", time: "14:00 - 14:30", status: "waiting", reason: "Dị ứng phấn hoa" }
-            
-        ];
-    } else if (day % 3 === 0) { 
-        return [
-            { id: 13, name: "Bạch Xuân L", time: "14:00 - 14:30", status: "waiting", reason: "Dị ứng phấn hoa" }
-        ];
-    }
-    
-    return []; 
-};
-
-const currentWaitingPatients = getWaitingPatients(currentDate);
 const isTodaySelected = currentDate.isSame(dayjs(), 'day');
 
 const statsData = [
@@ -161,15 +206,26 @@ const statsData = [
     },
   ];
 
-  const getListData = (value) => {
-    const patients = getWaitingPatients(value);
-    return patients.map(p => {
+const getListData = (value) => {
+    const dateStr = value.format('YYYY-MM-DD');
+    const dayData = calendarMap[dateStr];
+    
+    if (!dayData || !dayData.appointments) return [];
+
+    return dayData.appointments.map(apt => {
         let type = 'success'; 
-        if (p.status === 'processing' || p.status === 'waiting') type = 'warning';
+        if (apt.status === 'SCHEDULED') type = 'warning'; 
+        if (apt.status === 'EXAMINING') type = 'processing'; 
+        if (apt.status === 'CANCELLED') type = 'error'; 
+
+        const timeStr = apt.from ? apt.from.substring(0, 5) : '';
+
         return { 
             type, 
-            content: `${p.time.split(' - ')[0]} - ${p.name}`, 
-            reason: p.reason 
+            content: `${timeStr} - ${apt.patientName}`, 
+            reason: apt.description || 'Không có ghi chú',
+            status: apt.status,
+            raw: apt 
         };
     });
   };
@@ -223,9 +279,15 @@ const statsData = [
   };
 
   const dateCellRender = (value) => {
+    const dateStr = value.format('YYYY-MM-DD');
     const listData = getListData(value);
-    const hasMore = listData.length > 3;
-    const displayData = hasMore ? listData.slice(0, 2) : listData;
+
+    const dayData = calendarMap[dateStr];
+    const totalAppointments = dayData?.total > 0 ? dayData.total : listData.length;
+    
+    const hasMore = totalAppointments > 3;
+    const displayData = hasMore ? listData.slice(0, 2) : listData.slice(0, 3);
+
     return (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         {displayData.map((item, index) => {
@@ -302,9 +364,11 @@ const statsData = [
 
   const renderStatusTag = (status) => {
     switch(status) {
-      case 'processing': return <Tag color="processing" icon={<ClockCircleOutlined />}>Đang khám</Tag>;
-      case 'waiting': return <Tag color="warning">Đang chờ</Tag>;
-      default: return <Tag>N/A</Tag>;
+      case 'EXAMINING': return <Tag color="processing" icon={<ClockCircleOutlined />}>Đang khám</Tag>;
+      case 'SCHEDULED': return <Tag color="warning">Chờ khám</Tag>;
+      case 'EXAMINED': return <Tag color="success">Đã khám</Tag>;
+      case 'CANCELLED': return <Tag color="error">Đã hủy</Tag>;
+      default: return <Tag>{status}</Tag>;
     }
   };
 
@@ -573,6 +637,7 @@ const statsData = [
                     </div>
                 </div>
                 <Card variant="borderless" style={{ borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }} styles={{ body: { padding: 0, height: '100%' } }}>
+                  <Spin spinning={loadingCalendar}>
                     {viewMode === 'month' ? (
                         <Calendar 
                             cellRender={dateCellRender} 
@@ -584,6 +649,7 @@ const statsData = [
                     ) : (
                         renderWeekView()
                     )}
+                    </Spin>
                 </Card>
             </Col>
 
@@ -591,8 +657,9 @@ const statsData = [
                 <div style={{ height: 32, marginBottom: 16 }}></div>
                 <Card 
                     title={
-                      <div style={{display: 'flex', alignItems: 'center', gap: 8}}><ClockCircleOutlined style={{color: '#1677ff'}}/> 
-                      <span>{isTodaySelected ? "Hàng đợi hôm nay" : `Hàng đợi ngày ${currentDate.format('DD/MM/YYYY')}`}</span>
+                      <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                          <ClockCircleOutlined style={{color: '#1677ff'}}/> 
+                          <span>{isTodaySelected ? "Hàng đợi hôm nay" : `Hàng đợi ngày ${currentDate.format('DD/MM/YYYY')}`}</span>
                       </div>
                     }
                     variant="borderless"
@@ -600,44 +667,46 @@ const statsData = [
                     style={{flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
                     styles={{ body: { padding: '0 16px 16px 16px', flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }, header: { borderBottom: '1px solid #f0f0f0' } }}
                 >
-                  <div className="custom-scrollbar" style={{ maxHeight: '750px', overflowY: 'auto', paddingRight: 8,  }}>
-                        {currentWaitingPatients.length > 0 ? (
-                    <List
-                        itemLayout="horizontal"
-                        dataSource={currentWaitingPatients}
-                        renderItem={(item) => (
-                            <List.Item 
-                                onClick={() => handlePatientClick(item)}
-                                style={{ 
-                                    cursor: 'pointer', 
-                                    padding: '12px', 
-                                    borderRadius: '8px',
-                                    transition: 'background-color 0.3s'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f7fa'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                              > 
-                                <List.Item.Meta
-                                    avatar={<Avatar style={{ backgroundColor: item.status === 'processing' ? '#1677ff' : '#fde3cf', color: item.status === 'processing' ? '#fff' : '#f56a00' }}>{item.name[0]}</Avatar>}
-                                    title={<Text strong>{item.name}</Text>}
-                                    description={
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                            <Text type="secondary" style={{ fontSize: 12 }}>{item.time} - {item.reason}</Text>
-                                            <div>{renderStatusTag(item.status)}</div>
-                                        </div>
-                                    }
-                                />
-                            </List.Item>
+                  <Spin spinning={loadingWaiting} style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div className="custom-scrollbar" style={{ maxHeight: '750px', overflowY: 'auto', paddingRight: 8, height: '100%' }}>
+                            {waitingPatients.length > 0 ? (
+                        <List
+                            itemLayout="horizontal"
+                            dataSource={waitingPatients} 
+                            renderItem={(item) => (
+                                <List.Item 
+                                    onClick={() => handlePatientClick(item)}
+                                    style={{ 
+                                        cursor: 'pointer', 
+                                        padding: '12px', 
+                                        borderRadius: '8px',
+                                        transition: 'background-color 0.3s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f7fa'}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                  > 
+                                    <List.Item.Meta
+                                        avatar={<Avatar style={{ backgroundColor: item.status === 'EXAMINING' ? '#1677ff' : '#fde3cf', color: item.status === 'EXAMINING' ? '#fff' : '#f56a00' }}>{item.name[0]}</Avatar>}
+                                        title={<Text strong>{item.name}</Text>}
+                                        description={
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                                <Text type="secondary" style={{ fontSize: 12 }}>{item.time} - {item.reason}</Text>
+                                                <div>{renderStatusTag(item.status)}</div>
+                                            </div>
+                                        }
+                                    />
+                                </List.Item>
+                            )}
+                        />
+                        ) : (
+                          <Empty 
+                              description="Không có lịch hẹn nào" 
+                              image={Empty.PRESENTED_IMAGE_SIMPLE} 
+                              style={{ margin: '40px 0' }}
+                          />
                         )}
-                    />
-                    ) : (
-                      <Empty 
-                          description="Không có lịch hẹn nào" 
-                          image={Empty.PRESENTED_IMAGE_SIMPLE} 
-                          style={{ margin: '40px 0' }}
-                      />
-                    )}
-                  </div>
+                      </div>
+                  </Spin>
                 </Card>
             </Col>
         </Row>

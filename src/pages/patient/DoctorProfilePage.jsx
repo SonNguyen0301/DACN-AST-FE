@@ -224,11 +224,8 @@ export default function DoctorProfilePage() {
         if (fileList && fileList.length > 0) {
             fileList.forEach(file => {
                 if (file.originFileObj) {
-                    formData.append('images', file.originFileObj, file.name);
+                    formData.append('images', file.originFileObj);
                 } 
-                else if (file instanceof File) {
-                    formData.append('images', file, file.name);
-                }
             });
         }
 

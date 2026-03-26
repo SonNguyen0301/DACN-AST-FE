@@ -22,7 +22,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Footer from '../../components/common/Footer'; 
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { getUserInfoAPI, updateUserInfoAPI, getHistoryConsultationsAPI, getConsultationDetailAPI } from '../../services/userService';
+import { getUserInfoAPI, updateUserInfoAPI, getHistoryConsultationsAPI } from '../../services/userService';
 dayjs.extend(customParseFormat);
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;

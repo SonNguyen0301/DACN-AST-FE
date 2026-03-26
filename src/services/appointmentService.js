@@ -1,8 +1,8 @@
 import axios from './api'; 
 
-    const getPatientAppointmentsAPI = (userId, params) => {
-        return axios.get(`/appointments/${userId}`, { params });
-    };
+const getPatientAppointmentsAPI = (userId, params) => {
+    return axios.get(`patients/appointments/${userId}`, { params });
+};
 
 const cancelAppointmentAPI = (appointmentId) => {
     return axios.patch(`/appointments/${appointmentId}/cancel`);
@@ -16,8 +16,8 @@ const updateAppointmentAPI = (appointmentId, formData) => {
     });
 };
 
-const getUpcomingAppointmentAPI = (userId) => {
-    return axios.get(`/appointments/${userId}/upcoming`);
+const getUpcomingAppointmentAPI = () => {
+    return axios.get('patients/upcoming-appointment');
 };
 
 export { getPatientAppointmentsAPI, cancelAppointmentAPI, updateAppointmentAPI, getUpcomingAppointmentAPI };

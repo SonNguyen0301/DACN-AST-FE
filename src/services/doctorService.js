@@ -14,10 +14,23 @@ const getDoctorShiftsAPI = (doctorId, params) => {
 };
 
 const bookAppointmentAPI = (formData) => {
-    return axios.post('/shifts/book', formData);
+    return axios.post('/shifts/book', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data' 
+        }
+    });
 };
 
 const getDoctorAppointmentsAPI = (params) => {
     return axios.get('/doctors/personal-appointment', { params });
 };
-export { getDoctorsAPI, getDoctorInfoAPI, getDoctorShiftsAPI, bookAppointmentAPI, getDoctorAppointmentsAPI };
+
+const getAppointmentCalendarAPI = (doctorId, params) => {
+    return axios.get(`/doctors/${doctorId}/appointment-calendar`, { params });
+};
+
+const getAppointmentsByDateAPI = (doctorId, date) => {
+    return axios.get(`/doctors/${doctorId}/appointment-date/${date}`);
+};
+
+export { getDoctorsAPI, getDoctorInfoAPI, getDoctorShiftsAPI, bookAppointmentAPI, getDoctorAppointmentsAPI, getAppointmentCalendarAPI, getAppointmentsByDateAPI };

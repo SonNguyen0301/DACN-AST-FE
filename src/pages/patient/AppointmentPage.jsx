@@ -304,8 +304,8 @@ export default function AppointmentPage() {
                                           {apt.images.map((f, idx) => (
                                               <Image
                                                   key={idx}
-                                                  width={60}
-                                                  height={60}
+                                                  width={100}
+                                                  height={100}
                                                   src={f.base64} 
                                                   alt={f.description || 'Hình ảnh đính kèm'}
                                                   fallback="https://via.placeholder.com/60?text=L%E1%BB%97i"

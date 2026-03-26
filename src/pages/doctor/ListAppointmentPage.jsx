@@ -94,14 +94,18 @@ export default function DoctorAppointmentPage() {
                   const fromTime = item.from ? item.from.substring(0, 5) : '';
                   const toTime = item.to ? item.to.substring(0, 5) : '';
                   
-                  const imageUrls = item.images ? Object.values(item.images) : [];
+                  const imageUrls = item.images 
+                  ? Object.values(item.images)
+                      .map(img => typeof img === 'string' ? img : (img.base64 || img.dataUrl || img.url))
+                      .filter(Boolean) 
+                  : [];
 
                   return {
                       key: item.id || index, 
                       time: `${fromTime} - ${toTime}`,
                       date: item.date,
                       patientName: item.patientName,
-                      gender: item.gender === 'MALE' ? 'male' : (item.gender === 'FEMALE' ? 'female' : 'other'),
+                      gender: item.gender === 'MALE' ? 'MALE' : (item.gender === 'FEMALE' ? 'FEMALE' : 'OTHER'),
                       age: item.dateOfBirth ? dayjs().diff(dayjs(item.dateOfBirth), 'year') : 'N/A',
                       phone: item.phoneNumber,
                       reason: item.description || 'Không có ghi chú',
@@ -200,11 +204,11 @@ export default function DoctorAppointmentPage() {
       width: 250,
       render: (_, record) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Avatar size={40} style={{ backgroundColor: record.gender === 'male' ? '#1677ff' : '#eb2f96' }} icon={<UserOutlined />} />
+          <Avatar size={40} style={{ backgroundColor: record.gender === 'MALE' ? '#1677ff' : '#eb2f96' }} icon={<UserOutlined />} />
           <div>
             <Text strong style={{ display: 'block' }}>{record.patientName}</Text>
             <Space size={8} style={{ fontSize: 12, color: '#666', minWidth: 200 }}>
-              {record.gender === 'male' ? <ManOutlined style={{ color: '#1677ff' }}/> : <WomanOutlined style={{ color: '#eb2f96' }}/>} 
+              {record.gender === 'MALE' ? <ManOutlined style={{ color: '#1677ff' }}/> : <WomanOutlined style={{ color: '#eb2f96' }}/>} 
               <span>{record.age} tuổi</span>
               <span>|</span>
               <PhoneOutlined /> {record.phone}
@@ -260,7 +264,7 @@ export default function DoctorAppointmentPage() {
       ),
     },
   ];
-
+  
   const handleSignOut = () => {
     navigate('/');
   };
@@ -361,7 +365,9 @@ export default function DoctorAppointmentPage() {
              <Table 
                 columns={columns} 
                 dataSource={appointments} 
-                pagination={{ pageSize: 10 }}
+                loading={loading}
+                pagination={pagination}
+                onChange={handleTableChange}
                 onRow={(record) => ({
                     style: { cursor: 'pointer' },
                     onClick: () => handleViewDetail(record)  
@@ -412,10 +418,10 @@ export default function DoctorAppointmentPage() {
 
                 <Descriptions title="Thông tin y tế" column={1} bordered size="small">
                     <Descriptions.Item label="Mô tả chi tiết">
-                        {selectedPatient.description || "Bệnh nhân chưa cung cấp mô tả chi tiết."}
+                        {selectedPatient.detailedSymptoms || "Bệnh nhân chưa cung cấp mô tả chi tiết."}
                     </Descriptions.Item>
                     <Descriptions.Item label="Tiền sử bệnh">
-                         {selectedPatient.previousDiseases || "Không có ghi nhận."}
+                         {selectedPatient.history || "Không có ghi nhận."}
                     </Descriptions.Item>
                 </Descriptions>
 
@@ -426,16 +432,21 @@ export default function DoctorAppointmentPage() {
                     {selectedPatient.images && selectedPatient.images.length > 0 ? (
                         <Image.PreviewGroup>
                             <Space size={12} wrap>
-                                {selectedPatient.images.map((img, index) => (
-                                    <Image
-                                        key={index}
-                                        width={120}
-                                        height={120}
-                                        src={img}
-                                        style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #f0f0f0' }}
-                                        fallback="https://placehold.co/120x120?text=No+Image" 
-                                    />
-                                ))}
+                                {selectedPatient.images.map((imgStr, index) => {
+                                    const validSrc = imgStr.startsWith('http') || imgStr.startsWith('data:image') 
+                                        ? imgStr 
+                                        : `data:image/png;base64,${imgStr}`;
+                                    return (
+                                        <Image
+                                            key={index}
+                                            width={120}
+                                            height={120}
+                                            src={validSrc} 
+                                            style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #f0f0f0' }}
+                                            fallback="https://placehold.co/120x120?text=L%E1%BB%97i" 
+                                        />
+                                    );
+                                })}
                             </Space>
                         </Image.PreviewGroup>
                     ) : (

@@ -13,7 +13,8 @@ import {
   Dropdown,
   Spin,
   Empty,
-  Modal
+  Button,
+  notification
 } from "antd";
 import { 
   CalendarOutlined, 
@@ -54,24 +55,27 @@ export default function PatientDashboardPage() {
         const patientData = profileRes.data?.data;
 
         if (patientData && (patientData.folk === null || patientData.dateOfBirth === null || patientData.citizenCode === null || patientData.address === null || patientData.medicalInsurance === null)) {
-            Modal.warning({
-                title: 'Yêu cầu hoàn thiện hồ sơ',
-                content: 'Hồ sơ y tế của bạn chưa đầy đủ. Vui lòng cập nhật thông tin cá nhân (Ngày sinh, Giới tính, BHYT...) để có thể sử dụng các tính năng của ứng dụng.',
-                okText: 'Cập nhật ngay',
-                // keyboard: false, 
-                // maskClosable: false, 
-                cancelText : 'Để sau',
-                centered: true,
-                onOk: () => {
-                  Modal.destroyAll();
-                  navigate('/patient/personal', { state: { openEditModal: true } }); 
-                }
+            notification.warning({
+                message: 'Yêu cầu hoàn thiện hồ sơ',
+                description: 'Hồ sơ y tế của bạn chưa đầy đủ. Vui lòng cập nhật thông tin cá nhân để trải nghiệm dịch vụ tốt nhất.',
+                placement: 'topRight',
+                duration: 5, 
+                btn: (
+                    <Button 
+                        type="primary" 
+                        size="small" 
+                        onClick={() => {
+                            notification.destroy(); 
+                            navigate('/patient/personal', { state: { openEditModal: true } }); 
+                        }}
+                    >
+                        Cập nhật ngay
+                    </Button>
+                ),
             });
-            setLoadingApt(false);
-            return; 
         }
 
-        const res = await getUpcomingAppointmentAPI(user.id);
+        const res = await getUpcomingAppointmentAPI();
         if (res.data?.success && res.data?.data) {
           setUpcomingApt(res.data.data);
         } else {
