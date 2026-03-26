@@ -46,7 +46,7 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import Footer from "../../components/common/Footer"; 
 import { getAppointmentsByDateAPI } from '../../services/doctorService';
-import { useAuth } from '../../contexts/AuthContext';
+import useAuth from '../../hooks/useAuth';
 import dayjs from 'dayjs';
 
 const { Header, Content } = Layout;
