@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Card, Button,
   Space, Dropdown, Tabs, Tag, Popconfirm,
-  Modal, Form, Input, Upload,Row, Col, message, Spin, Image
+  Modal, Form, Input, Upload,Row, Col, message, Spin, Image, Pagination
 } from "antd";
 import { 
   UserOutlined, LogoutOutlined, CalendarOutlined,
@@ -56,23 +56,46 @@ export default function AppointmentPage() {
   const [editingAppointment, setEditingAppointment] = useState(null); 
   const [form] = Form.useForm();
 
+  const [tabPages, setTabPages] = useState({ '1': 1, '2': 1, '3': 1, '4': 1 });
+  const pageSize = 5;
+
   const fetchAppointments = async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
-        const allRes = await getPatientAppointmentsAPI(user.id, {
-            sort: 'createdAt', sortDirection: 'ASC', page: 1, take: 10
+        const firstRes = await getPatientAppointmentsAPI(user.id, {
+            sort: 'createdAt', sortDirection: 'ASC', page: 1, take: 50
         });
 
-        if (allRes.data?.data) {
-            const allData = allRes.data.data.data;
-            
+        if (firstRes.data?.data) {
+            let allData = firstRes.data.data.data || [];
+            const meta = firstRes.data.data.meta;
+
+            if (meta && meta.pageCount > 1) {
+                const fetchPromises = [];
+                
+                for (let i = 2; i <= meta.pageCount; i++) {
+                    fetchPromises.push(
+                        getPatientAppointmentsAPI(user.id, {
+                            sort: 'createdAt', sortDirection: 'ASC', page: i, take: 50
+                        })
+                    );
+                }
+
+                const nextResponses = await Promise.all(fetchPromises);
+                
+                nextResponses.forEach(res => {
+                    const pageData = res.data?.data?.data || [];
+                    allData = [...allData, ...pageData];
+                });
+            }
+
             const upcoming = allData.filter(apt => apt.status === 'SCHEDULED' || apt.status === 'PENDING');
             const past = allData.filter(apt => apt.status === 'CANCELLED');
             const examined = allData.filter(apt => apt.status === 'EXAMINED');
             const examining = allData.filter(apt => apt.status === 'EXAMINING');
 
-            setUpcomingAppointments(upcoming.reverse());
+            setUpcomingAppointments(upcoming.reverse()); 
             setPastAppointments(past);
             setExaminedAppointments(examined);
             setExaminingAppointments(examining);
@@ -233,7 +256,7 @@ export default function AppointmentPage() {
       return null;
     };
 
-  const renderAppointmentList = (data, isUpcomingTab = false) => {
+  const renderAppointmentList = (data, tabKey, isUpcomingTab = false) => {
     if (data.length === 0) {
       return (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -242,10 +265,13 @@ export default function AppointmentPage() {
         </div>
       );
     }
-    
+  const currentPage = tabPages[tabKey] || 1;
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = data.slice(startIndex, endIndex);
     return (
       <Space direction="vertical" style={{ width: '100%' }} size="large">
-        {data.map(apt => {
+        {paginatedData.map(apt => {
            const hasNotesOrFiles = isUpcomingTab && (apt.description || (apt.images && apt.images.length > 0));
 
            return (
@@ -337,6 +363,19 @@ export default function AppointmentPage() {
             </Card>
           );
         })}
+
+        {data.length > pageSize && (
+            <div style={{ textAlign: 'center', marginTop: 16, marginBottom: 8 }}>
+                <Pagination 
+                    current={currentPage} 
+                    pageSize={pageSize} 
+                    total={data.length} 
+                    onChange={(page) => setTabPages(prev => ({ ...prev, [tabKey]: page }))} 
+                    showSizeChanger={false} // Tắt chọn pageSize để UI gọn gàng
+                />
+            </div>
+        )}
+
       </Space>
     );
   };
@@ -377,16 +416,16 @@ export default function AppointmentPage() {
         <Card style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
           <Tabs defaultActiveKey="1" size="large">
             <TabPane tab={`Lịch hẹn sắp tới (${upcomingAppointments.length})`} key="1">
-              {renderAppointmentList(upcomingAppointments, true)}
+              {renderAppointmentList(upcomingAppointments, '1',true)}
             </TabPane>
             <TabPane tab={`Đã hủy (${pastAppointments.length})`} key="2">
-              {renderAppointmentList(pastAppointments, false)}
+              {renderAppointmentList(pastAppointments, '2', false)}
             </TabPane>
             <TabPane tab={`Đã khám (${examinedAppointments.length})`} key="3">
-              {renderAppointmentList(examinedAppointments, false)}
+              {renderAppointmentList(examinedAppointments, '3', false)}
             </TabPane>
             <TabPane tab={`Đang khám (${examiningAppointments.length})`} key="4">
-              {renderAppointmentList(examiningAppointments, false)}
+              {renderAppointmentList(examiningAppointments, '4', false)}
             </TabPane>
           </Tabs>
         </Card>

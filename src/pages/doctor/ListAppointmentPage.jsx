@@ -53,7 +53,7 @@ export default function DoctorAppointmentPage() {
   const navigate = useNavigate();
 
   const [searchText, setSearchText] = useState('');
-  const [filterStatus, setFilterStatus] = useState('pending');
+  const [filterStatus, setFilterStatus] = useState('SCHEDULED');
   const [dateRange, setDateRange] = useState([dayjs().startOf('month'), dayjs()]);
   const [timeRange, setTimeRange] = useState(null);
 
@@ -190,6 +190,14 @@ export default function DoctorAppointmentPage() {
   }
 
   const columns = [
+    {
+        title: 'Ngày khám',
+        dataIndex: 'date',
+        key: 'date',
+        width: 120,
+        render: (text) => <Tag color="green" style={{ fontSize: 14 }}>{dayjs(text).format('DD/MM/YYYY')}</Tag>,
+        sorter: (a, b) => dayjs(a.date).unix() - dayjs(b.date).unix(),
+    },
     {
       title: 'Thời gian',
       dataIndex: 'time',
@@ -408,7 +416,7 @@ export default function DoctorAppointmentPage() {
                         <Title level={4} style={{ margin: 0 }}>{selectedPatient.patientName}</Title>
                         <Space direction="vertical" size={2} style={{ marginTop: 8 }}>
                             <Text type="secondary"><UserOutlined /> Giới tính: {selectedPatient.gender === 'MALE' ? 'Nam' : 'Nữ'}</Text>
-                            <Text type="secondary"><PhoneOutlined /> SĐT: {selectedPatient.phoneNumber}</Text>
+                            <Text type="secondary"><PhoneOutlined /> SĐT: {selectedPatient.phone}</Text>
                             <Text type="secondary"><CalendarOutlined /> Giờ hẹn: <Tag color="blue">{selectedPatient.time}</Tag></Text>
                         </Space>
                     </div>

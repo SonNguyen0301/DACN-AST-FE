@@ -42,22 +42,15 @@ import { useState } from 'react';
 import dayjs from 'dayjs';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useEffect } from "react";
-import { getAppointmentCalendarAPI, getAppointmentsByDateAPI } from "../../services/doctorService";
+import { getAppointmentCalendarAPI, getAppointmentsByDateAPI, getDoctorDashboardInfoAPI, getStatisticMonthlyDiseaseAPI } from "../../services/doctorService";
+import useAuth from "../../hooks/useAuth";
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 
 export default function DoctorDashboardPage() {
   const navigate = useNavigate();
+  const { user, logout} = useAuth(); 
 
-  const diseaseData = [
-    { name: 'Mụn trứng cá', value: 45 },
-    { name: 'Viêm da cơ địa', value: 25 },
-    { name: 'Nấm da', value: 15 },
-    { name: 'Vảy nến', value: 10 },
-    { name: 'Khác', value: 5 },
-  ];
-
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -67,10 +60,6 @@ export default function DoctorDashboardPage() {
       setIsDetailModalOpen(true);
   };
 
-  const canceledPatients = [
-    { id: 1, name: "Hoàng Thị M", time: "14:00 - 14:30" },
-    { id: 2, name: "Đinh Văn N", time: "15:30 - 16:00" },
-  ];
 
   const COLORS = ['#1677ff', '#52c41a', '#faad14', '#ff4d4f', '#9e9e9e'];
 
@@ -79,6 +68,105 @@ export default function DoctorDashboardPage() {
 
   const [calendarMap, setCalendarMap] = useState({});
   const [loadingCalendar, setLoadingCalendar] = useState(false);
+
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [diseaseData, setDiseaseData] = useState([]);
+
+  const currentMonth = dayjs().month() - 1;
+
+  useEffect(() => {
+      const fetchDashboardData = async () => {
+          if (!user?.id) return;
+          try {
+              const [statsRes, diseaseRes] = await Promise.all([
+                  getDoctorDashboardInfoAPI(),
+                  getStatisticMonthlyDiseaseAPI(currentMonth)
+              ]);
+
+              if (statsRes.data?.success) {
+                  setDashboardStats(statsRes.data.data);
+              }
+
+              if (diseaseRes.data?.success) {
+                  const mappedDisease = diseaseRes.data.data.map(item => ({
+                      name: item.diseaseName,
+                      value: item.count
+                  }));
+                  setDiseaseData(mappedDisease);
+              }
+          } catch (error) {
+              console.error("Lỗi lấy dữ liệu Dashboard tổng quan:", error);
+          }
+      };
+
+      fetchDashboardData();
+  }, [user?.id, currentMonth]);
+
+    const calculateTrend = (current, previous) => {
+        if (previous === 0) return { trend: current > 0 ? 'up' : null, value: current > 0 ? 100 : 0 };
+        const diff = current - previous;
+        const percent = Math.round((Math.abs(diff) / previous) * 100);
+        return {
+            trend: diff >= 0 ? 'up' : 'down',
+            value: percent
+        };
+    };
+
+    let statsData = [];
+    if (dashboardStats) {
+      const weekTrend = calculateTrend(dashboardStats.currentWeekPatientsCount, dashboardStats.previousWeekPatientsCount);
+      const monthTrend = calculateTrend(dashboardStats.currentMonthAppointmentsCount, dashboardStats.previousMonthAppointmentsCount);
+      
+      let todayProgress = 0;
+      if (dashboardStats.totalAppointmentsCount > 0) {
+          todayProgress = Math.round((dashboardStats.examinationsCount / dashboardStats.totalAppointmentsCount) * 100);
+      }
+
+      statsData = [
+          { 
+              title: "Bệnh nhân hôm nay", 
+              value: dashboardStats.totalAppointmentsCount, 
+              suffix: "ca",
+              icon: <ClockCircleOutlined />, 
+              color: "#1677ff", 
+              bg: "#e6f4ff", 
+              progress: todayProgress, 
+              progressDetail: `Đã khám: ${dashboardStats.examinationsCount}/${dashboardStats.totalAppointmentsCount} ca`, 
+          },
+          { 
+              title: "Bệnh nhân tuần này", 
+              value: dashboardStats.currentWeekPatientsCount, 
+              suffix: "người",
+              icon: <TeamOutlined />, 
+              color: "#52c41a", 
+              bg: "#f6ffed", 
+              trend: weekTrend.trend,
+              trendValue: `${weekTrend.value}%`,
+              subText: "So với tuần trước"
+          },
+          { 
+              title: `Tổng khám tháng ${currentMonth}`, 
+              value: dashboardStats.currentMonthAppointmentsCount, 
+              suffix: "lượt",
+              icon: <RiseOutlined />, 
+              color: "#722ed1", 
+              bg: "#f9f0ff", 
+              trend: monthTrend.trend,
+              trendValue: `${monthTrend.value}%`,
+              subText: "So với tháng trước"
+          },
+          { 
+              title: "Lịch bị hủy", 
+              value: dashboardStats.cancelledAppointmentsCount, 
+              suffix: "ca",
+              icon: <UserDeleteOutlined />, 
+              color: "#ff4d4f", 
+              bg: "#fff1f0", 
+              clickable: true, 
+          },
+      ];
+  } 
+  
 
   useEffect(() => {
     const fetchCalendarData = async () => {
@@ -93,7 +181,7 @@ export default function DoctorDashboardPage() {
                 startDate,
                 endDate,
                 option: viewMode.toUpperCase(), 
-                batch: 3
+                batch: 4
             };
 
             const res = await getAppointmentCalendarAPI(user.id, params);
@@ -154,57 +242,56 @@ export default function DoctorDashboardPage() {
       };
 
       fetchAppointmentsByDate();
-  }, [currentDate, user?.id]);
+  }, [currentDate.format('YYYY-MM-DD'), user?.id]);
   
-  const user = { name: "BS. CK2 Trần Thị Hoa", role: "doctor" };
 
 const isTodaySelected = currentDate.isSame(dayjs(), 'day');
 
-const statsData = [
-    { 
-      title: "Bệnh nhân hôm nay", 
-      value: 8, 
-      suffix: "ca",
-      icon: <ClockCircleOutlined />, 
-      color: "#1677ff", 
-      bg: "#e6f4ff", 
-      progress: Math.round((5/8) * 100), 
-      progressDetail: "Đã khám: 5/8 ca", 
-    },
-    { 
-      title: "Bệnh nhân tuần này", 
-      value: 42, 
-      suffix: "người",
-      icon: <TeamOutlined />, 
-      color: "#52c41a", 
-      bg: "#f6ffed", 
-      trend: "up",
-      trendValue: "15%",
-      subText: "So với tuần trước"
-    },
-    { 
-      title: "Tổng khám tháng này", 
-      value: 156, 
-      suffix: "lượt",
-      icon: <RiseOutlined />, 
-      color: "#722ed1", 
-      bg: "#f9f0ff", 
-      trend: "down",
-      trendValue: "5%",
-      subText: "So với tháng trước"
-    },
-    { 
-      title: "Lịch bị hủy", 
-      value: 2, 
-      suffix: "ca",
-      icon: <UserDeleteOutlined />, 
-      color: "#ff4d4f", 
-      bg: "#fff1f0", 
-      subText: "Trống lịch lúc 14:00 và 15:30",
-      clickable: true, 
-      onClick: () => setIsCancelModalOpen(true)
-    },
-  ];
+// const statsData = [
+//     { 
+//       title: "Bệnh nhân hôm nay", 
+//       value: 8, 
+//       suffix: "ca",
+//       icon: <ClockCircleOutlined />, 
+//       color: "#1677ff", 
+//       bg: "#e6f4ff", 
+//       progress: Math.round((5/8) * 100), 
+//       progressDetail: "Đã khám: 5/8 ca", 
+//     },
+//     { 
+//       title: "Bệnh nhân tuần này", 
+//       value: 42, 
+//       suffix: "người",
+//       icon: <TeamOutlined />, 
+//       color: "#52c41a", 
+//       bg: "#f6ffed", 
+//       trend: "up",
+//       trendValue: "15%",
+//       subText: "So với tuần trước"
+//     },
+//     { 
+//       title: "Tổng khám tháng này", 
+//       value: 156, 
+//       suffix: "lượt",
+//       icon: <RiseOutlined />, 
+//       color: "#722ed1", 
+//       bg: "#f9f0ff", 
+//       trend: "down",
+//       trendValue: "5%",
+//       subText: "So với tháng trước"
+//     },
+//     { 
+//       title: "Lịch bị hủy", 
+//       value: 2, 
+//       suffix: "ca",
+//       icon: <UserDeleteOutlined />, 
+//       color: "#ff4d4f", 
+//       bg: "#fff1f0", 
+//       subText: "Trống lịch lúc 14:00 và 15:30",
+//       clickable: true, 
+//       onClick: () => setIsCancelModalOpen(true)
+//     },
+//   ];
 
 const getListData = (value) => {
     const dateStr = value.format('YYYY-MM-DD');
@@ -392,12 +479,14 @@ const getListData = (value) => {
              const isToday = day.isSame(dayjs(), 'day');
              return (
                <Col key={i} span={24} md={3} style={{ flex: 1, minWidth: 120 }}> 
-                 <div style={{ 
-                    height: '100%', minHeight: 400,
-                    border: isToday ? '1px solid #1677ff' : '1px solid #f0f0f0',
-                    borderRadius: 8,
-                    backgroundColor: isToday ? '#e6f4ff' : '#fff'
-                 }}>
+                 <div 
+                    onClick={() => setCurrentDate(day)}
+                    style={{ 
+                        height: '100%', minHeight: 400,
+                        border: isToday ? '1px solid #1677ff' : '1px solid #f0f0f0',
+                        borderRadius: 8,
+                        backgroundColor: isToday ? '#e6f4ff' : '#fff'
+                    }}>
                     <div style={{ 
                         padding: '12px 0', textAlign: 'center', 
                         borderBottom: '1px solid #f0f0f0',
@@ -429,7 +518,7 @@ const getListData = (value) => {
   };
 
   const handleSignOut = () => {
-      console.log("Đã đăng xuất!");
+      logout();
       navigate('/');
   };
 
@@ -585,7 +674,7 @@ const getListData = (value) => {
 
             <Col xs={24} lg={8}>
                     <Card 
-                        title="Tỷ lệ bệnh lý tháng 11" 
+                        title={`Tỷ lệ bệnh lý tháng ${currentMonth}`} 
                         variant="borderless" 
                         style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: '100%' }}
                         styles={{ body: { padding: 0 } }} 
@@ -643,8 +732,8 @@ const getListData = (value) => {
                             cellRender={dateCellRender} 
                             style={{ padding: 24, borderRadius: 16 }} 
                             value={currentDate}
-                            onSelect={setCurrentDate}
-                            onPanelChange={(date) => setCurrentDate(date)}
+                            onSelect={(newDate) => setCurrentDate(newDate)}
+                            onPanelChange={(newDate) => setCurrentDate(newDate)}
                         />
                     ) : (
                         renderWeekView()
@@ -711,41 +800,6 @@ const getListData = (value) => {
             </Col>
         </Row>
       </Content>
-
-      <Modal
-        title={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <UserDeleteOutlined style={{ color: '#ff4d4f', fontSize: 20 }} /> 
-                <span style={{ fontSize: 18 }}>Danh sách ca khám bị hủy</span>
-            </div>
-        }
-        open={isCancelModalOpen}
-        onCancel={() => setIsCancelModalOpen(false)}
-        footer={[
-            <Button key="close" onClick={() => setIsCancelModalOpen(false)}>
-                Đóng
-            </Button>
-        ]}
-        centered
-      >
-        <List
-            itemLayout="horizontal"
-            dataSource={canceledPatients}
-            renderItem={(item) => (
-                <List.Item>
-                    <List.Item.Meta
-                        avatar={<Avatar style={{ backgroundColor: '#fff1f0', color: '#ff4d4f' }}>{item.name[0]}</Avatar>}
-                        title={<Text strong>{item.name}</Text>}
-                        description={
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 4 }}>
-                                <Text type="secondary" style={{ fontSize: 13 }}><ClockCircleOutlined /> Khung giờ: {item.time}</Text>
-                            </div>
-                        }
-                    />
-                </List.Item>
-            )}
-        />
-      </Modal>
 
       <Modal
         title={

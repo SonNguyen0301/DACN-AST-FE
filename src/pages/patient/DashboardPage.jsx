@@ -56,6 +56,7 @@ export default function PatientDashboardPage() {
 
         if (patientData && (patientData.folk === null || patientData.dateOfBirth === null || patientData.citizenCode === null || patientData.address === null || patientData.medicalInsurance === null)) {
             notification.warning({
+                key: 'profile-warning',
                 message: 'Yêu cầu hoàn thiện hồ sơ',
                 description: 'Hồ sơ y tế của bạn chưa đầy đủ. Vui lòng cập nhật thông tin cá nhân để trải nghiệm dịch vụ tốt nhất.',
                 placement: 'topRight',
