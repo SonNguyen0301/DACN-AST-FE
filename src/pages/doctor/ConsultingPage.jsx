@@ -96,7 +96,7 @@ export default function ExaminationPage() {
                           key: apt.id || index,
                           patientName: apt.patientName,
                           age: apt.dateOfBirth ? dayjs().diff(dayjs(apt.dateOfBirth), 'year') : 'N/A',
-                          gender: apt.gender === 'MALE' ? 'male' : 'female',
+                          gender: apt.gender === 'MALE' ? 'MALE' : 'FEMALE',
                           phone: apt.phoneNumber || 'Không có',
                           time: `${fromTime} - ${toTime}`,
                           reason: apt.description || 'Không có ghi chú',
@@ -202,9 +202,10 @@ export default function ExaminationPage() {
       { title: 'Khung giờ', dataIndex: 'time', key: 'time', render: (text) => <Tag color="blue">{text}</Tag> },
       { title: 'Họ và tên', dataIndex: 'patientName', key: 'patientName', render: (text) => <Text strong>{text}</Text> },
       { title: 'Lý do', dataIndex: 'reason', key: 'reason' },
+      { title: 'Tiền sử bệnh', dataIndex: 'history', key: 'history' , render: (history) => <Tag color={history !== 'Không có' ? 'orange' : 'green'}>{history}</Tag>},
       { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (status) => <Tag color={status === 'EXAMINING' ? 'processing' : 'warning'}>{status === 'EXAMINING' ? 'Đang khám' : 'Chờ khám'}</Tag> },
       { 
-          title: 'Hành động', 
+          title: '', 
           key: 'action', 
           render: (_, record) => (
               <Button type="primary" onClick={() => setActivePatient(record)}>
@@ -305,13 +306,13 @@ export default function ExaminationPage() {
                             <Col xs={24} lg={6}>
                                 <Card title="Hồ sơ bệnh nhân" style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", position: 'sticky', top: 90 }}>
                                     <div style={{ textAlign: 'center', marginBottom: 20 }}>
-                                        <Avatar size={80} icon={<UserOutlined />} src={activePatient.avatar} style={{ backgroundColor: activePatient.gender === 'male' ? '#1677ff' : '#eb2f96', marginBottom: 12 }} />
+                                        <Avatar size={80} icon={<UserOutlined />} src={activePatient.avatar} style={{ backgroundColor: activePatient.gender === 'MALE' ? '#1677ff' : '#eb2f96', marginBottom: 12 }} />
                                         <Title level={4} style={{ margin: 0 }}>{activePatient.patientName}</Title>
                                         <Text type="secondary">{activePatient.phone}</Text>
                                     </div>
                                     <Divider />
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                        <div><Text type="secondary" style={{ fontSize: 12 }}>Tuổi & Giới tính</Text><div style={{ fontWeight: 500 }}>{activePatient.age} tuổi - {activePatient.gender === 'male' ? 'Nam' : 'Nữ'}</div></div>
+                                        <div><Text type="secondary" style={{ fontSize: 12 }}>Tuổi & Giới tính</Text><div style={{ fontWeight: 500 }}>{activePatient.age} tuổi - {activePatient.gender === 'MALE' ? 'Nam' : 'Nữ'}</div></div>
                                         <div><Text type="secondary" style={{ fontSize: 12 }}>Tiền sử bệnh ghi nhận</Text><div style={{ fontWeight: 500 }}>{activePatient.history ? <Tag color="orange" style={{ whiteSpace: 'normal', height: 'auto', padding: '4px' }}>{activePatient.history}</Tag> : 'Không có'}</div></div>
                                         {activePatient.images && activePatient.images.length > 0 && (
                                             <div>
@@ -341,7 +342,7 @@ export default function ExaminationPage() {
                                         <Col span={8}><Form.Item label="Mức độ lan rộng" name="severity"><Select><Option value="local">Khu trú</Option><Option value="spread">Lan rộng</Option><Option value="whole">Toàn thân</Option></Select></Form.Item></Col>
                                         <Col span={12}><Form.Item label="Dị ứng" name="allergy"><Input /></Form.Item></Col>
                                         <Col span={12}><Form.Item label="Tiền sử bệnh lý" name="history"><Input /></Form.Item></Col>
-                                        <Col span={8}><Form.Item label="Giới tính" name="gender"><Select><Option value="male">Nam</Option><Option value="female">Nữ</Option></Select></Form.Item></Col>
+                                        <Col span={8}><Form.Item label="Giới tính" name="gender"><Select><Option value="MALE">Nam</Option><Option value="FEMALE">Nữ</Option></Select></Form.Item></Col>
                                         <Col span={8}><Form.Item label="Tuổi" name="age"><InputNumber style={{ width: '100%' }} /></Form.Item></Col>
                                         <Col span={8}><Form.Item label="Yếu tố di truyền" name="genetic"><Radio.Group><Radio value="yes">Có</Radio><Radio value="no">Không</Radio></Radio.Group></Form.Item></Col>
                                     </Row>

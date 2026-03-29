@@ -86,11 +86,13 @@ export default function DoctorDashboardPage() {
               if (statsRes.data?.success) {
                   setDashboardStats(statsRes.data.data);
               }
-
+            
               if (diseaseRes.data?.success) {
+                const totalDiseaseCount = diseaseRes.data.data.reduce((sum, item) => sum + item.count, 0);
                   const mappedDisease = diseaseRes.data.data.map(item => ({
                       name: item.diseaseName,
-                      value: item.count
+                      value: Number((item.count/ totalDiseaseCount * 100).toFixed(2)),
+                      count: item.count,
                   }));
                   setDiseaseData(mappedDisease);
               }
@@ -226,7 +228,13 @@ export default function DoctorDashboardPage() {
                           time: `${fromStr} - ${toStr}`,
                           status: apt.status,
                           reason: apt.description || 'Không có ghi chú',
-                          raw: apt 
+                          raw: apt ,
+                          age: apt.dateOfBirth ? dayjs().diff(dayjs(apt.dateOfBirth), 'year') : 'N/A',
+                          history: apt.previousDiseases?.length ? apt.previousDiseases.join(', ') : 'Không có ghi nhận.',
+                          gender: apt.gender === 'MALE' ? 'Nam' : 'Nữ',
+                          phone : apt.phoneNumber || 'Không có',
+                          detailedSymptoms: apt.description || 'Không có mô tả chi tiết.',
+
                       };
                   });
                   setWaitingPatients(mappedData);
@@ -392,7 +400,7 @@ const getListData = (value) => {
                     <Text strong style={{ display: 'block', fontSize: 16 }}>{patientName}</Text>
                     <Text type="secondary" style={{ fontSize: 12 }}>Nam - 32 tuổi • {index % 2 === 0 ? 'Bệnh nhân mới' : 'Tái khám'}</Text>
                  </div>
-              </div>
+              </div>    
               
               <div style={{ background: '#f5f7fa', padding: 10, borderRadius: 8, marginBottom: 12 }}>
                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
@@ -581,7 +589,7 @@ const getListData = (value) => {
          <Dropdown menu={{ items: menuUserItems }} placement="bottomRight" arrow>
            <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                 <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.name}</span>
+                 <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.firstName + " " + user.lastName}</span>
                  <span style={{ fontSize: 12, color: '#888' }}>Khoa Da liễu</span>
              </div>
              <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
@@ -695,7 +703,13 @@ const getListData = (value) => {
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                   ))}
                                 </Pie>
-                                <Tooltip formatter={(value) => [`${value}%`, 'Tỷ lệ']} />
+                                <Tooltip 
+                                    formatter={(value, name, item) => [
+                                        `${value}% (Số lượng: ${item.payload.count} ca)`, 
+                                        'Tỷ lệ'
+                                    ]} 
+                                />
+
                                 <Legend verticalAlign="bottom" height={36} iconType="circle"/>
                               </PieChart>
                             </ResponsiveContainer>
@@ -775,7 +789,7 @@ const getListData = (value) => {
                                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                   > 
                                     <List.Item.Meta
-                                        avatar={<Avatar style={{ backgroundColor: item.status === 'EXAMINING' ? '#1677ff' : '#fde3cf', color: item.status === 'EXAMINING' ? '#fff' : '#f56a00' }}>{item.name[0]}</Avatar>}
+                                        avatar={<Avatar style={{ backgroundColor: item.gender === 'MALE' ? '#1677ff' : '#f982be', color: '#fff'  }}>{item.name[0]}</Avatar>}
                                         title={<Text strong>{item.name}</Text>}
                                         description={
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -841,7 +855,7 @@ const getListData = (value) => {
                     <div>
                         <Title level={4} style={{ margin: 0 }}>{selectedPatient.name}</Title>
                         <Space direction="vertical" size={2} style={{ marginTop: 4 }}>
-                            <Text type="secondary" style={{ fontSize: 13 }}>Nam - 32 tuổi (Dữ liệu giả định)</Text>
+                            <Text type="secondary" style={{ fontSize: 13 }}>{selectedPatient.gender === 'MALE' ? 'Nam' : 'Nữ'} - {selectedPatient.age} tuổi</Text>
                         </Space>
                     </div>
                 </div>

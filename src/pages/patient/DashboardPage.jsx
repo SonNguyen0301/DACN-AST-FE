@@ -55,8 +55,11 @@ export default function PatientDashboardPage() {
         const patientData = profileRes.data?.data;
 
         if (patientData && (patientData.folk === null || patientData.dateOfBirth === null || patientData.citizenCode === null || patientData.address === null || patientData.medicalInsurance === null)) {
-            notification.warning({
+          const hasShownWarning = sessionStorage.getItem('profileWarningShown');
+          if (!hasShownWarning) {  
+          notification.warning({
                 key: 'profile-warning',
+                style: { backgroundColor: '#ffffff' },
                 message: 'Yêu cầu hoàn thiện hồ sơ',
                 description: 'Hồ sơ y tế của bạn chưa đầy đủ. Vui lòng cập nhật thông tin cá nhân để trải nghiệm dịch vụ tốt nhất.',
                 placement: 'topRight',
@@ -74,6 +77,8 @@ export default function PatientDashboardPage() {
                     </Button>
                 ),
             });
+            sessionStorage.setItem('profileWarningShown', 'true');
+        }
         }
 
         const res = await getUpcomingAppointmentAPI();
@@ -136,6 +141,7 @@ const featureCards = [
   ];
 
   const handleSignOut = () => {
+    sessionStorage.removeItem('profileWarningShown');
     logout();
     navigate('/');
   };

@@ -250,7 +250,7 @@ export default function DoctorAppointmentPage() {
       }
     },
     {
-      title: 'Hành động',
+      title: '',
       key: 'action',
       width: 100,
       render: (_, record) => (

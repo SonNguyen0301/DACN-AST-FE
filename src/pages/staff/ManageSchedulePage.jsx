@@ -37,10 +37,13 @@ import {
   FileExcelOutlined,
   ClockCircleOutlined,
   HomeOutlined,       
+  FilePdfOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
 import Footer from "../../components/common/Footer"; 
+import { jsPDF } from 'jspdf'; 
+import autoTable from 'jspdf-autotable';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -58,18 +61,98 @@ export default function ManageStaffSchedulePage() {
   const [selectedDateShifts, setSelectedDateShifts] = useState([]);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
 
+  const [exporting, setExporting] = useState(false); 
+
+  const removeAccents = (str) => {
+      if (!str) return '';
+      return str.normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/đ/g, 'd').replace(/Đ/g, 'D');
+  };
+
+
+  const handleExportPDF = () => {
+      setExporting(true);
+      const monthStr = selectedDate.format('MM/YYYY');
+      const monthPrefix = selectedDate.format('YYYY-MM'); 
+
+      message.loading({ content: `Đang tạo file PDF lịch trực tháng ${monthStr}...`, key: 'exportPdf' });
+
+      setTimeout(() => {
+          try {
+              const doc = new jsPDF();
+              
+              const tableData = [];
+              Object.keys(scheduleData).forEach(dateKey => {
+                  if (dateKey.startsWith(monthPrefix)) {
+                      const shifts = scheduleData[dateKey];
+                      shifts.forEach(shift => {
+                          tableData.push([
+                              dayjs(dateKey).format('DD/MM/YYYY'),
+                              removeAccents(shift.doctor) || '',
+                              removeAccents(shift.dept) || '',
+                              shift.time || '',
+                              removeAccents(shift.room) || ''
+                          ]);
+                      });
+                  }
+              });
+
+              if (tableData.length === 0) {
+                  message.warning({ content: `Không có lịch trực nào trong tháng ${monthStr} để xuất PDF!`, key: 'exportPdf', duration: 3 });
+                  setExporting(false);
+                  return;
+              }
+
+              doc.setFontSize(18);
+              doc.text(`LICH TRUC THANG ${monthStr}`, 14, 15);
+              doc.setFontSize(11);
+              doc.text(`Xuat boi: ${removeAccents(user.name)} - Ngay xuat: ${dayjs().format('DD/MM/YYYY')}`, 14, 22);
+
+              autoTable(doc, {
+                  startY: 28, 
+                  head: [['Ngay', 'Bac si', 'Chuyen khoa', 'Thoi gian', 'Phong']], 
+                  body: tableData, 
+                  theme: 'grid',
+                  headStyles: { fillColor: [22, 119, 255] }, 
+                  styles: { fontSize: 10 }
+              });
+
+              const fileName = `Lich_Truc_Thang_${selectedDate.format('MM_YYYY')}.pdf`;
+              const pdfBlob = doc.output('blob');
+              const blobUrl = URL.createObjectURL(pdfBlob); 
+              
+              const link = document.createElement('a'); 
+              link.href = blobUrl;
+              link.download = fileName;
+              document.body.appendChild(link);
+              link.click(); 
+              
+              document.body.removeChild(link);
+              URL.revokeObjectURL(blobUrl);
+              
+              message.success({ content: 'Xuất file PDF thành công!', key: 'exportPdf', duration: 3 });
+          } catch (error) {
+              console.error("Lỗi tạo PDF:", error);
+              message.error({ content: 'Có lỗi xảy ra khi tạo file PDF.', key: 'exportPdf', duration: 3 });
+          } finally {
+              setExporting(false);
+          }
+      }, 800); 
+  };
+
   const user = { name: "Lê Thị Bích", role: "admission" };
 
   const [scheduleData, setScheduleData] = useState({
     '2026-01-01': [
-      { id: 1, doctor: 'BS. CK2 Trần Thị Hoa', dept: 'Da liễu', time: '08:00 - 12:00', room: 'P.201', quota: 20 },
-      { id: 2, doctor: 'BS. Nguyễn Văn Nam', dept: 'Nội khoa', time: '13:00 - 17:00', room: 'P.305', quota: 15 },
+      { id: 1, doctor: 'BS. CK2 Trần Thị Hoa', dept: 'Da liễu', time: '08:00 - 12:00', room: 'P.201', },
+      { id: 2, doctor: 'BS. Nguyễn Văn Nam', dept: 'Nội khoa', time: '13:00 - 17:00', room: 'P.305' },
     ],
     '2026-01-12': [
-      { id: 3, doctor: 'BS. Lê Thị Tú', dept: 'Nhi khoa', time: '08:00 - 16:00', room: 'P.102', quota: 30 },
+      { id: 3, doctor: 'BS. Lê Thị Tú', dept: 'Nhi khoa', time: '08:00 - 16:00', room: 'P.102' },
     ],
     '2026-01-13': [
-       { id: 4, doctor: 'BS. Phạm Minh', dept: 'Tai Mũi Họng', time: '08:00 - 12:00', room: 'P.401', quota: 20 },
+       { id: 4, doctor: 'BS. Phạm Minh', dept: 'Tai Mũi Họng', time: '08:00 - 12:00', room: 'P.401' },
     ]
   });
 
@@ -228,7 +311,7 @@ export default function ManageStaffSchedulePage() {
           onClick={({ key }) => {
             if(key === '1') navigate('/staff/dashboard');
             if(key === '2') navigate('/staff/appointments');
-            if(key === '3') navigate('/staff/schedule');
+            if(key === '3') navigate('/staff/manage-schedule');
           }}
         />
         <Dropdown menu={{ items: menuUserItems }}>
@@ -244,7 +327,6 @@ export default function ManageStaffSchedulePage() {
 
       <Content style={{ padding: "30px 40px" }}>
         
-        {/* TOOLBAR */}
         <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
                 <Title level={3} style={{ margin: 0 }}>Quản lý lịch làm việc</Title>
@@ -252,12 +334,28 @@ export default function ManageStaffSchedulePage() {
             </div>
             <Space>
                 <Button 
+                    icon={<FilePdfOutlined />} 
+                    onClick={handleExportPDF}
+                    loading={exporting}
+                >
+                    Xuất PDF
+                </Button>
+
+                <Button 
                     icon={<UploadOutlined />} 
                     onClick={() => setIsUploadModalOpen(true)}
                 >
                     Nhập từ CSV
                 </Button>
 
+                <Button 
+                    type="primary"
+                    icon={<PlusOutlined />} 
+                    onClick={handleAddNew}
+                >
+                    Thêm lịch thủ công
+                </Button>
+                
             </Space>
         </div>
 
@@ -368,31 +466,21 @@ export default function ManageStaffSchedulePage() {
                 </Select>
             </Form.Item>
             
-            <Row gutter={16}>
-                <Col span={12}>
                     <Form.Item label="Ngày trực" name="date" rules={[{ required: true, message: 'Chọn ngày' }]}>
                         <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
                     </Form.Item>
-                </Col>
-                <Col span={12}>
+
                     <Form.Item label="Khung giờ (Bắt đầu - Kết thúc)" name="time" rules={[{ required: true, message: 'Chọn giờ' }]}>
                         <TimePicker.RangePicker format="HH:mm" style={{ width: '100%' }} />
                     </Form.Item>
-                </Col>
-            </Row>
 
-            <Row gutter={16}>
-                <Col span={12}>
+
+
                     <Form.Item label="Phòng khám" name="room" rules={[{ required: true }]}>
                         <InputNumber style={{ width: '100%' }} placeholder="VD: 201" prefix="P." />
                     </Form.Item>
-                </Col>
-                <Col span={12}>
-                    <Form.Item label="Số lượng khám tối đa (Quota)" name="quota" rules={[{ required: true }]}>
-                        <InputNumber style={{ width: '100%' }} min={1} defaultValue={20} />
-                    </Form.Item>
-                </Col>
-            </Row>
+ 
+   
         </Form>
       </Modal>
 
@@ -404,14 +492,14 @@ export default function ManageStaffSchedulePage() {
         okText="Tiến hành nhập liệu"
       >
         <Form form={uploadForm} layout="vertical">
-            <Form.Item 
+            {/* <Form.Item 
                 label="Áp dụng cho tháng" 
                 name="month" 
                 rules={[{ required: true, message: 'Vui lòng chọn tháng cần nhập lịch' }]}
                 initialValue={dayjs()}
             >
                 <DatePicker picker="month" format="MM/YYYY" style={{ width: '100%' }} />
-            </Form.Item>
+            </Form.Item> */}
 
             <div style={{ marginBottom: 16 }}>
                 <Text type="secondary">Vui lòng tải lên file theo mẫu quy định (.csv). </Text>
