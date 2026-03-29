@@ -84,7 +84,7 @@ export default function BookingPage() {
 
               setDoctors(dataArray);
               
-              setTotalDoctors(res.data.data.total || res.data.data.totalItems || dataArray.length || 0); 
+              setTotalDoctors(res.data.data.meta.itemCount); 
           }
       } catch (error) {
           console.error("Lỗi lấy danh sách bác sĩ:", error);

@@ -64,3 +64,43 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+@media (max-width: 576px) {
+  
+  .ant-layout-header {
+    padding: 0 16px !important;
+  }
+  
+  .ant-layout-content {
+    padding: 16px !important;
+  }
+
+  .ant-menu-horizontal {
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+  }
+  
+  .ant-menu-horizontal::-webkit-scrollbar {
+    display: none; 
+  }
+
+  .ant-row {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  .ant-col {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-bottom: 16px; 
+  }
+
+  .ant-card, .ant-modal-content {
+    width: 100% !important;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .ant-space {
+    flex-wrap: wrap;
+  }
+}

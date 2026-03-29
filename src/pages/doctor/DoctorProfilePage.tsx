@@ -154,33 +154,54 @@ export default function DoctorProfilePage() {
     </div>
   );
 
-  const SettingsTab = () => (
+const SettingsTab = () => (
     <Form layout="vertical">
         <Row gutter={16}>
             <Col span={12}>
-                <Form.Item label="Số điện thoại">
-                    <Input prefix={<PhoneOutlined />} defaultValue={doctorInfo.phone} />
+                <Form.Item label={<span style={{ fontWeight: 600 }}>Số điện thoại</span>}>
+                    <Input 
+                        prefix={<PhoneOutlined style={{ color: '#1677ff' }} />} 
+                        value={doctorInfo.phone} 
+                        readOnly 
+                        bordered={false} 
+                        style={{ color: '#333', fontSize: 15, paddingLeft: 0, cursor: 'default' }}
+                    />
                 </Form.Item>
             </Col>
             <Col span={12}>
-                 <Form.Item label="Email">
-                    <Input prefix={<MailOutlined />} defaultValue={doctorInfo.email} disabled />
+                 <Form.Item label={<span style={{ fontWeight: 600 }}>Email</span>}>
+                    <Input 
+                        prefix={<MailOutlined style={{ color: '#1677ff' }} />} 
+                        value={doctorInfo.email} 
+                        readOnly 
+                        bordered={false} 
+                        style={{ color: '#333', fontSize: 15, paddingLeft: 0, cursor: 'default' }}
+                    />
                 </Form.Item>
             </Col>
             <Col span={24}>
-                <Form.Item label="Địa chỉ phòng khám / Nơi làm việc">
-                     <Input prefix={<EnvironmentOutlined />} defaultValue={doctorInfo.hospital} />
+                <Form.Item label={<span style={{ fontWeight: 600 }}>Địa chỉ phòng khám / Nơi làm việc</span>}>
+                     <Input 
+                        prefix={<EnvironmentOutlined style={{ color: '#1677ff' }} />} 
+                        value={doctorInfo.hospital} 
+                        readOnly 
+                        bordered={false} 
+                        style={{ color: '#333', fontSize: 15, paddingLeft: 0, cursor: 'default' }}
+                    />
                 </Form.Item>
             </Col>
             <Col span={24}>
-                 <Form.Item label="Giới thiệu ngắn">
-                     <Input.TextArea rows={4} defaultValue={doctorInfo.about} />
+                 <Form.Item label={<span style={{ fontWeight: 600 }}>Giới thiệu ngắn</span>}>
+                     <Input.TextArea 
+                        rows={4} 
+                        value={doctorInfo.about} 
+                        readOnly 
+                        bordered={false} 
+                        style={{ color: '#333', fontSize: 15, paddingLeft: 0, cursor: 'default', resize: 'none' }}
+                    />
                 </Form.Item>
             </Col>
         </Row>
-        <Button type="primary" onClick={() => message.success("Cập nhật thông tin thành công!")}>
-            Lưu thay đổi
-        </Button>
     </Form>
   );
 

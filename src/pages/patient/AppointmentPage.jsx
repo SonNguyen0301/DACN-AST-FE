@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Card, Button,
   Space, Dropdown, Tabs, Tag, Popconfirm,
-  Modal, Form, Input, Upload,Row, Col, message, Spin, Image
+  Modal, Form, Input, Upload,Row, Col, message, Spin, Image, Pagination
 } from "antd";
 import { 
   UserOutlined, LogoutOutlined, CalendarOutlined,
@@ -25,12 +25,27 @@ const { TextArea } = Input;
 const { Dragger } = Upload; 
 
 
+const formatFileName = (fileName) => {
+  if (!fileName) return '';
+  const parts = fileName.split('.');
+  
+  if (parts.length >= 3) {
+    const extension = parts.pop(); 
+    parts.pop(); 
+    return `${parts.join('.')}.${extension}`;
+  }
+  
+  return fileName; 
+}
 export default function AppointmentPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth(); 
 
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [pastAppointments, setPastAppointments] = useState([]);
+  const [examinedAppointments, setExaminedAppointments] = useState([]);
+  const [examiningAppointments, setExaminingAppointments] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -41,22 +56,49 @@ export default function AppointmentPage() {
   const [editingAppointment, setEditingAppointment] = useState(null); 
   const [form] = Form.useForm();
 
+  const [tabPages, setTabPages] = useState({ '1': 1, '2': 1, '3': 1, '4': 1 });
+  const pageSize = 5;
+
   const fetchAppointments = async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
-        const allRes = await getPatientAppointmentsAPI(user.id, {
-            sort: 'createdAt', sortDirection: 'ASC', page: 1, take: 10
+        const firstRes = await getPatientAppointmentsAPI(user.id, {
+            sort: 'createdAt', sortDirection: 'ASC', page: 1, take: 50
         });
 
-        if (allRes.data?.data) {
-            const allData = allRes.data.data.data;
-            
-            const upcoming = allData.filter(apt => apt.status === 'SCHEDULED' || apt.status === 'PENDING');
-            const past = allData.filter(apt => apt.status === 'EXAMINED' || apt.status === 'CANCELLED' || apt.status === 'LATE');
+        if (firstRes.data?.data) {
+            let allData = firstRes.data.data.data || [];
+            const meta = firstRes.data.data.meta;
 
-            setUpcomingAppointments(upcoming.reverse());
+            if (meta && meta.pageCount > 1) {
+                const fetchPromises = [];
+                
+                for (let i = 2; i <= meta.pageCount; i++) {
+                    fetchPromises.push(
+                        getPatientAppointmentsAPI(user.id, {
+                            sort: 'createdAt', sortDirection: 'ASC', page: i, take: 50
+                        })
+                    );
+                }
+
+                const nextResponses = await Promise.all(fetchPromises);
+                
+                nextResponses.forEach(res => {
+                    const pageData = res.data?.data?.data || [];
+                    allData = [...allData, ...pageData];
+                });
+            }
+
+            const upcoming = allData.filter(apt => apt.status === 'SCHEDULED' || apt.status === 'PENDING');
+            const past = allData.filter(apt => apt.status === 'CANCELLED');
+            const examined = allData.filter(apt => apt.status === 'EXAMINED');
+            const examining = allData.filter(apt => apt.status === 'EXAMINING');
+
+            setUpcomingAppointments(upcoming.reverse()); 
             setPastAppointments(past);
+            setExaminedAppointments(examined);
+            setExaminingAppointments(examining);
         }
     } catch (error) {
         console.error("Lỗi lấy lịch hẹn:", error);
@@ -97,9 +139,10 @@ export default function AppointmentPage() {
       
       const existingFiles = (apt.images || []).map((img, index) => ({
           uid: `old-${index}`, 
-          // name: img.description || `Hình_anh_đính_kèm_${index+1}.png`,
+          name: formatFileName(img.fileName), 
           status: 'done',
           url: img.base64,
+          thumbUrl: img.base64,
       }));
       setFileList(existingFiles);
       setIsEditModalOpen(true);
@@ -116,6 +159,18 @@ export default function AppointmentPage() {
             fileList.forEach(file => {
                 if (file.originFileObj) {
                     formData.append('images', file.originFileObj);
+                } else if (file.url || file.thumbUrl) {
+                    const dataUrl = file.url || file.thumbUrl;
+                    const arr = dataUrl.split(',');
+                    const mime = arr[0].match(/:(.*?);/)[1];
+                    const bstr = atob(arr[1]);
+                    let n = bstr.length;
+                    const u8arr = new Uint8Array(n);
+                    while(n--){
+                        u8arr[n] = bstr.charCodeAt(n);
+                    }
+                    const newFile = new File([u8arr], file.name, {type:mime});
+                    formData.append('images', newFile);
                 }
             });
 
@@ -142,12 +197,26 @@ export default function AppointmentPage() {
     };
     
     const uploadProps = {
-        name: 'file', multiple: true, maxCount: 5,
+        name: 'file', multiple: true, maxCount: 5, accept: '.png,.jpg,.jpeg', listType: 'picture',
         beforeUpload: () => false, 
         fileList: fileList,
         onChange(info) { 
             setFileList(info.fileList); 
         },
+        onPreview: async (file) => { 
+            let src = file.url || file.thumbUrl;
+            if (!src) {
+              src = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file.originFileObj);
+                reader.onload = () => resolve(reader.result);
+              });
+            }
+            const image = new window.Image();
+            image.src = src;
+            const imgWindow = window.open(src);
+            imgWindow?.document.write(image.outerHTML);
+        }
     };
 
     const handleCancelAppointment = async (aptId) => {
@@ -187,7 +256,7 @@ export default function AppointmentPage() {
       return null;
     };
 
-  const renderAppointmentList = (data, isUpcomingTab = false) => {
+  const renderAppointmentList = (data, tabKey, isUpcomingTab = false) => {
     if (data.length === 0) {
       return (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -196,10 +265,13 @@ export default function AppointmentPage() {
         </div>
       );
     }
-    
+  const currentPage = tabPages[tabKey] || 1;
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = data.slice(startIndex, endIndex);
     return (
       <Space direction="vertical" style={{ width: '100%' }} size="large">
-        {data.map(apt => {
+        {paginatedData.map(apt => {
            const hasNotesOrFiles = isUpcomingTab && (apt.description || (apt.images && apt.images.length > 0));
 
            return (
@@ -258,8 +330,8 @@ export default function AppointmentPage() {
                                           {apt.images.map((f, idx) => (
                                               <Image
                                                   key={idx}
-                                                  width={60}
-                                                  height={60}
+                                                  width={100}
+                                                  height={100}
                                                   src={f.base64} 
                                                   alt={f.description || 'Hình ảnh đính kèm'}
                                                   fallback="https://via.placeholder.com/60?text=L%E1%BB%97i"
@@ -291,6 +363,19 @@ export default function AppointmentPage() {
             </Card>
           );
         })}
+
+        {data.length > pageSize && (
+            <div style={{ textAlign: 'center', marginTop: 16, marginBottom: 8 }}>
+                <Pagination 
+                    current={currentPage} 
+                    pageSize={pageSize} 
+                    total={data.length} 
+                    onChange={(page) => setTabPages(prev => ({ ...prev, [tabKey]: page }))} 
+                    showSizeChanger={false} // Tắt chọn pageSize để UI gọn gàng
+                />
+            </div>
+        )}
+
       </Space>
     );
   };
@@ -331,10 +416,16 @@ export default function AppointmentPage() {
         <Card style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
           <Tabs defaultActiveKey="1" size="large">
             <TabPane tab={`Lịch hẹn sắp tới (${upcomingAppointments.length})`} key="1">
-              {renderAppointmentList(upcomingAppointments, true)}
+              {renderAppointmentList(upcomingAppointments, '1',true)}
             </TabPane>
-            <TabPane tab={`Lịch sử khám (${pastAppointments.length})`} key="2">
-              {renderAppointmentList(pastAppointments, false)}
+            <TabPane tab={`Đã hủy (${pastAppointments.length})`} key="2">
+              {renderAppointmentList(pastAppointments, '2', false)}
+            </TabPane>
+            <TabPane tab={`Đã khám (${examinedAppointments.length})`} key="3">
+              {renderAppointmentList(examinedAppointments, '3', false)}
+            </TabPane>
+            <TabPane tab={`Đang khám (${examiningAppointments.length})`} key="4">
+              {renderAppointmentList(examiningAppointments, '4', false)}
             </TabPane>
           </Tabs>
         </Card>
@@ -352,7 +443,7 @@ export default function AppointmentPage() {
             <Dragger {...uploadProps}>
               <p className="ant-upload-drag-icon"><InboxOutlined /></p>
               <p className="ant-upload-text">Chọn tệp tin hoặc kéo thả vào đây</p>
-              <p className="ant-upload-hint">Hỗ trợ ảnh định dạng PNG, JPG</p>
+              <p className="ant-upload-hint">Hỗ trợ ảnh định dạng PNG, JPG, JPEG</p>
             </Dragger>
           </Form.Item>
         </Form>

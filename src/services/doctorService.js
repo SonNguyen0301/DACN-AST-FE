@@ -14,7 +14,30 @@ const getDoctorShiftsAPI = (doctorId, params) => {
 };
 
 const bookAppointmentAPI = (formData) => {
-    return axios.post('/shifts/book', formData);
+    return axios.post('/shifts/book', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data' 
+        }
+    });
 };
 
-export { getDoctorsAPI, getDoctorInfoAPI, getDoctorShiftsAPI, bookAppointmentAPI };
+const getDoctorAppointmentsAPI = (params) => {
+    return axios.get('/doctors/personal-appointment', { params });
+};
+
+const getAppointmentCalendarAPI = (doctorId, params) => {
+    return axios.get(`/doctors/${doctorId}/appointment-calendar`, { params });
+};
+
+const getAppointmentsByDateAPI = (doctorId, date) => {
+    return axios.get(`/doctors/${doctorId}/appointment-date/${date}`);
+};
+
+const getDoctorDashboardInfoAPI = () => {
+    return axios.get('/doctors/doctor-info-dashboard');
+};
+
+const getStatisticMonthlyDiseaseAPI = (month) => {
+    return axios.get(`/consultations/statistic-monthly-disease?month=${month}`);
+};
+export { getDoctorsAPI, getDoctorInfoAPI, getDoctorShiftsAPI, bookAppointmentAPI, getDoctorAppointmentsAPI, getAppointmentCalendarAPI, getAppointmentsByDateAPI, getDoctorDashboardInfoAPI, getStatisticMonthlyDiseaseAPI };

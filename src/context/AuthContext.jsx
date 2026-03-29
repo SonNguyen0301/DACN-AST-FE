@@ -1,6 +1,6 @@
 // src/context/AuthContext.jsx
 import { createContext, useState, useEffect } from 'react';
-import { loginDevModeAPI } from '../services/authService';
+import { loginAPI } from '../services/authService';
 import { getChatbotTokenAPI } from '../services/chatService'; // <--- Import mới
 
 import { jwtDecode } from "jwt-decode";
@@ -29,10 +29,10 @@ export const AuthProvider = ({ children }) => {
         return null;
     });
 
-    const login = async (email) => {
+    const login = async (email,password) => {
         try {
             // --- GIAI ĐOẠN 1: LẤY USER TOKEN ---
-            const userRes = await loginDevModeAPI(email);
+            const userRes = await loginAPI(email, password);
             const userToken = userRes.data.data.accessToken; 
 
             const decodedUser = jwtDecode(userToken);
