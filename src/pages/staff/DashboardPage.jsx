@@ -1,4 +1,4 @@
-import  { useState } from 'react';
+import  { useState, useEffect } from 'react';
 import { 
   Layout, 
   Menu, 
@@ -20,46 +20,128 @@ import {
   UserOutlined, 
   LogoutOutlined,
   CalendarOutlined, 
-  CheckCircleOutlined,
   ClockCircleOutlined,
   TeamOutlined,
   PhoneOutlined,
   SearchOutlined,
-  MedicineBoxOutlined
+  MedicineBoxOutlined,
+  ThunderboltOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/Footer"; 
+import { getTodayAppointments, getActiveDoctors } from '../../services/staffService'; 
+import dayjs from 'dayjs';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 
+const getTimeRange = () => {
+    const now = dayjs();
+    const minutes = now.minute();
+    const dateStr = now.format('YYYY-MM-DD');
+  
+    let from, to;
+  
+    if (minutes < 30) {
+      from = now.minute(0).second(0).format('HH:mm:ss+07');
+      to = now.minute(30).second(0).format('HH:mm:ss+07');
+    } else {
+      from = now.minute(30).second(0).format('HH:mm:ss+07');
+      to = now.add(1, 'hour').minute(0).second(0).format('HH:mm:ss+07');
+    }
+  
+    return { currentDate: dateStr, from, to };
+};
+
 export default function AdmissionStaffDashboardPage() {
   const navigate = useNavigate();
-  
   const user = { name: "Lê Thị Bích", role: "admission" };
+
+  const [bookingRequests, setBookingRequests] = useState([]);
+  const [doctorsOnDuty, setDoctorsOnDuty] = useState([]);
+
+  const fetchAppointments = async () => {
+        try {
+            const { currentDate, from, to } = getTimeRange();
+            const params = { currentDate, from, to };
+            
+            const response = await getTodayAppointments(params);
+            
+            if (response.data.success) {
+                const mappedData = response.data.data.map((item, index) => ({
+                    key: index,
+                    patient: item.patientName,
+                    phone: item.phoneNumber,
+                    doctor: item.doctorName,
+                    time: `${item.from.substring(0, 5)} - ${item.to.substring(0, 5)}`,
+                    status: item.status
+                }));
+                setBookingRequests(mappedData);
+            }
+        } catch (error) {
+            console.error("Lỗi lấy danh sách cuộc hẹn:", error);
+        }
+    };
+
+  const fetchActiveDoctors = async () => {
+      try {
+          const currentDate = dayjs().format('YYYY-MM-DD'); 
+          
+          const response = await getActiveDoctors(currentDate);
+
+          if (response.data.success) {
+              const mappedDoctors = response.data.data.map(doc => {
+                  let uiStatus = 'offline';
+                  if (doc.status === 'EXAMINING') uiStatus = 'busy';
+                  if (doc.status === 'ON_DUTY') uiStatus = 'online';
+
+                  return {
+                      name: doc.doctorName,
+                      dept: doc.department,
+                      status: uiStatus,
+                  };
+              });
+              setDoctorsOnDuty(mappedDoctors);
+          }
+      } catch (error) {
+          console.error("Lỗi lấy danh sách bác sĩ trực:", error);
+      }
+  };
+
+  useEffect(() => {
+      fetchAppointments();
+      fetchActiveDoctors(); 
+  
+      const interval = setInterval(() => {
+          fetchAppointments();
+          fetchActiveDoctors();
+      }, 60000); 
+  
+      return () => clearInterval(interval); 
+  }, []);
 
   const statsData = [
     { title: "Lịch hẹn hôm nay", value: 45, icon: <CalendarOutlined />, color: "#1677ff", bg: "#e6f4ff" },
-    { title: "Đã Check-in", value: 18, icon: <CheckCircleOutlined />, color: "#52c41a", bg: "#f6ffed" },
-    { title: "Bác sĩ đang trực", value: 8, icon: <TeamOutlined />, color: "#722ed1", bg: "#f9f0ff" },
+    { title: "Ca trống gần nhất", value: "10:30", icon: <ThunderboltOutlined />, color: "#13c2c2", bg: "#e6fffb" },
+    { title: "Bác sĩ đang trực", value: doctorsOnDuty.length, icon: <TeamOutlined />, color: "#722ed1", bg: "#f9f0ff" },
   ];
 
-  const initialBookingRequests = [
-    { key: '1', patient: 'Trần Văn X', phone: '0909 123 111', doctor: 'BS. CK2 Trần Thị Hoa', time: '09:00 - 09:30', type: 'Tái khám', status: 'pending' },
-    { key: '2', patient: 'Lê Thị Y', phone: '0912 456 222', doctor: 'BS. Nguyễn Văn Nam', time: '09:30 - 10:00', type: 'Mới', status: 'pending' },
-    { key: '3', patient: 'Nguyễn Z', phone: '0987 888 333', doctor: 'BS. CK2 Trần Thị Hoa', time: '10:00 - 10:30', type: 'Mới', status: 'pending' },
-    { key: '4', patient: 'Phạm Văn K', phone: '0933 777 444', doctor: 'BS. Lê Thị Tú', time: '10:30 - 11:00', type: 'Tái khám', status: 'pending' },
-    { key: '5', patient: 'Hoàng Thị M', phone: '0977 111 555', doctor: 'BS. Nguyễn Văn Nam', time: '11:00 - 11:30', type: 'Mới', status: 'pending' },
-  ];
+  // const initialBookingRequests = [
+  //   { key: '1', patient: 'Trần Văn X', phone: '0909 123 111', doctor: 'BS. CK2 Trần Thị Hoa', time: '09:00 - 09:30', type: 'Tái khám', status: 'pending' },
+  //   { key: '2', patient: 'Lê Thị Y', phone: '0912 456 222', doctor: 'BS. Nguyễn Văn Nam', time: '09:30 - 10:00', type: 'Mới', status: 'pending' },
+  //   { key: '3', patient: 'Nguyễn Z', phone: '0987 888 333', doctor: 'BS. CK2 Trần Thị Hoa', time: '10:00 - 10:30', type: 'Mới', status: 'pending' },
+  //   { key: '4', patient: 'Phạm Văn K', phone: '0933 777 444', doctor: 'BS. Lê Thị Tú', time: '10:30 - 11:00', type: 'Tái khám', status: 'pending' },
+  //   { key: '5', patient: 'Hoàng Thị M', phone: '0977 111 555', doctor: 'BS. Nguyễn Văn Nam', time: '11:00 - 11:30', type: 'Mới', status: 'pending' },
+  // ];
 
-  const [bookingRequests] = useState(initialBookingRequests);
+  // const [bookingRequests] = useState(initialBookingRequests);
 
-  const doctorsOnDuty = [
-    { name: "BS. CK2 Trần Thị Hoa", dept: "Da liễu", status: "busy", queue: 3 },
-    { name: "BS. Nguyễn Văn Nam", dept: "Nội khoa", status: "online", queue: 0 },
-    { name: "BS. Lê Thị Tú", dept: "Nhi khoa", status: "online", queue: 1 },
-    { name: "BS. Phạm Minh", dept: "Tai Mũi Họng", status: "offline", queue: 0 },
-  ];
+  // const doctorsOnDuty = [
+  //   { name: "BS. CK2 Trần Thị Hoa", dept: "Da liễu", status: "busy", queue: 3 },
+  //   { name: "BS. Nguyễn Văn Nam", dept: "Nội khoa", status: "online", queue: 0 },
+  //   { name: "BS. Lê Thị Tú", dept: "Nhi khoa", status: "online", queue: 1 },
+  //   { name: "BS. Phạm Minh", dept: "Tai Mũi Họng", status: "offline", queue: 0 },
+  // ];
 
   const handleSignOut = () => {
     navigate('/');
@@ -127,7 +209,20 @@ export default function AdmissionStaffDashboardPage() {
           </Tag>
       )
     },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      render: (status) => {
+        let color = 'blue';
+        let text = status;
+        if (status === 'EXAMINING') { color = 'orange'; text = 'ĐANG KHÁM'; }
+        if (status === 'PENDING') { color = 'default'; text = 'CHỜ TIẾP NHẬN'; }
+        return <Tag color={color}>{text}</Tag>;
+      }
+    },
   ];
+
+
 
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
@@ -191,7 +286,7 @@ export default function AdmissionStaffDashboardPage() {
         <Row gutter={[24, 24]}>
             <Col xs={24} lg={16}>
                 <Card 
-                    title="Lịch hẹn" 
+                    title="Lịch hẹn " 
                     variant="borderless"
                     extra={<Button type="link">Xem tất cả</Button>}
                     style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", height: '100%' }}

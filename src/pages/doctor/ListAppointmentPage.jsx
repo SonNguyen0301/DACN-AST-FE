@@ -232,6 +232,56 @@ export default function DoctorAppointmentPage() {
       render: (text) => <Text>{text}</Text>,
     },
     {
+      title: 'Hình ảnh đính kèm',
+      key: 'images',
+      width: 150,
+      render: (_, record) => {
+        if (!record.images || record.images.length === 0) {
+            return <Text type="secondary" style={{fontSize: 12}}>Không có ảnh</Text>;
+        }
+        return (
+          <div onClick={(e) => e.stopPropagation()}> 
+            <Image.PreviewGroup>
+                <Space size={6} wrap>
+                    {record.images.map((imgStr, index) => {
+                        const validSrc = imgStr.startsWith('http') || imgStr.startsWith('data:image') 
+                            ? imgStr 
+                            : `data:image/png;base64,${imgStr}`;
+                        
+                        return (
+                            <Image
+                                key={index}
+                                width={45}
+                                height={45}
+                                src={validSrc} 
+                                style={{ 
+                                    objectFit: 'cover', 
+                                    borderRadius: 6, 
+                                    border: '1px solid #d9d9d9',
+                                    display: index < 5 ? 'block' : 'none' 
+                                }}
+                                fallback="https://placehold.co/45x45?text=L%E1%BB%97i" 
+                            />
+                        );
+                    })}
+                    
+                    {record.images.length > 2 && (
+                        <div style={{ 
+                            width: 45, height: 45, 
+                            background: '#f5f5f5', border: '1px dashed #d9d9d9', borderRadius: 6, 
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                            fontSize: 13, color: '#666', fontWeight: 500
+                        }}>
+                            +{record.images.length - 2}
+                        </div>
+                    )}
+                </Space>
+            </Image.PreviewGroup>
+          </div>
+        );
+      }
+    },
+    {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',

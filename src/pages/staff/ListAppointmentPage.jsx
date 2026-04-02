@@ -17,16 +17,20 @@ import {
   Select, 
   Dropdown, 
   Modal,
+  message,
+  Tooltip,
+  Popconfirm,
+  Space
 } from "antd";
 import { 
   UserOutlined, 
   LogoutOutlined,
   SearchOutlined, 
   FilterOutlined, 
-  EyeOutlined, 
   PhoneOutlined, 
   MedicineBoxOutlined,
   ClockCircleOutlined,
+  CloseCircleOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
@@ -44,6 +48,7 @@ export default function AdmissionStaffAppointmentPage() {
   const navigate = useNavigate();
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterDoctor, setFilterDoctor] = useState('all');
   
   const [dateRange, setDateRange] = useState([dayjs().startOf('month'), dayjs()]);
   const [timeRange, setTimeRange] = useState(null);
@@ -117,9 +122,12 @@ export default function AdmissionStaffAppointmentPage() {
 
   const [dataSource, setDataSource] = useState(initialData);
 
+  const doctorList = [...new Set(initialData.map(item => item.doctor))];
+
   const handleSearch = (val) => setSearchText(val.toLowerCase());
   const handleStatusChange = (val) => setFilterStatus(val);
-  
+  const handleDoctorChange = (val) => setFilterDoctor(val);
+
   const handleDateRangeChange = (dates) => {
     setDateRange(dates);
   };
@@ -134,12 +142,22 @@ export default function AdmissionStaffAppointmentPage() {
     setIsModalOpen(false);
     setSelectedPatient(null);
   };
+  const handleCancelAppointment = (key) => {
+    const newData = dataSource.map(item => {
+      if (item.key === key) {
+        return { ...item, status: 'cancelled' }; 
+      }
+      return item;
+    });
+    setDataSource(newData);
+    message.success('Đã hủy lịch hẹn thành công!');
+  };
 
   const filteredData = dataSource.filter(item => {
 
     const matchName = item.patientName.toLowerCase().includes(searchText) || item.phone.includes(searchText);
-    
     const matchStatus = filterStatus === 'all' || item.status === filterStatus;
+    const matchDoctor = filterDoctor === 'all' || item.doctor === filterDoctor;
     
     let matchDate = true;
     if (dateRange && dateRange[0] && dateRange[1]) {
@@ -158,7 +176,7 @@ export default function AdmissionStaffAppointmentPage() {
 
         matchTime = targetTime.isBetween(filterStart, filterEnd, null, '[]');
     }
-    return matchName && matchTime && matchStatus && matchDate; 
+    return matchName && matchTime && matchStatus && matchDate && matchDoctor; 
   });
 
   const columns = [
@@ -224,16 +242,36 @@ export default function AdmissionStaffAppointmentPage() {
       }
     },
     {
-      title: 'Chi tiết',
+      title: 'Thao tác',
       key: 'action',
-      width: 80,
+      width: 100,
       render: (_, record) => (
-        <Button 
-            type="text" 
-            size="small" 
-            icon={<EyeOutlined />} 
-            onClick={() => handleViewDetail(record)}
-        />
+        <Space>
+          {record.status === 'pending' && (
+             <Tooltip title="Hủy lịch">
+               <Popconfirm
+                 title="Hủy lịch khám"
+                 description="Bạn có chắc chắn muốn hủy lịch hẹn này không?"
+                 onConfirm={(e) => {
+                   e.stopPropagation(); 
+                   handleCancelAppointment(record.key);
+                 }}
+                 onCancel={(e) => e.stopPropagation()}
+                 okText="Xác nhận"
+                 cancelText="Đóng"
+                 placement="topRight"
+               >
+                 <Button 
+                   type="text" 
+                   danger
+                   size="large" 
+                   icon={<CloseCircleOutlined />} 
+                   onClick={(e) => e.stopPropagation()}
+                 />
+               </Popconfirm>
+             </Tooltip>
+          )}
+        </Space>
       ),
     },
   ];
@@ -295,7 +333,7 @@ export default function AdmissionStaffAppointmentPage() {
                         allowClear={false}
                     />
                 </Col>
-                <Col xs={24} md={6}>
+                <Col xs={24} md={5}>
                     <Text strong style={{ display: 'block', marginBottom: 4 }}>Khoảng giờ hẹn:</Text>
                     <TimePicker.RangePicker 
                         format="HH:mm"
@@ -305,7 +343,7 @@ export default function AdmissionStaffAppointmentPage() {
                         style={{ width: '100%' }}
                     />
                 </Col>
-                <Col xs={24} md={6}>
+                <Col xs={24} md={5}>
                     <Text strong style={{ display: 'block', marginBottom: 4 }}>Từ khóa:</Text>
                     <Input 
                         placeholder="Tìm theo tên hoặc SĐT..." 
@@ -313,6 +351,21 @@ export default function AdmissionStaffAppointmentPage() {
                         onChange={(e) => handleSearch(e.target.value)} 
                         allowClear 
                     />
+                </Col>
+
+                <Col xs={24} md={4}>
+                    <Text strong style={{ display: 'block', marginBottom: 4 }}>Bác sĩ:</Text>
+                    <Select 
+                      defaultValue="all" 
+                      style={{ width: '100%' }} 
+                      onChange={handleDoctorChange} 
+                      showSearch
+                    >
+                        <Option value="all">Tất cả bác sĩ</Option>
+                        {doctorList.map(doctor => (
+                          <Option key={doctor} value={doctor}>{doctor}</Option>
+                        ))}
+                    </Select>
                 </Col>
 
                 <Col xs={24} md={4}>
@@ -324,9 +377,6 @@ export default function AdmissionStaffAppointmentPage() {
                     </Select>
                 </Col>
 
-                <Col xs={24} md={2} style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
-                    <Button type="primary" icon={<FilterOutlined />} style={{ marginTop: 22 }}>Lọc</Button>
-                </Col>
             </Row>
         </Card>
 
