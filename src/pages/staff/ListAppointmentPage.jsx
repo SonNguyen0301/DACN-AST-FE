@@ -1,5 +1,5 @@
 
-import  { useState } from 'react';
+import  { useState, useEffect } from 'react';
 import { 
   Layout, 
   Menu, 
@@ -38,6 +38,8 @@ import isBetween from 'dayjs/plugin/isBetween';
 import Footer from "../../components/common/Footer"; 
 
 dayjs.extend(isBetween);
+import { getStaffAppointmentsAPI } from '../../services/staffService';
+import { cancelAppointmentAPI } from '../../services/appointmentService';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -47,11 +49,15 @@ const { RangePicker } = DatePicker;
 export default function AdmissionStaffAppointmentPage() {
   const navigate = useNavigate();
   const [searchText, setSearchText] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('SCHEDULED');
   const [filterDoctor, setFilterDoctor] = useState('all');
   
   const [dateRange, setDateRange] = useState([dayjs().startOf('month'), dayjs()]);
   const [timeRange, setTimeRange] = useState(null);
+
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -119,10 +125,73 @@ export default function AdmissionStaffAppointmentPage() {
       status: 'pending',
     },
   ];
+  const fetchAppointments = async (page = 1) => {
+    setLoading(true);
+    try {
+        const params = {
+            page: page,
+            take: pagination.pageSize,
+            sort: 'updatedAt', 
+            sortDirection: 'ASC',
+            fromDate: dateRange && dateRange[0] ? dateRange[0].format('YYYY-MM-DD') : dayjs().startOf('month').format('YYYY-MM-DD'),
+            toDate: dateRange && dateRange[1] ? dateRange[1].format('YYYY-MM-DD') : dayjs().endOf('month').format('YYYY-MM-DD'),
+        };
+
+        if (searchText) params.keyword = searchText;
+        if (filterStatus !== 'all') params.status = filterStatus;
+        if (timeRange && timeRange[0] && timeRange[1]) {
+            params.from = timeRange[0].format('HH:mm'); 
+            params.to = timeRange[1].format('HH:mm');
+        }
+
+        const res = await getStaffAppointmentsAPI(params); 
+        
+        if (res.data?.success) {
+            const rawData = res.data.data.data;
+            
+            const mappedData = rawData.map((item, index) => {
+                const fromTime = item.from ? item.from.substring(0, 5) : '';
+                const toTime = item.to ? item.to.substring(0, 5) : '';
+
+                return {
+                    key: index, 
+                    date: item.date,
+                    time: `${fromTime} - ${toTime}`,
+                    patientName: item.patientName,
+                    gender: item.gender,
+                    phone: item.phoneNumber,
+                    doctor: item.doctorName,
+                    department: item.department,
+                    reason: item.description || item.note || 'Không có ghi chú',
+                    status: item.status, 
+                };
+            });
+
+            const finalData = filterDoctor === 'all' ? mappedData : mappedData.filter(d => d.doctor === filterDoctor);
+
+            setAppointments(finalData);
+            setPagination({
+                current: res.data.data.meta.page,
+                pageSize: res.data.data.meta.take,
+                total: res.data.data.meta.itemCount
+            });
+        }
+    } catch (error) {
+        console.error("Lỗi lấy danh sách khám:", error);
+        message.error("Không thể tải danh sách đặt khám.");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+      fetchAppointments();
+  }, []);
 
   const [dataSource, setDataSource] = useState(initialData);
 
-  const doctorList = [...new Set(initialData.map(item => item.doctor))];
+  // const doctorList = [...new Set(initialData.map(item => item.doctor))];
+  const doctorList = [...new Set(appointments.map(item => item.doctor))];
 
   const handleSearch = (val) => setSearchText(val.toLowerCase());
   const handleStatusChange = (val) => setFilterStatus(val);
@@ -142,6 +211,7 @@ export default function AdmissionStaffAppointmentPage() {
     setIsModalOpen(false);
     setSelectedPatient(null);
   };
+
   const handleCancelAppointment = (key) => {
     const newData = dataSource.map(item => {
       if (item.key === key) {
@@ -152,7 +222,7 @@ export default function AdmissionStaffAppointmentPage() {
     setDataSource(newData);
     message.success('Đã hủy lịch hẹn thành công!');
   };
-
+  
   const filteredData = dataSource.filter(item => {
 
     const matchName = item.patientName.toLowerCase().includes(searchText) || item.phone.includes(searchText);
@@ -235,8 +305,10 @@ export default function AdmissionStaffAppointmentPage() {
         let color = 'default';
         let label = 'Không rõ';
         switch (status) {
-          case 'pending': color = 'warning'; label = 'Chờ khám'; break;
-          case 'completed': color = 'success'; label = 'Đã khám'; break;
+          case 'SCHEDULED': color = 'processing'; label = 'Đã đặt lịch'; break;
+          case 'EXAMINING': color = 'warning'; label = 'Đang khám'; break;
+          case 'EXAMINED': color = 'success'; label = 'Đã khám xong'; break;
+          case 'CANCELLED': color = 'error'; label = 'Đã hủy'; break;
         }
         return <Tag color={color} style={{ minWidth: 80, textAlign: 'center' }}>{label.toUpperCase()}</Tag>;
       }
@@ -372,8 +444,10 @@ export default function AdmissionStaffAppointmentPage() {
                     <Text strong style={{ display: 'block', marginBottom: 4 }}>Trạng thái:</Text>
                     <Select defaultValue="all" style={{ width: '100%' }} onChange={handleStatusChange} suffixIcon={<FilterOutlined />}>
                         <Option value="all">Tất cả</Option>
-                        <Option value="pending">Chờ khám</Option>
-                        <Option value="completed">Đã khám xong</Option>
+                        <Option value="SCHEDULED">Chờ khám</Option>
+                        <Option value="EXAMINING">Đang khám</Option>
+                        <Option value="EXAMINED">Đã khám xong</Option>
+                        <Option value="CANCELLED">Đã hủy</Option>
                     </Select>
                 </Col>
 

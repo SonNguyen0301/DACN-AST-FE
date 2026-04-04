@@ -83,16 +83,20 @@ export default function DoctorDashboardPage() {
               const dashboardParams = {
                   currentDate: now.format('YYYY-MM-DD'),
                   startWeekDate: now.startOf('week').format('YYYY-MM-DD'),
+
                   lastStartWeekDate: now.subtract(1, 'week').startOf('week').format('YYYY-MM-DD'),
                   lastEndWeekDate: now.subtract(1, 'week').endOf('week').format('YYYY-MM-DD'),
+                  
                   startMonthDate: now.startOf('month').format('YYYY-MM-DD'),
+
+
                   lastStartMonthDate: now.subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
                   lastEndMonthDate: now.subtract(1, 'month').endOf('month').format('YYYY-MM-DD')
               };
-
+            
               const diseaseParams = {
-                    startMonthDate: now.startOf('month').format('YYYY-MM-DD'),
-                    endMonthDate: now.endOf('month').format('YYYY-MM-DD')
+                    startMonthDate: now.subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
+                    endMonthDate: now.subtract(1, 'month').endOf('month').format('YYYY-MM-DD')
                 };
 
               const [statsRes, diseaseRes] = await Promise.all([

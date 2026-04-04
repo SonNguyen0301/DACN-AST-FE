@@ -29,7 +29,7 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/Footer"; 
-import { getTodayAppointments, getActiveDoctors } from '../../services/staffService'; 
+import { getTodayAppointments, getActiveDoctors, getStaffDashboardInfo } from '../../services/staffService'; 
 import dayjs from 'dayjs';
 
 const { Header, Content } = Layout;
@@ -59,6 +59,11 @@ export default function AdmissionStaffDashboardPage() {
 
   const [bookingRequests, setBookingRequests] = useState([]);
   const [doctorsOnDuty, setDoctorsOnDuty] = useState([]);
+
+  const [dashboardStats, setDashboardStats] = useState({
+      todayAppointments: 0,
+      nextAvailableShift: "Hết ca trống"
+  });
 
   const fetchAppointments = async () => {
         try {
@@ -108,21 +113,49 @@ export default function AdmissionStaffDashboardPage() {
       }
   };
 
+  const fetchDashboardStatsInfo = async () => {
+      try {
+          const now = dayjs();
+          const currentDate = now.format('YYYY-MM-DD');
+          const currentTime = now.format('HH:mm:ss+07'); 
+
+          const response = await getStaffDashboardInfo(currentDate, currentTime);
+
+          if (response.data.success) {
+              const data = response.data.data;
+              let nextShift = "Hết ca trống";
+
+              if (data.shifts && data.shifts.length > 0) {
+                  nextShift = data.shifts[0].startTime.substring(0, 5);
+              }
+
+              setDashboardStats({
+                  todayAppointments: data.todayAppointmentsCount || 0,
+                  nextAvailableShift: nextShift
+              });
+          }
+      } catch (error) {
+          console.error("Lỗi lấy thống kê dashboard:", error);
+      }
+  };
+
   useEffect(() => {
       fetchAppointments();
       fetchActiveDoctors(); 
+      fetchDashboardStatsInfo();
   
       const interval = setInterval(() => {
           fetchAppointments();
           fetchActiveDoctors();
+          fetchDashboardStatsInfo();
       }, 60000); 
   
       return () => clearInterval(interval); 
   }, []);
 
   const statsData = [
-    { title: "Lịch hẹn hôm nay", value: 45, icon: <CalendarOutlined />, color: "#1677ff", bg: "#e6f4ff" },
-    { title: "Ca trống gần nhất", value: "10:30", icon: <ThunderboltOutlined />, color: "#13c2c2", bg: "#e6fffb" },
+    { title: "Lịch hẹn hôm nay", value: dashboardStats.todayAppointments, icon: <CalendarOutlined />, color: "#1677ff", bg: "#e6f4ff" },
+    { title: "Ca trống gần nhất", value: dashboardStats.nextAvailableShift, icon: <ThunderboltOutlined />, color: "#13c2c2", bg: "#e6fffb" },
     { title: "Bác sĩ đang trực", value: doctorsOnDuty.length, icon: <TeamOutlined />, color: "#722ed1", bg: "#f9f0ff" },
   ];
 
@@ -322,7 +355,7 @@ export default function AdmissionStaffDashboardPage() {
                                     description={
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <Text type="secondary" style={{ fontSize: 12 }}>Khoa {doc.dept}</Text>
-                                            {doc.status === 'busy' && <Tag color="red">Đang khám ({doc.queue})</Tag>}
+                                            {doc.status === 'busy' && <Tag color="blue">Đang khám </Tag>}
                                             {doc.status === 'online' && <Tag color="green">Rảnh</Tag>}
                                             {doc.status === 'offline' && <Tag color="default">Nghỉ</Tag>}
                                         </div>
