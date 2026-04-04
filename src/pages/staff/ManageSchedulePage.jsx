@@ -435,7 +435,6 @@ export default function ManageStaffSchedulePage() {
                                     <Space split={<Divider type="vertical" />}>
                                         <Text style={{ fontSize: 13 }}><ClockCircleOutlined /> {item.time}</Text>
                                         <Text style={{ fontSize: 13 }}><UserOutlined /> Phòng: {item.room}</Text>
-                                        <Text style={{ fontSize: 13 }}>Quota: {item.quota}</Text>
                                     </Space>
                                 </div>
                             }

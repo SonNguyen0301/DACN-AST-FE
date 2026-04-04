@@ -228,9 +228,9 @@ export default function DoctorProfilePage() {
   };
 
   const disabledDate = (current) => {
-    const dateStr = current.format('DD-MM-YYYY');
-    return current.isBefore(dayjs().startOf('day')) || !scheduleMap[dateStr] || scheduleMap[dateStr].length === 0;
-    // return current.isBefore(dayjs().startOf('day'));
+    // const dateStr = current.format('DD-MM-YYYY');
+    // return current.isBefore(dayjs().startOf('day')) || !scheduleMap[dateStr] || scheduleMap[dateStr].length === 0;
+    return current && current.isBefore(dayjs().startOf('day'));
   };
 
   const handleSignOut = () => { logout(); navigate('/login'); };

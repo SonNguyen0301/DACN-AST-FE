@@ -99,6 +99,8 @@ export default function AdmissionStaffDashboardPage() {
                   let uiStatus = 'offline';
                   if (doc.status === 'EXAMINING') uiStatus = 'busy';
                   if (doc.status === 'ON_DUTY') uiStatus = 'online';
+                  if (doc.status === 'OFF_DUTY') uiStatus = 'free';
+                  if (doc.status === 'NO_WORKING') uiStatus = 'offline';
 
                   return {
                       name: doc.doctorName,
@@ -356,8 +358,9 @@ export default function AdmissionStaffDashboardPage() {
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <Text type="secondary" style={{ fontSize: 12 }}>Khoa {doc.dept}</Text>
                                             {doc.status === 'busy' && <Tag color="blue">Đang khám </Tag>}
-                                            {doc.status === 'online' && <Tag color="green">Rảnh</Tag>}
+                                            {doc.status === 'online' && <Tag color="yellow">Đang trực</Tag>}
                                             {doc.status === 'offline' && <Tag color="default">Nghỉ</Tag>}
+                                            {doc.status === 'free' && <Tag color="green">Sẵn sàng</Tag>}
                                         </div>
                                     }
                                 />

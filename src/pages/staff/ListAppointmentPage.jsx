@@ -222,6 +222,17 @@ export default function AdmissionStaffAppointmentPage() {
     setDataSource(newData);
     message.success('Đã hủy lịch hẹn thành công!');
   };
+
+  const handleNoteForAppointment = (key) => {
+    const newData = dataSource.map(item => {
+      if (item.key === key) {
+        return { ...item, notes: 'Đã có ghi chú mới' };
+      }
+      return item;
+    });
+    setDataSource(newData);
+    message.success('Đã thêm ghi chú cho lịch hẹn!');
+  }
   
   const filteredData = dataSource.filter(item => {
 
@@ -346,6 +357,16 @@ export default function AdmissionStaffAppointmentPage() {
         </Space>
       ),
     },
+    {
+      title: 'Ghi chú',
+      dataIndex: 'notes',
+      width: 200,
+      render: (text, record) => (
+        <Tooltip title={text} onClick={() => handleNoteForAppointment(record.key)}>
+          <Text ellipsis style={{ maxWidth: 180 }}>{text}</Text>
+        </Tooltip>
+      )
+    }
   ];
 
   const handleSignOut = () => navigate('/');
