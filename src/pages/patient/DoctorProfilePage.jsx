@@ -76,62 +76,62 @@ export default function DoctorProfilePage() {
           });
         }
 
-        const firstRes = await getDoctorShiftsAPI(id, { page: 1, take: 50, sortDirection: 'ASC' });
+        // const firstRes = await getDoctorShiftsAPI(id, { page: 1, take: 50, sortDirection: 'ASC' });
         
-        let allShifts = firstRes.data?.data?.data || [];
-        const meta = firstRes.data?.data?.meta;
+        // let allShifts = firstRes.data?.data?.data || [];
+        // const meta = firstRes.data?.data?.meta;
 
-        if (meta && meta.pageCount > 1) {
-            const fetchPromises = [];
+        // if (meta && meta.pageCount > 1) {
+        //     const fetchPromises = [];
             
-            for (let i = 2; i <= meta.pageCount; i++) {
-                fetchPromises.push(
-                    getDoctorShiftsAPI(id, { page: i, take: 50, sortDirection: 'ASC' })
-                );
-            }
+        //     for (let i = 2; i <= meta.pageCount; i++) {
+        //         fetchPromises.push(
+        //             getDoctorShiftsAPI(id, { page: i, take: 50, sortDirection: 'ASC' }) 
+        //         );
+        //     }
 
-            const nextResponses = await Promise.all(fetchPromises);
+        //     const nextResponses = await Promise.all(fetchPromises);
             
-            nextResponses.forEach(res => {
-                const pageData = res.data?.data?.data || [];
-                allShifts = [...allShifts, ...pageData];
-            });
-        }
+        //     nextResponses.forEach(res => {
+        //         const pageData = res.data?.data?.data || [];
+        //         allShifts = [...allShifts, ...pageData];
+        //     });
+        // }
         
-        const map = {};
+        // const map = {};
 
-        allShifts.forEach(item => {
-            if (!item.shift.date || !item.shift.from || !item.shift.to) return;
+        // allShifts.forEach(item => {
+        //     if (!item.shift.date || !item.shift.from || !item.shift.to) return;
 
-            const dateObj = dayjs(item.shift.date);
-            const dStr = dateObj.format('DD-MM-YYYY');
-            if(!map[dStr]) map[dStr] = [];
+        //     const dateObj = dayjs(item.shift.date);
+        //     const dStr = dateObj.format('DD-MM-YYYY');
+        //     if(!map[dStr]) map[dStr] = [];
             
-            const startTimeStr = item.shift.from.substring(0, 5);
-            const endTimeStr = item.shift.to.substring(0, 5);
-            const startHour = parseInt(startTimeStr.substring(0, 2));
+        //     const startTimeStr = item.shift.from.substring(0, 5);
+        //     const endTimeStr = item.shift.to.substring(0, 5);
+        //     const startHour = parseInt(startTimeStr.substring(0, 2));
 
-            const currentStatus = item.status || 'AVAILABLE';
+        //     const currentStatus = item.status || 'AVAILABLE';
 
-            map[dStr].push({
-              shiftId: item.shiftId,
-              status: currentStatus,
-              displayTime: `${startTimeStr} - ${endTimeStr}`,
-              startHour: startHour
-            });
-        });
+        //     map[dStr].push({
+        //       shiftId: item.shiftId,
+        //       status: currentStatus,
+        //       displayTime: `${startTimeStr} - ${endTimeStr}`,
+        //       startHour: startHour
+        //     });
+        // });
         
-          const today = dayjs();
-          setCalendarValue(today); 
+        //   const today = dayjs();
+        //   setCalendarValue(today); 
 
-          const todayStr = today.format('DD-MM-YYYY');
+        //   const todayStr = today.format('DD-MM-YYYY');
           
-          if (map[todayStr] && map[todayStr].length > 0) {
-            setSelectedDateStr(todayStr);
-          } else {
-            setSelectedDateStr(null);
-          }
-        setScheduleMap(map);
+        //   if (map[todayStr] && map[todayStr].length > 0) {
+        //     setSelectedDateStr(todayStr);
+        //   } else {
+        //     setSelectedDateStr(null);
+        //   }
+        // setScheduleMap(map);
 
       } catch (error) {
         console.error("Lỗi lấy dữ liệu:", error);
@@ -144,6 +144,57 @@ export default function DoctorProfilePage() {
 
     fetchDoctorAndShifts();
   }, [id]);
+
+  useEffect(() => {
+    const fetchShifts = async () => {
+      if (!id) return;
+      setLoadingShifts(true);
+      
+      try {
+        // const startDate = calendarValue.startOf('month').subtract(7, 'day').format('YYYY-MM-DD');
+        // const endDate = calendarValue.endOf('month').add(7, 'day').format('YYYY-MM-DD');
+        const startDate = dayjs(calendarValue).format('YYYY-MM-DD');
+        const endDate = startDate;
+        const res = await getDoctorShiftsAPI(id, { startDate, endDate });
+        const rawData = res.data?.data || [];
+        
+        const map = {};
+
+        rawData.forEach(dayItem => {
+            const dateStr = dayjs(dayItem.date).format('DD-MM-YYYY');
+            map[dateStr] = [];
+
+            dayItem.shift.forEach(shiftItem => {
+                const startTimeStr = shiftItem.from.substring(0, 5);
+                const endTimeStr = shiftItem.to.substring(0, 5);
+                const startHour = parseInt(startTimeStr.substring(0, 2));
+
+                map[dateStr].push({
+                    shiftId: shiftItem.id, 
+                    status: shiftItem.status,
+                    displayTime: `${startTimeStr} - ${endTimeStr}`,
+                    startHour: startHour
+                });
+            });
+        });
+
+        setScheduleMap(map);
+
+        const todayStr = dayjs().format('DD-MM-YYYY');
+        if (!selectedDateStr && map[todayStr] && map[todayStr].length > 0) {
+            setSelectedDateStr(todayStr);
+        }
+
+      } catch (error) {
+        console.error("Lỗi lấy lịch khám:", error);
+        message.error("Không thể tải lịch khám lúc này.");
+      } finally {
+        setLoadingShifts(false);
+      }
+    };
+
+    fetchShifts();
+  }, [calendarValue.format('YYYY-MM-DD'), id]);
   
   const currentScheduleSlots = selectedDateStr ? scheduleMap[selectedDateStr] : [];
 
@@ -177,8 +228,9 @@ export default function DoctorProfilePage() {
   };
 
   const disabledDate = (current) => {
-    const dateStr = current.format('DD-MM-YYYY');
-    return current.isBefore(dayjs().startOf('day')) || !scheduleMap[dateStr] || scheduleMap[dateStr].length === 0;
+    // const dateStr = current.format('DD-MM-YYYY');
+    // return current.isBefore(dayjs().startOf('day')) || !scheduleMap[dateStr] || scheduleMap[dateStr].length === 0;
+    return current && current.isBefore(dayjs().startOf('day'));
   };
 
   const handleSignOut = () => { logout(); navigate('/login'); };
@@ -415,6 +467,7 @@ export default function DoctorProfilePage() {
                         value={calendarValue}
                         disabledDate={disabledDate}
                         onSelect={onDateSelect}
+                        onPanelChange={(newDate) => setCalendarValue(newDate)}
                         style={{ flex: 1 }}
                         headerRender={({ value, onChange }) => {
                             const start = 0;

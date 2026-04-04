@@ -33,11 +33,12 @@ const getAppointmentsByDateAPI = (doctorId, date) => {
     return axios.get(`/doctors/${doctorId}/appointment-date/${date}`);
 };
 
-const getDoctorDashboardInfoAPI = () => {
-    return axios.get('/doctors/doctor-info-dashboard');
+const getDoctorDashboardInfoAPI = (params) => {
+    return axios.get('/doctors/doctor-info-dashboard', { params });
 };
 
-const getStatisticMonthlyDiseaseAPI = (month) => {
-    return axios.get(`/consultations/statistic-monthly-disease?month=${month}`);
+const getStatisticMonthlyDiseaseAPI = (params) => {
+    return axios.get('/consultations/statistic-monthly-disease', { params });
 };
+
 export { getDoctorsAPI, getDoctorInfoAPI, getDoctorShiftsAPI, bookAppointmentAPI, getDoctorAppointmentsAPI, getAppointmentCalendarAPI, getAppointmentsByDateAPI, getDoctorDashboardInfoAPI, getStatisticMonthlyDiseaseAPI };

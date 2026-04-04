@@ -78,9 +78,30 @@ export default function DoctorDashboardPage() {
       const fetchDashboardData = async () => {
           if (!user?.id) return;
           try {
+              const now = dayjs(); 
+              
+              const dashboardParams = {
+                  currentDate: now.format('YYYY-MM-DD'),
+                  startWeekDate: now.startOf('week').format('YYYY-MM-DD'),
+
+                  lastStartWeekDate: now.subtract(1, 'week').startOf('week').format('YYYY-MM-DD'),
+                  lastEndWeekDate: now.subtract(1, 'week').endOf('week').format('YYYY-MM-DD'),
+                  
+                  startMonthDate: now.startOf('month').format('YYYY-MM-DD'),
+
+
+                  lastStartMonthDate: now.subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
+                  lastEndMonthDate: now.subtract(1, 'month').endOf('month').format('YYYY-MM-DD')
+              };
+            
+              const diseaseParams = {
+                    startMonthDate: now.subtract(1, 'month').startOf('month').format('YYYY-MM-DD'),
+                    endMonthDate: now.subtract(1, 'month').endOf('month').format('YYYY-MM-DD')
+                };
+
               const [statsRes, diseaseRes] = await Promise.all([
-                  getDoctorDashboardInfoAPI(),
-                  getStatisticMonthlyDiseaseAPI(currentMonth)
+                  getDoctorDashboardInfoAPI(dashboardParams),
+                  getStatisticMonthlyDiseaseAPI(diseaseParams)
               ]);
 
               if (statsRes.data?.success) {
@@ -102,7 +123,7 @@ export default function DoctorDashboardPage() {
       };
 
       fetchDashboardData();
-  }, [user?.id, currentMonth]);
+  }, [user?.id]);
 
     const calculateTrend = (current, previous) => {
         if (previous === 0) return { trend: current > 0 ? 'up' : null, value: current > 0 ? 100 : 0 };
@@ -214,6 +235,7 @@ export default function DoctorDashboardPage() {
           if (!user?.id) return;
           setLoadingWaiting(true);
           try {
+            
               const dateStr = currentDate.format('YYYY-MM-DD');
               
               const res = await getAppointmentsByDateAPI(user.id, dateStr);
@@ -787,6 +809,20 @@ const getListData = (value) => {
                                     }}
                                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f7fa'}
                                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+
+                                    actions={[
+                                        (item.status !== 'EXAMINED' && item.status !== 'CANCELLED') ? (
+                                            <Button 
+                                                type="primary" 
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); 
+                                                    navigate('/doctor/consulting', { state: { patient: item } }); 
+                                                }}
+                                            >
+                                                Bắt đầu khám
+                                            </Button>
+                                        ) : null
+                                    ]}
                                   > 
                                     <List.Item.Meta
                                         avatar={<Avatar style={{ backgroundColor: item.gender === 'MALE' ? '#1677ff' : '#f982be', color: '#fff'  }}>{item.name[0]}</Avatar>}
@@ -833,7 +869,6 @@ const getListData = (value) => {
                 type="primary" 
                 onClick={() => {
                     setIsDetailModalOpen(false);
-                    // Có thể truyền dữ liệu sang trang khám nếu cần
                     navigate('/doctor/consulting', { state: { patient: selectedPatient } }); 
                 }}
             >
