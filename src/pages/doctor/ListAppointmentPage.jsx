@@ -40,7 +40,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
 import Footer from "../../components/common/Footer"; 
-import { getDoctorAppointmentsAPI } from '../../services/doctorService';
+import { getDoctorAppointmentsAPI, startExaminationAPI } from '../../services/doctorService';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -102,6 +102,7 @@ export default function DoctorAppointmentPage() {
 
                   return {
                       key: item.id || index, 
+                      patientId: item.patientId,
                       time: `${fromTime} - ${toTime}`,
                       date: item.date,
                       patientName: item.patientName,
@@ -184,9 +185,21 @@ export default function DoctorAppointmentPage() {
       }
   };
 
-  const proceedToConsultation = () => {
-      handleCloseModal();
-      navigate('/doctor/consulting', { state: { patient: selectedPatient } });
+  const proceedToConsultation = async () => {
+      try {
+          const res = await startExaminationAPI({
+              appointmentId: selectedPatient.key,
+              patientId: selectedPatient.patientId
+          });
+          if (res.data?.success || res.status === 201) {
+              const consultationId = res.data?.data?.consultationId || res.data?.consultationId;
+              handleCloseModal();
+              navigate('/doctor/consulting', { state: { patient: selectedPatient, consultationId } });
+          }
+      } catch (error) {
+          console.error("Lỗi khi bắt đầu khám:", error);
+          message.error(error.response?.data?.message || "Không thể bắt đầu ca khám.");
+      }
   }
 
   const columns = [
