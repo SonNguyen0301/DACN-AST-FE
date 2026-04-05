@@ -269,7 +269,11 @@ export default function DoctorProfilePage() {
         const formData = new FormData();
         formData.append('doctorId', id);
         formData.append('shiftId', selectedShift.shiftId);
-        formData.append('patientId', user.id); 
+        formData.append('patientId', user.id);
+        
+        // Convert DD-MM-YYYY to YYYY-MM-DD for ISO8601 validation
+        const [dd, mm, yyyy] = selectedDateStr.split('-');
+        formData.append('date', `${yyyy}-${mm}-${dd}`); 
         
         if (notes) formData.append('description', notes);
 
