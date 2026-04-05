@@ -45,7 +45,7 @@ import {
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import Footer from "../../components/common/Footer"; 
-import { getAppointmentsByDateAPI } from '../../services/doctorService';
+import { getAppointmentsByDateAPI, createAiDiagnosisAPI, getAiDiagnosisResultAPI, finishExaminationAPI, startExaminationAPI } from '../../services/doctorService';
 import useAuth from '../../hooks/useAuth';
 import dayjs from 'dayjs';
 
@@ -65,8 +65,10 @@ export default function ExaminationPage() {
 
   const [viewState, setViewState] = useState('input'); 
   const [useAI, setUseAI] = useState(true);
+  const [isAILoading, setIsAILoading] = useState(false);
 
   const [activePatient, setActivePatient] = useState(location.state?.patient || null);
+  const [consultationId, setConsultationId] = useState(location.state?.consultationId || null);
   
   const [todayPatients, setTodayPatients] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
@@ -94,6 +96,7 @@ export default function ExaminationPage() {
 
                       return {
                           key: apt.id || index,
+                          patientId: apt.patientId, // lưu id để call API
                           patientName: apt.patientName,
                           age: apt.dateOfBirth ? dayjs().diff(dayjs(apt.dateOfBirth), 'year') : 'N/A',
                           gender: apt.gender === 'MALE' ? 'MALE' : 'FEMALE',
@@ -156,21 +159,71 @@ export default function ExaminationPage() {
   };
 
   const handleAIAssist = () => {
-    form.validateFields().then(values => {
+    form.validateFields().then(async values => {
           console.log('Input Values (AI Assist):', values);
           setUseAI(true);
-          setViewState('loading');
+          setViewState('result');
+          setIsAILoading(true);
           
-          setTimeout(() => {
-              setViewState('result');
-              message.success("AI đã hoàn tất phân tích!");
-              
-              resultForm.setFieldsValue({
-                  finalDiagnosis: mockAIResult.diagnoses[0].name,
-                  doctorAdvice: mockAIResult.advice,
-                  currentCondition: "Tổn thương sưng đỏ, có dấu hiệu lan rộng nhẹ."
-              });
-          }, 2000);
+          try {
+              if (!consultationId) {
+                  message.error("Lỗi: Không tìm thấy phiên khám bệnh.");
+                  setViewState('input');
+                  setIsAILoading(false);
+                  return;
+              }
+
+              const formData = new FormData();
+              formData.append('consultationId', consultationId);
+              formData.append('description', values.description || values.symptom || "Không có mô tả");
+
+              let hasImage = false;
+              if (values.images && values.images.fileList && values.images.fileList.length > 0) {
+                  const file = values.images.fileList[0].originFileObj;
+                  formData.append('file', file);
+                  hasImage = true;
+              }
+
+              if (!hasImage) {
+                 message.error("AI yêu cầu ít nhất 1 hình ảnh tổn thương để phân tích.");
+                 setViewState('input');
+                 setIsAILoading(false);
+                 return;
+              }
+
+              await createAiDiagnosisAPI(formData);
+
+              const pollResult = setInterval(async () => {
+                  try {
+                      const res = await getAiDiagnosisResultAPI(consultationId);
+                      if (res.data?.success && res.data?.data) {
+                          clearInterval(pollResult);
+                          setIsAILoading(false);
+                          message.success("AI đã hoàn tất phân tích!");
+                          
+                          const aiResult = res.data.data;
+                          resultForm.setFieldsValue({
+                              finalDiagnosis: aiResult.diseases?.[0]?.diseaseName || mockAIResult.diagnoses[0].name,
+                              doctorAdvice: aiResult.aiAdvice || mockAIResult.advice,
+                              currentCondition: aiResult.suggestedDiagnosis || values.description || values.symptom
+                          });
+                      }
+                  } catch (e) {
+                      if (e.response?.status !== 404) {
+                          clearInterval(pollResult);
+                          setIsAILoading(false);
+                          setViewState('input');
+                          message.error("Lỗi khi chờ kết quả AI.");
+                      }
+                  }
+              }, 3000); 
+
+          } catch (error) {
+              console.error("Lỗi chạy AI:", error);
+              message.error("Không thể gửi yêu cầu phân tích AI.");
+              setIsAILoading(false);
+              setViewState('input');
+          }
       }).catch(info => {
           console.log('Validate Failed:', info);
       });
@@ -191,11 +244,26 @@ export default function ExaminationPage() {
           console.log('Validate Failed:', info);
       });
   };
-  const onFinishResult = (values) => {
+  const onFinishResult = async (values) => {
       console.log('Final Result:', values);
-      message.success("Đã lưu hồ sơ khám bệnh và gửi toa thuốc!");
-      setActivePatient(null);
-      setViewState('input');
+      try {
+          if (!consultationId) {
+             message.error("Lỗi: Không tìm thấy phiên khám bệnh.");
+             return;
+          }
+          await finishExaminationAPI({
+              consultationId: consultationId,
+              finalDiagnosis: values.finalDiagnosis,
+              currentCondition: values.currentCondition,
+              medicines: values.medicines
+          });
+          message.success("Đã lưu hồ sơ khám bệnh và gửi toa thuốc!");
+          setActivePatient(null);
+          setViewState('input');
+      } catch (error) {
+          console.error("Lỗi khi kết thúc khám:", error);
+          message.error("Không thể lưu kết quả khám bệnh.");
+      }
   };
 
   const columns = [
@@ -208,8 +276,23 @@ export default function ExaminationPage() {
           title: '', 
           key: 'action', 
           render: (_, record) => (
-              <Button type="primary" onClick={() => setActivePatient(record)}>
-                  Bắt đầu khám
+              <Button type="primary" onClick={async () => {
+                  try {
+                      const res = await startExaminationAPI({
+                          appointmentId: record.key,
+                          patientId: record.patientId
+                      });
+                      if (res.data?.success || res.status === 201 || res.status === 200) {
+                          const id = res.data?.data?.consultationId || res.data?.consultationId;
+                          setConsultationId(id);
+                          setActivePatient(record);
+                      }
+                  } catch (error) {
+                      console.error("Lỗi khi bắt đầu khám:", error);
+                      message.error(error.response?.data?.message || "Không thể bắt đầu ca khám.");
+                  }
+              }}>
+                  {record.status === 'EXAMINING' ? 'Tiếp tục khám' : 'Bắt đầu khám'}
               </Button>
           ) 
       }
@@ -294,12 +377,6 @@ export default function ExaminationPage() {
 
                 </div>
 
-                {viewState === 'loading' && (
-                    <Card style={{ textAlign: 'center', padding: 80, borderRadius: 12 }}>
-                        <Spin size="large" tip="AI đang phân tích hình ảnh và dữ liệu..." />
-                    </Card>
-                )}
-
                 {viewState === 'input' && (
                     <Form form={form} layout="vertical">
                         <Row gutter={[24, 24]}>
@@ -373,48 +450,56 @@ export default function ExaminationPage() {
                                 title={<><RobotOutlined style={{ color: '#1677ff', marginRight: 8 }} /> Kết quả phân tích AI</>}
                                 style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: '100%', borderTop: '4px solid #1677ff' }}
                             >
-                                <div style={{ textAlign: 'center', marginBottom: 20, position: 'relative' }}>
-                                    <Image 
-                                        src={mockAIResult.analyzedImage} 
-                                        style={{ borderRadius: 8, maxHeight: 250, objectFit: 'contain' }} 
-                                    />
-                                    <Tag color="cyan" style={{ position: 'absolute', top: 10, right: 10 }}>AI Analyzed</Tag>
-                                </div>
+                                {isAILoading ? (
+                                    <div style={{ textAlign: 'center', padding: "80px 0", minHeight: "300px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                                        <Spin size="large" tip="AI đang phân tích hình ảnh và dữ liệu, vui lòng đợi..." />
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div style={{ textAlign: 'center', marginBottom: 20, position: 'relative' }}>
+                                            <Image 
+                                                src={mockAIResult.analyzedImage} 
+                                                style={{ borderRadius: 8, maxHeight: 250, objectFit: 'contain' }} 
+                                            />
+                                            <Tag color="cyan" style={{ position: 'absolute', top: 10, right: 10 }}>AI Analyzed</Tag>
+                                        </div>
 
-                                <Alert 
-                                    message={`Mức độ nghiêm trọng: ${mockAIResult.severityLevel === 'medium' ? 'TRUNG BÌNH' : 'CAO'}`}
-                                    type={mockAIResult.severityLevel === 'medium' ? 'warning' : 'error'}
-                                    showIcon
-                                    style={{ marginBottom: 20, fontWeight: 'bold' }}
-                                />
+                                        <Alert 
+                                            message={`Mức độ nghiêm trọng: ${mockAIResult.severityLevel === 'medium' ? 'TRUNG BÌNH' : 'CAO'}`}
+                                            type={mockAIResult.severityLevel === 'medium' ? 'warning' : 'error'}
+                                            showIcon
+                                            style={{ marginBottom: 20, fontWeight: 'bold' }}
+                                        />
 
-                                <Title level={5}>Chẩn đoán có khả năng cao nhất:</Title>
-                                <List
-                                    dataSource={mockAIResult.diagnoses}
-                                    renderItem={item => (
-                                        <List.Item style={{ display: 'block', borderBottom: '1px dashed #f0f0f0' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                                <Text strong>{item.name}</Text>
-                                                <Tag color={item.probability > 80 ? 'green' : 'orange'}>{item.probability}%</Tag>
-                                            </div>
-                                            <Progress percent={item.probability} showInfo={false} size="small" status={item.probability > 80 ? 'success' : 'normal'} />
-                                        </List.Item>
-                                    )}
-                                />
+                                        <Title level={5}>Chẩn đoán có khả năng cao nhất:</Title>
+                                        <List
+                                            dataSource={mockAIResult.diagnoses}
+                                            renderItem={item => (
+                                                <List.Item style={{ display: 'block', borderBottom: '1px dashed #f0f0f0' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                                                        <Text strong>{item.name}</Text>
+                                                        <Tag color={item.probability > 80 ? 'green' : 'orange'}>{item.probability}%</Tag>
+                                                    </div>
+                                                    <Progress percent={item.probability} showInfo={false} size="small" status={item.probability > 80 ? 'success' : 'normal'} />
+                                                </List.Item>
+                                            )}
+                                        />
 
-                                <div style={{ marginTop: 20 }}>
-                                    <Title level={5}>Giải thích:</Title>
-                                    <Paragraph type="secondary" style={{ background: '#f5f7fa', padding: 12, borderRadius: 8 }}>
-                                        {mockAIResult.explanation}
-                                    </Paragraph>
-                                </div>
-                                
-                                <div style={{ marginTop: 20 }}>
-                                    <Title level={5}>Lời khuyên đề xuất:</Title>
-                                    <Paragraph>
-                                        <CheckCircleOutlined style={{ color: '#52c41a' }} /> {mockAIResult.advice}
-                                    </Paragraph>
-                                </div>
+                                        <div style={{ marginTop: 20 }}>
+                                            <Title level={5}>Giải thích:</Title>
+                                            <Paragraph type="secondary" style={{ background: '#f5f7fa', padding: 12, borderRadius: 8 }}>
+                                                {mockAIResult.explanation}
+                                            </Paragraph>
+                                        </div>
+                                        
+                                        <div style={{ marginTop: 20 }}>
+                                            <Title level={5}>Lời khuyên đề xuất:</Title>
+                                            <Paragraph>
+                                                <CheckCircleOutlined style={{ color: '#52c41a' }} /> {mockAIResult.advice}
+                                            </Paragraph>
+                                        </div>
+                                    </>
+                                )}
                             </Card>
                         </Col>
                         )}
@@ -484,8 +569,8 @@ export default function ExaminationPage() {
                                     <Divider />
 
                                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16 }}>
-                                        <Button size="large">In toa thuốc</Button>
-                                        <Button type="primary" size="large" icon={<SaveOutlined />} htmlType="submit">
+                                        <Button size="large" disabled={isAILoading}>In toa thuốc</Button>
+                                        <Button type="primary" size="large" icon={<SaveOutlined />} htmlType="submit" disabled={isAILoading}>
                                             Lưu hồ sơ & Kết thúc
                                         </Button>
                                     </div>

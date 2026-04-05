@@ -558,12 +558,12 @@ export default function PersonalPage() {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="dateOfBirth" label="Ngày sinh" rules={[{ message: 'Vui lòng chọn ngày sinh!' }]}>
+              <Form.Item name="dateOfBirth" label="Ngày sinh" rules={[{ message: 'Vui lòng chọn ngày sinh!' , required: true }]}>
                 <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày sinh" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="gender" label="Giới tính" rules={[{  message: 'Vui lòng chọn giới tính!' }]}>
+              <Form.Item name="gender" label="Giới tính" rules={[{  message: 'Vui lòng chọn giới tính!' , required: true }]}>
                 <Select placeholder="Chọn giới tính">
                   <Option value="MALE">Nam</Option>
                   <Option value="FEMALE">Nữ</Option>

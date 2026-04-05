@@ -246,6 +246,7 @@ export default function DoctorDashboardPage() {
                       const toStr = apt.to ? apt.to.substring(0, 5) : '';
                       return {
                           id: apt.id,
+                          patientId: apt.patientId,
                           name: apt.patientName,
                           time: `${fromStr} - ${toStr}`,
                           status: apt.status,
