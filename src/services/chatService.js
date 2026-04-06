@@ -1,5 +1,7 @@
 import axios from './api'; 
 
+const API_BASE_URL = (import.meta.env.VITE_URL_SERVER || '').replace(/\/$/, '');
+
 
 const getChatbotTokenAPI = () => {
     return axios.post('/embedded-chat/passport'); 
@@ -26,7 +28,7 @@ const getMessagesAPI = (conversationId, chatToken) => {
 const uploadFileChatAPI = async (file, chatToken) => {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await fetch('http://localhost:3001/embedded-chat/upload-file', {
+    const response = await fetch(`${API_BASE_URL}/embedded-chat/upload-file`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${chatToken}`,
@@ -39,7 +41,7 @@ const uploadFileChatAPI = async (file, chatToken) => {
 
 const sendChatStreamAPI = async ({ query, conversation_id, parent_message_id, files, chatToken, onData, onEnd, onError }) => {
     try {
-        const response = await fetch('http://localhost:3001/embedded-chat/chat-messages-stream', {
+        const response = await fetch(`${API_BASE_URL}/embedded-chat/chat-messages-stream`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

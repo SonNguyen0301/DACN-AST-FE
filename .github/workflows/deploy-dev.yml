@@ -21,12 +21,14 @@ jobs:
           key: ${{ secrets.VM_SSH_KEY }}
           port: 22
           script: |
+            set -e
             cd /home/anhuu/code-base/DACN-AST-FE
             
             git fetch origin
             git reset --hard origin/dev
             
             # echo "${{ secrets.FE_ENV_DEV_FILE }}" > .env
+            docker network inspect astcare-net > /dev/null 2>&1 || docker network create astcare-net
             
             docker compose up --build -d
             

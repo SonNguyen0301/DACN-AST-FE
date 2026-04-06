@@ -14,6 +14,7 @@ import { getConversationsAPI, getMessagesAPI, sendChatStreamAPI, uploadFileChatA
 
 const { Sider, Content } = Layout;
 const { Text } = Typography;
+const API_BASE_URL = (import.meta.env.VITE_URL_SERVER || '').replace(/\/$/, '');
 
 export default function ChatBotPopup({ onClose }) {
   const { chatToken, user } = useAuth(); 
@@ -63,7 +64,7 @@ export default function ChatBotPopup({ onClose }) {
             text: item.message,
             sender: item.type === 'sent' ? 'user' : 'bot',
             imagePreview: item.imageUrls?.[0]
-              ? `http://localhost:3001/embedded-chat/image-proxy?url=${encodeURIComponent(item.imageUrls[0])}&token=${encodeURIComponent(chatToken)}`
+            ? `${API_BASE_URL}/embedded-chat/image-proxy?url=${encodeURIComponent(item.imageUrls[0])}&token=${encodeURIComponent(chatToken)}`
               : null,
         }));
 
