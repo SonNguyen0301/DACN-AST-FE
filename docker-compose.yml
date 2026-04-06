@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - '80:80'
+    networks:
+      - astcare-net
+
+networks:
+  astcare-net:
+    external: true

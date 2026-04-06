@@ -1,0 +1,33 @@
+name: Deploy Frontend to Dev Environment
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Google Cloud VM via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USERNAME }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: 22
+          script: |
+            cd /home/anhuu/code-base/DACN-AST-FE
+            
+            git fetch origin
+            git reset --hard origin/dev
+            
+            # echo "${{ secrets.FE_ENV_DEV_FILE }}" > .env
+            
+            docker compose up --build -d
+            
+            docker image prune -f
