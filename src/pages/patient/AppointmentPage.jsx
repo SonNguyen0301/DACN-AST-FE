@@ -40,7 +40,6 @@ const formatFileName = (fileName) => {
 export default function AppointmentPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth(); 
-
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [pastAppointments, setPastAppointments] = useState([]);
   const [examinedAppointments, setExaminedAppointments] = useState([]);
@@ -66,6 +65,8 @@ export default function AppointmentPage() {
         const firstRes = await getPatientAppointmentsAPI(user.id, {
             sort: 'createdAt', sortDirection: 'ASC', page: 1, take: 50
         });
+
+
 
         if (firstRes.data?.data) {
             let allData = firstRes.data.data.data || [];

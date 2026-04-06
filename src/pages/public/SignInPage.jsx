@@ -38,6 +38,7 @@ const onFinish = async (values) => {
     console.log('Form values:', values);
     
     const res = await login(values.email, values.password);
+    console.log('Login response:', res);
 
     if (res.success) {
       message.success('Đăng nhập thành công!');

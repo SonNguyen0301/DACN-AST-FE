@@ -244,20 +244,27 @@ export default function DoctorDashboardPage() {
                   const mappedData = res.data.data.appointments.map(apt => {
                       const fromStr = apt.from ? apt.from.substring(0, 5) : '';
                       const toStr = apt.to ? apt.to.substring(0, 5) : '';
+
+                      const imageUrls = apt.images 
+                        ? Object.values(apt.images)
+                            .map(img => typeof img === 'string' ? img : (img.base64 || img.dataUrl || img.url))
+                            .filter(Boolean) 
+                        : [];
                       return {
                           id: apt.id,
                           patientId: apt.patientId,
                           name: apt.patientName,
+                          patientName: apt.patientName,
                           time: `${fromStr} - ${toStr}`,
                           status: apt.status,
                           reason: apt.description || 'Không có ghi chú',
                           raw: apt ,
                           age: apt.dateOfBirth ? dayjs().diff(dayjs(apt.dateOfBirth), 'year') : 'N/A',
                           history: apt.previousDiseases?.length ? apt.previousDiseases.join(', ') : 'Không có ghi nhận.',
-                          gender: apt.gender === 'MALE' ? 'Nam' : 'Nữ',
+                          gender: apt.gender === 'MALE' ? 'MALE' : (apt.gender === 'FEMALE' ? 'FEMALE' : 'OTHER'),
                           phone : apt.phoneNumber || 'Không có',
                           detailedSymptoms: apt.description || 'Không có mô tả chi tiết.',
-
+                          images: imageUrls
                       };
                   });
                   setWaitingPatients(mappedData);
@@ -278,51 +285,6 @@ export default function DoctorDashboardPage() {
 
 const isTodaySelected = currentDate.isSame(dayjs(), 'day');
 
-// const statsData = [
-//     { 
-//       title: "Bệnh nhân hôm nay", 
-//       value: 8, 
-//       suffix: "ca",
-//       icon: <ClockCircleOutlined />, 
-//       color: "#1677ff", 
-//       bg: "#e6f4ff", 
-//       progress: Math.round((5/8) * 100), 
-//       progressDetail: "Đã khám: 5/8 ca", 
-//     },
-//     { 
-//       title: "Bệnh nhân tuần này", 
-//       value: 42, 
-//       suffix: "người",
-//       icon: <TeamOutlined />, 
-//       color: "#52c41a", 
-//       bg: "#f6ffed", 
-//       trend: "up",
-//       trendValue: "15%",
-//       subText: "So với tuần trước"
-//     },
-//     { 
-//       title: "Tổng khám tháng này", 
-//       value: 156, 
-//       suffix: "lượt",
-//       icon: <RiseOutlined />, 
-//       color: "#722ed1", 
-//       bg: "#f9f0ff", 
-//       trend: "down",
-//       trendValue: "5%",
-//       subText: "So với tháng trước"
-//     },
-//     { 
-//       title: "Lịch bị hủy", 
-//       value: 2, 
-//       suffix: "ca",
-//       icon: <UserDeleteOutlined />, 
-//       color: "#ff4d4f", 
-//       bg: "#fff1f0", 
-//       subText: "Trống lịch lúc 14:00 và 15:30",
-//       clickable: true, 
-//       onClick: () => setIsCancelModalOpen(true)
-//     },
-//   ];
 
 const getListData = (value) => {
     const dateStr = value.format('YYYY-MM-DD');
