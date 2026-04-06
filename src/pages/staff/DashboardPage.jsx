@@ -119,9 +119,10 @@ export default function AdmissionStaffDashboardPage() {
       try {
           const now = dayjs();
           const currentDate = now.format('YYYY-MM-DD');
-          const currentTime = now.format('HH:mm:ss+07'); 
+          const from = now.format('HH:mm:ss+07'); 
+          const params = { currentDate, from };
 
-          const response = await getStaffDashboardInfo(currentDate, currentTime);
+          const response = await getStaffDashboardInfo(params);
 
           if (response.data.success) {
               const data = response.data.data;

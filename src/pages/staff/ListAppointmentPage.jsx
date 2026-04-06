@@ -56,6 +56,7 @@ export default function AdmissionStaffAppointmentPage() {
   const [timeRange, setTimeRange] = useState(null);
 
   const [appointments, setAppointments] = useState([]);
+  const [doctorList, setDoctorList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
@@ -63,68 +64,6 @@ export default function AdmissionStaffAppointmentPage() {
   const [selectedPatient, setSelectedPatient] = useState(null);
   const user = { name: "Lê Thị Bích", role: "admission" };
 
-  const initialData = [
-    {
-      key: '1',
-      date: '2026-01-01', 
-      time: '08:00 - 08:30',
-      patientName: 'Nguyễn Văn A',
-      gender: 'male',
-      age: 32,
-      phone: '0909123456',
-      doctor: 'BS. CK2 Trần Thị Hoa',
-      reason: 'Đau đầu, chóng mặt kéo dài',
-      status: 'pending',
-    },
-    {
-      key: '2',
-      date: '2026-01-01',
-      time: '08:30 - 09:00',
-      patientName: 'Trần Thị B',
-      gender: 'female',
-      age: 28,
-      phone: '0912345678',
-      doctor: 'BS. Nguyễn Văn Nam',
-      reason: 'Nổi mẩn đỏ vùng mặt',
-      status: 'completed',
-    },
-    {
-      key: '3',
-      date: '2026-01-01', 
-      time: '09:00 - 09:30',
-      patientName: 'Lê Văn C',
-      gender: 'male',
-      age: 45,
-      phone: '0987654321',
-      doctor: 'BS. CK2 Trần Thị Hoa',
-      reason: 'Tái khám viêm da cơ địa',
-      status: 'completed',
-    },
-    {
-      key: '4',
-      date: '2026-01-01',
-      time: '09:30 - 10:00',
-      patientName: 'Phạm Thị D',
-      gender: 'female',
-      age: 50,
-      phone: '0933445566',
-      doctor: 'BS. Lê Thị Tú',
-      reason: 'Đau khớp gối khi vận động',
-      status: 'pending',
-    },
-    {
-      key: '5',
-      date: '2026-01-01', 
-      time: '10:00 - 10:30',
-      patientName: 'Hoàng Văn E',
-      gender: 'male',
-      age: 22,
-      phone: '0977889900',
-      doctor: 'BS. Nguyễn Văn Nam',
-      reason: 'Tư vấn thẩm mỹ sẹo',
-      status: 'pending',
-    },
-  ];
   const fetchAppointments = async (page = 1) => {
     setLoading(true);
     try {
@@ -154,7 +93,7 @@ export default function AdmissionStaffAppointmentPage() {
                 const toTime = item.to ? item.to.substring(0, 5) : '';
 
                 return {
-                    key: index, 
+                    key: item.id || index, 
                     date: item.date,
                     time: `${fromTime} - ${toTime}`,
                     patientName: item.patientName,
@@ -170,6 +109,12 @@ export default function AdmissionStaffAppointmentPage() {
             const finalData = filterDoctor === 'all' ? mappedData : mappedData.filter(d => d.doctor === filterDoctor);
 
             setAppointments(finalData);
+
+            if(filterDoctor === 'all'){
+               const uniqueDoctors = [...new Set(mappedData.map(item => item.doctor))];
+               setDoctorList(uniqueDoctors);
+            }
+
             setPagination({
                 current: res.data.data.meta.page,
                 pageSize: res.data.data.meta.take,
@@ -188,19 +133,10 @@ export default function AdmissionStaffAppointmentPage() {
       fetchAppointments();
   }, []);
 
-  const [dataSource, setDataSource] = useState(initialData);
 
-  // const doctorList = [...new Set(initialData.map(item => item.doctor))];
-  const doctorList = [...new Set(appointments.map(item => item.doctor))];
+  const handleFilterClick = () => fetchAppointments(1); 
+  const handleTableChange = (newPagination) => fetchAppointments(newPagination.current);
 
-  const handleSearch = (val) => setSearchText(val.toLowerCase());
-  const handleStatusChange = (val) => setFilterStatus(val);
-  const handleDoctorChange = (val) => setFilterDoctor(val);
-
-  const handleDateRangeChange = (dates) => {
-    setDateRange(dates);
-  };
-    const handleTimeRangeChange = (times) => setTimeRange(times);
 
   const handleViewDetail = (record) => {
     setSelectedPatient(record);
@@ -212,54 +148,14 @@ export default function AdmissionStaffAppointmentPage() {
     setSelectedPatient(null);
   };
 
-  const handleCancelAppointment = (key) => {
-    const newData = dataSource.map(item => {
-      if (item.key === key) {
-        return { ...item, status: 'cancelled' }; 
-      }
-      return item;
-    });
-    setDataSource(newData);
-    message.success('Đã hủy lịch hẹn thành công!');
+  const handleCancelAppointment = () => {
+
   };
 
-  const handleNoteForAppointment = (key) => {
-    const newData = dataSource.map(item => {
-      if (item.key === key) {
-        return { ...item, notes: 'Đã có ghi chú mới' };
-      }
-      return item;
-    });
-    setDataSource(newData);
-    message.success('Đã thêm ghi chú cho lịch hẹn!');
+  const handleNoteForAppointment = () => {
+    
   }
   
-  const filteredData = dataSource.filter(item => {
-
-    const matchName = item.patientName.toLowerCase().includes(searchText) || item.phone.includes(searchText);
-    const matchStatus = filterStatus === 'all' || item.status === filterStatus;
-    const matchDoctor = filterDoctor === 'all' || item.doctor === filterDoctor;
-    
-    let matchDate = true;
-    if (dateRange && dateRange[0] && dateRange[1]) {
-        const itemDate = dayjs(item.date);
-        matchDate = itemDate.isBetween(dateRange[0], dateRange[1], 'day', '[]'); 
-    }
-
-    let matchTime = true;
-    if (timeRange && timeRange[0] && timeRange[1]) {
-        const timeString = item.time.split(' - ')[0]; 
-        const appointmentTime = dayjs(timeString, 'HH:mm');
-        
-        const filterStart = dayjs().hour(timeRange[0].hour()).minute(timeRange[0].minute());
-        const filterEnd = dayjs().hour(timeRange[1].hour()).minute(timeRange[1].minute());
-        const targetTime = dayjs().hour(appointmentTime.hour()).minute(appointmentTime.minute());
-
-        matchTime = targetTime.isBetween(filterStart, filterEnd, null, '[]');
-    }
-    return matchName && matchTime && matchStatus && matchDate && matchDoctor; 
-  });
-
   const columns = [
     {
       title: 'Ngày khám', 
@@ -416,12 +312,12 @@ export default function AdmissionStaffAppointmentPage() {
 
         <Card variant="borderless" style={{ borderRadius: 12, marginBottom: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <Row gutter={[16, 16]} align="bottom">
-                <Col xs={24} md={6}>
+                <Col xs={24} md={5}>
                     <Text strong style={{ display: 'block', marginBottom: 4 }}>Khoảng thời gian:</Text>
                     <RangePicker 
                         value={dateRange}
                         format="DD/MM/YYYY"
-                        onChange={handleDateRangeChange}
+                        onChange={setDateRange}
                         style={{ width: '100%' }}
                         allowClear={false}
                     />
@@ -431,7 +327,7 @@ export default function AdmissionStaffAppointmentPage() {
                     <TimePicker.RangePicker 
                         format="HH:mm"
                         minuteStep={15}
-                        onChange={handleTimeRangeChange}
+                        onChange={setTimeRange}
                         placeholder={['Từ giờ', 'Đến giờ']}
                         style={{ width: '100%' }}
                     />
@@ -441,7 +337,8 @@ export default function AdmissionStaffAppointmentPage() {
                     <Input 
                         placeholder="Tìm theo tên hoặc SĐT..." 
                         prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />} 
-                        onChange={(e) => handleSearch(e.target.value)} 
+                        onChange={(e) => setSearchText(e.target.value)} 
+                        onPressEnter={handleFilterClick}
                         allowClear 
                     />
                 </Col>
@@ -451,7 +348,7 @@ export default function AdmissionStaffAppointmentPage() {
                     <Select 
                       defaultValue="all" 
                       style={{ width: '100%' }} 
-                      onChange={handleDoctorChange} 
+                      onChange={setFilterDoctor} 
                       showSearch
                     >
                         <Option value="all">Tất cả bác sĩ</Option>
@@ -461,9 +358,9 @@ export default function AdmissionStaffAppointmentPage() {
                     </Select>
                 </Col>
 
-                <Col xs={24} md={4}>
+                <Col xs={24} md={3}>
                     <Text strong style={{ display: 'block', marginBottom: 4 }}>Trạng thái:</Text>
-                    <Select defaultValue="all" style={{ width: '100%' }} onChange={handleStatusChange} suffixIcon={<FilterOutlined />}>
+                    <Select defaultValue="all" style={{ width: '100%' }} onChange={setFilterStatus} suffixIcon={<FilterOutlined />}>
                         <Option value="all">Tất cả</Option>
                         <Option value="SCHEDULED">Chờ khám</Option>
                         <Option value="EXAMINING">Đang khám</Option>
@@ -471,15 +368,19 @@ export default function AdmissionStaffAppointmentPage() {
                         <Option value="CANCELLED">Đã hủy</Option>
                     </Select>
                 </Col>
-
+                <Col xs={24} md={2} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button type="primary" loading={loading} onClick={handleFilterClick} icon={<FilterOutlined />}>Lọc dữ liệu</Button>
+                </Col>
             </Row>
         </Card>
 
         <Card variant="borderless" style={{ borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }} styles={{ body: { padding: 0 } }}>
              <Table 
                 columns={columns} 
-                dataSource={filteredData} 
-                pagination={{ pageSize: 10 }}
+                dataSource={appointments} 
+                loading={loading}
+                pagination={pagination}
+                onChange={handleTableChange}
                 onRow={(record) => ({
                     style: { cursor: 'pointer' },
                     onClick: () => handleViewDetail(record)
