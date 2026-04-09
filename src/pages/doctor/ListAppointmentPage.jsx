@@ -463,7 +463,7 @@ export default function DoctorAppointmentPage() {
                 Đóng
             </Button>,
             (selectedPatient?.status === 'SCHEDULED' || selectedPatient?.status === 'EXAMINING') && (
-                <Button key="start" type="primary" onClick={handleStartConsultation}>
+                <Button key="start" type="primary" onClick={handleStartConsultation} disabled={!dayjs(selectedPatient.date).isSame(dayjs(), 'day')}>
                     Bắt đầu khám
                 </Button>
             )
