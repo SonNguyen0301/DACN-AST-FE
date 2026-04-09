@@ -1,4 +1,4 @@
-import  { useState } from 'react';
+import  { useState, useEffect } from 'react';
 import { 
   Layout, 
   Menu, 
@@ -21,8 +21,6 @@ import {
   Dropdown,
   Space,
   Tag,
-  Row,
-  Col,
   Divider,
   Popover, 
 } from "antd";
@@ -42,8 +40,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
 import Footer from "../../components/common/Footer"; 
-import { jsPDF } from 'jspdf'; 
-import autoTable from 'jspdf-autotable';
+import { getStaffScheduleAPI, createStaffScheduleAPI, importStaffScheduleCSVAPI, exportStaffScheduleCSVAPI } from '../../services/staffService';
+import { getDoctorsAPI } from '../../services/doctorService';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -54,6 +52,10 @@ export default function ManageStaffSchedulePage() {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [uploadForm] = Form.useForm(); 
+
+  const [scheduleData, setScheduleData] = useState({});
+  const [currentMonthView, setCurrentMonthView] = useState(dayjs());
+  const [doctorOptions, setDoctorOptions] = useState([]);
   
   const [isModalOpen, setIsModalOpen] = useState(false); 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -63,98 +65,112 @@ export default function ManageStaffSchedulePage() {
 
   const [exporting, setExporting] = useState(false); 
 
-  const removeAccents = (str) => {
-      if (!str) return '';
-      return str.normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .replace(/đ/g, 'd').replace(/Đ/g, 'D');
-  };
+  const fetchSchedule = async (dateObj) => {
+      try {
+          const startDate = dateObj.startOf('month').startOf('week').format('YYYY-MM-DD');
+          const endDate = dateObj.endOf('month').endOf('week').format('YYYY-MM-DD');
 
+          const res = await getStaffScheduleAPI(startDate, endDate);
+          
+          if (res.data?.success) {
+              const rawData = res.data.data || [];
+              const map = {};
 
-  const handleExportPDF = () => {
-      setExporting(true);
-      const monthStr = selectedDate.format('MM/YYYY');
-      const monthPrefix = selectedDate.format('YYYY-MM'); 
+              rawData.forEach((item, index) => {
+                  const dateStr = item.date;
+                  if (!map[dateStr]) map[dateStr] = [];
 
-      message.loading({ content: `Đang tạo file PDF lịch trực tháng ${monthStr}...`, key: 'exportPdf' });
+                  const fromTime = item.from ? item.from.substring(0, 5) : '';
+                  const toTime = item.to ? item.to.substring(0, 5) : '';
 
-      setTimeout(() => {
-          try {
-              const doc = new jsPDF();
-              
-              const tableData = [];
-              Object.keys(scheduleData).forEach(dateKey => {
-                  if (dateKey.startsWith(monthPrefix)) {
-                      const shifts = scheduleData[dateKey];
-                      shifts.forEach(shift => {
-                          tableData.push([
-                              dayjs(dateKey).format('DD/MM/YYYY'),
-                              removeAccents(shift.doctor) || '',
-                              removeAccents(shift.dept) || '',
-                              shift.time || '',
-                              removeAccents(shift.room) || ''
-                          ]);
-                      });
-                  }
+                  map[dateStr].push({
+                      id: index, 
+                      doctor: item.doctorName,
+                      dept: 'Da liễu', 
+                      time: `${fromTime} - ${toTime}`,
+                      room: item.room
+                  });
               });
-
-              if (tableData.length === 0) {
-                  message.warning({ content: `Không có lịch trực nào trong tháng ${monthStr} để xuất PDF!`, key: 'exportPdf', duration: 3 });
-                  setExporting(false);
-                  return;
-              }
-
-              doc.setFontSize(18);
-              doc.text(`LICH TRUC THANG ${monthStr}`, 14, 15);
-              doc.setFontSize(11);
-              doc.text(`Xuat boi: ${removeAccents(user.name)} - Ngay xuat: ${dayjs().format('DD/MM/YYYY')}`, 14, 22);
-
-              autoTable(doc, {
-                  startY: 28, 
-                  head: [['Ngay', 'Bac si', 'Chuyen khoa', 'Thoi gian', 'Phong']], 
-                  body: tableData, 
-                  theme: 'grid',
-                  headStyles: { fillColor: [22, 119, 255] }, 
-                  styles: { fontSize: 10 }
-              });
-
-              const fileName = `Lich_Truc_Thang_${selectedDate.format('MM_YYYY')}.pdf`;
-              const pdfBlob = doc.output('blob');
-              const blobUrl = URL.createObjectURL(pdfBlob); 
-              
-              const link = document.createElement('a'); 
-              link.href = blobUrl;
-              link.download = fileName;
-              document.body.appendChild(link);
-              link.click(); 
-              
-              document.body.removeChild(link);
-              URL.revokeObjectURL(blobUrl);
-              
-              message.success({ content: 'Xuất file PDF thành công!', key: 'exportPdf', duration: 3 });
-          } catch (error) {
-              console.error("Lỗi tạo PDF:", error);
-              message.error({ content: 'Có lỗi xảy ra khi tạo file PDF.', key: 'exportPdf', duration: 3 });
-          } finally {
-              setExporting(false);
+              setScheduleData(map);
           }
-      }, 800); 
+      } catch (error) {
+          console.error("Lỗi lấy lịch trực:", error);
+          message.error("Không thể tải lịch trực.");
+      }
   };
+
+  useEffect(() => {
+      fetchSchedule(currentMonthView);
+  }, [currentMonthView.format('YYYY-MM')]);
+
+  useEffect(() => {
+      const fetchDoctorsList = async () => {
+          try {
+              const res = await getDoctorsAPI({ page: 1, take: 100, sortDirection: 'ASC' });
+              
+              if (res.data?.success) {
+                  const docs = res.data.data.data || res.data.data;
+                  setDoctorOptions(docs);
+              }
+          } catch (error) {
+              console.error("Lỗi tải danh sách bác sĩ:", error);
+          }
+      };
+
+      fetchDoctorsList();
+  }, []);
+
+    const handleExportCSV = async () => {
+      setExporting(true);
+      try {
+          const startDate = currentMonthView.startOf('month').format('YYYY-MM-DD');
+          const endDate = currentMonthView.endOf('month').format('YYYY-MM-DD');
+
+          message.loading({ content: `Đang tải file CSV tháng ${currentMonthView.format('MM/YYYY')}...`, key: 'exportCsv' });
+
+          const response = await exportStaffScheduleCSVAPI(startDate, endDate);
+
+          const blob = new Blob([response.data], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+
+          const contentDisposition = response.headers['content-disposition'];
+          const fileName = contentDisposition
+            ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
+            : `schedule_${startDate}_${endDate}.csv`;
+
+          link.setAttribute('download', fileName);
+          document.body.appendChild(link);
+          link.click();
+          
+          link.remove();
+          window.URL.revokeObjectURL(url);
+
+          message.success({ content: 'Xuất file CSV thành công!', key: 'exportCsv', duration: 3 });
+      } catch (error) {
+          console.error("Lỗi xuất file CSV:", error);
+          message.error({ content: 'Có lỗi xảy ra khi xuất file CSV.', key: 'exportCsv', duration: 3 });
+      } finally {
+          setExporting(false);
+      }
+  };
+
 
   const user = { name: "Lê Thị Bích", role: "admission" };
 
-  const [scheduleData, setScheduleData] = useState({
-    '2026-01-01': [
-      { id: 1, doctor: 'BS. CK2 Trần Thị Hoa', dept: 'Da liễu', time: '08:00 - 12:00', room: 'P.201', },
-      { id: 2, doctor: 'BS. Nguyễn Văn Nam', dept: 'Nội khoa', time: '13:00 - 17:00', room: 'P.305' },
-    ],
-    '2026-01-12': [
-      { id: 3, doctor: 'BS. Lê Thị Tú', dept: 'Nhi khoa', time: '08:00 - 16:00', room: 'P.102' },
-    ],
-    '2026-01-13': [
-       { id: 4, doctor: 'BS. Phạm Minh', dept: 'Tai Mũi Họng', time: '08:00 - 12:00', room: 'P.401' },
-    ]
-  });
+//   const [scheduleData, setScheduleData] = useState({
+//     '2026-01-01': [
+//       { id: 1, doctor: 'BS. CK2 Trần Thị Hoa', dept: 'Da liễu', time: '08:00 - 12:00', room: 'P.201', },
+//       { id: 2, doctor: 'BS. Nguyễn Văn Nam', dept: 'Nội khoa', time: '13:00 - 17:00', room: 'P.305' },
+//     ],
+//     '2026-01-12': [
+//       { id: 3, doctor: 'BS. Lê Thị Tú', dept: 'Nhi khoa', time: '08:00 - 16:00', room: 'P.102' },
+//     ],
+//     '2026-01-13': [
+//        { id: 4, doctor: 'BS. Phạm Minh', dept: 'Tai Mũi Họng', time: '08:00 - 12:00', room: 'P.401' },
+//     ]
+//   });
 
   const getListData = (value) => {
     const dateString = value.format('YYYY-MM-DD');
@@ -254,24 +270,78 @@ export default function ManageStaffSchedulePage() {
     setIsModalOpen(true);
   };
 
-  const handleUploadSubmit = () => {
-    uploadForm.validateFields().then(values => {
-        const monthStr = values.month.format('MM/YYYY');
-        message.loading({ content: `Đang xử lý lịch cho tháng ${monthStr}...`, key: 'upload' });
-        
-        setTimeout(() => {
-            message.success({ content: 'Đã nhập dữ liệu lịch thành công!', key: 'upload' });
-            setIsUploadModalOpen(false);
-            uploadForm.resetFields();
-        }, 1500);
-    });
+  const handleUploadSubmit =  async () => {
+    try {
+          const values = await uploadForm.validateFields();
+          const fileList = values.file;
+          
+          if (!fileList || fileList.length === 0) {
+              message.error("Vui lòng chọn một file CSV để tải lên.");
+              return;
+          }
+
+          const file = fileList[0].originFileObj;
+          
+          const formData = new FormData();
+          formData.append('file', file);
+          
+          message.loading({ content: 'Đang xử lý file CSV...', key: 'uploadCsv' });
+
+          const res = await importStaffScheduleCSVAPI(formData);
+          
+          if (res.data?.success) {
+              const { successes, errors } = res.data.data;
+              
+              setIsUploadModalOpen(false);
+              uploadForm.resetFields();
+              fetchSchedule(currentMonthView); 
+
+              if (errors && errors.length > 0) {
+                  message.warning({ 
+                      content: `Thành công ${successes?.length || 0} ca. Thất bại ${errors.length} ca (VD: ${errors[0].message})`, 
+                      key: 'uploadCsv', 
+                      duration: 6 
+                  });
+              } else {
+                  message.success({ content: `Đã nhập thành công ${successes?.length || 0} ca trực!`, key: 'uploadCsv', duration: 3 });
+              }
+          }
+      } catch (error) {
+          console.error("Lỗi upload CSV:", error);
+          message.error({ content: error.response?.data?.message || 'Có lỗi xảy ra khi upload file.', key: 'uploadCsv', duration: 3 });
+      }
   };
 
-  const handleFormSubmit = (values) => {
-    const timeRange = `${values.time[0].format('HH:mm')} - ${values.time[1].format('HH:mm')}`;
-    console.log("New Schedule:", { ...values, timeRange });
-    message.success("Đã lưu lịch làm việc");
-    setIsModalOpen(false);
+  const handleFormSubmit = async (values) => {
+    try {
+          const fromTime = values.time[0].format('HH:mm:00+07');
+          const toTime = values.time[1].format('HH:mm:00+07');
+          const dateStr = values.date.format('YYYY-MM-DD');
+          
+          let roomStr = values.room.toString();
+          if (!roomStr.toUpperCase().startsWith('P')) {
+              roomStr = `P${roomStr}`;
+          }
+
+          const payload = {
+              doctorId: values.doctor, 
+              room: roomStr,
+              date: dateStr,
+              from: fromTime,
+              to: toTime
+          };
+
+          const res = await createStaffScheduleAPI(payload);
+          
+          if (res.data?.success) {
+              message.success("Đã thêm lịch trực thành công!");
+              setIsModalOpen(false);
+              fetchSchedule(currentMonthView); 
+          }
+      } catch (error) {
+          console.error("Lỗi thêm lịch:", error);
+          message.error("Có lỗi xảy ra khi lưu lịch.");
+      }
   };
 
   const handleDeleteShift = () => {
@@ -335,10 +405,10 @@ export default function ManageStaffSchedulePage() {
             <Space>
                 <Button 
                     icon={<FilePdfOutlined />} 
-                    onClick={handleExportPDF}
+                    onClick={handleExportCSV}
                     loading={exporting}
                 >
-                    Xuất PDF
+                    Xuất CSV
                 </Button>
 
                 <Button 
@@ -364,6 +434,7 @@ export default function ManageStaffSchedulePage() {
             <Calendar 
                 dateCellRender={dateCellRender} 
                 onSelect={onSelectDate}
+                onPanelChange={(date) => setCurrentMonthView(date)}
                 headerRender={({ value, onChange }) => {
                     return (
                         <div style={{ padding: '10px 0 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -376,6 +447,7 @@ export default function ManageStaffSchedulePage() {
                                     onChange={(newMonth) => {
                                         const now = value.clone().month(newMonth);
                                         onChange(now);
+                                        setCurrentMonthView(now);
                                     }}
                                 >
                                     {Array.from({ length: 12 }, (_, i) => <Select.Option key={i} value={i}>Tháng {i + 1}</Select.Option>)}
@@ -387,6 +459,7 @@ export default function ManageStaffSchedulePage() {
                                     onChange={(newYear) => {
                                         const now = value.clone().year(newYear);
                                         onChange(now);
+                                        setCurrentMonthView(now);
                                     }}
                                 >
                                     {Array.from({ length: 10 }, (_, i) => <Select.Option key={i} value={dayjs().year() - 5 + i}>{dayjs().year() - 5 + i}</Select.Option>)}
@@ -458,10 +531,23 @@ export default function ManageStaffSchedulePage() {
       >
         <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
             <Form.Item label="Chọn Bác sĩ" name="doctor" rules={[{ required: true, message: 'Vui lòng chọn bác sĩ' }]}>
-                <Select placeholder="Tìm kiếm bác sĩ..." showSearch optionFilterProp="children">
-                    <Option value="BS. CK2 Trần Thị Hoa">BS. CK2 Trần Thị Hoa (Da liễu)</Option>
-                    <Option value="BS. Nguyễn Văn Nam">BS. Nguyễn Văn Nam (Nội khoa)</Option>
-                    <Option value="BS. Lê Thị Tú">BS. Lê Thị Tú (Nhi khoa)</Option>
+                <Select 
+                    placeholder="Tìm kiếm bác sĩ..." 
+                    showSearch 
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                    }
+                >
+                    {doctorOptions.map(doc => (
+                        <Option 
+                            key={doc.id} 
+                            value={doc.id}
+                            label={`${doc.lastName} ${doc.firstName}`} 
+                        >
+                            BS. {doc.lastName} {doc.firstName} ({doc.department || 'Chưa rõ'})
+                        </Option>
+                    ))}
                 </Select>
             </Form.Item>
             

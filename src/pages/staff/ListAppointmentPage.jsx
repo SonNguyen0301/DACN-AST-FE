@@ -20,7 +20,8 @@ import {
   message,
   Tooltip,
   Popconfirm,
-  Space
+  Space,
+  Form
 } from "antd";
 import { 
   UserOutlined, 
@@ -30,7 +31,8 @@ import {
   PhoneOutlined, 
   MedicineBoxOutlined,
   ClockCircleOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  EditOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
@@ -38,7 +40,7 @@ import isBetween from 'dayjs/plugin/isBetween';
 import Footer from "../../components/common/Footer"; 
 
 dayjs.extend(isBetween);
-import { getStaffAppointmentsAPI } from '../../services/staffService';
+import { getStaffAppointmentsAPI, updateAppointmentNoteAPI } from '../../services/staffService';
 import { cancelAppointmentAPI } from '../../services/appointmentService';
 
 const { Header, Content } = Layout;
@@ -62,6 +64,10 @@ export default function AdmissionStaffAppointmentPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
+
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [noteForm] = Form.useForm();
+
   const user = { name: "Lê Thị Bích", role: "admission" };
 
   const fetchAppointments = async (page = 1) => {
@@ -102,6 +108,7 @@ export default function AdmissionStaffAppointmentPage() {
                     doctor: item.doctorName,
                     department: item.department,
                     reason: item.description || item.note || 'Không có ghi chú',
+                    note: item.note,
                     status: item.status, 
                 };
             });
@@ -133,6 +140,27 @@ export default function AdmissionStaffAppointmentPage() {
       fetchAppointments();
   }, []);
 
+  const handleCancelAppointment = async (key) => {
+    try {
+        const res = await cancelAppointmentAPI(key);
+        
+        if (res.data?.success || res.data?.isSuccess) {
+            const newData = appointments.map(item => {
+                if (item.key === key) return { ...item, status: 'CANCELLED' }; 
+                return item;
+            });
+            setAppointments(newData);
+            
+            message.success(res.data?.message || 'Đã hủy lịch hẹn thành công!');
+        } else {
+            message.error('Không thể hủy lịch hẹn này.');
+        }
+    } catch (error) {
+        console.error("Lỗi khi hủy lịch hẹn:", error);
+        const errorMsg = error.response?.data?.message || 'Đã xảy ra lỗi hệ thống khi hủy lịch.';
+        message.error(errorMsg);
+    }
+  };
 
   const handleFilterClick = () => fetchAppointments(1); 
   const handleTableChange = (newPagination) => fetchAppointments(newPagination.current);
@@ -148,13 +176,35 @@ export default function AdmissionStaffAppointmentPage() {
     setSelectedPatient(null);
   };
 
-  const handleCancelAppointment = () => {
-
+  const openNoteModal = (record) => {
+    setSelectedPatient(record);
+    noteForm.setFieldsValue({ note: record.note });
+    setIsNoteModalOpen(true);
   };
 
-  const handleNoteForAppointment = () => {
-    
-  }
+  const handleNoteForAppointment = async (values) => {
+    try {
+        const res = await updateAppointmentNoteAPI(selectedPatient.key, values.note);
+        if (!res.data?.success) {
+            message.error('Không thể cập nhật ghi chú cho lịch hẹn này.');
+            return;
+        }
+        
+        const newData = appointments.map(item => {
+            if (item.key === selectedPatient.key) {
+                return { ...item, note: values.note };
+            }
+            return item;
+        });
+        setAppointments(newData);
+        
+        message.success('Đã cập nhật ghi chú thành công!');
+        setIsNoteModalOpen(false);
+    } catch (error) {
+        console.error("Lỗi cập nhật ghi chú:", error);
+        message.error('Có lỗi xảy ra khi cập nhật ghi chú.');
+    }
+  };
   
   const columns = [
     {
@@ -255,12 +305,25 @@ export default function AdmissionStaffAppointmentPage() {
     },
     {
       title: 'Ghi chú',
-      dataIndex: 'notes',
+      dataIndex: 'note',
       width: 200,
       render: (text, record) => (
-        <Tooltip title={text} onClick={() => handleNoteForAppointment(record.key)}>
-          <Text ellipsis style={{ maxWidth: 180 }}>{text}</Text>
-        </Tooltip>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <Text ellipsis style={{ maxWidth: 140 }} type={text ? 'default' : 'secondary'}>
+                {text || 'Chưa có ghi chú'}
+            </Text>
+            <Tooltip title="Thêm/Sửa ghi chú">
+                <Button 
+                    type="text" 
+                    size="small" 
+                    icon={<EditOutlined style={{ color: '#1677ff' }} />} 
+                    onClick={(e) => { 
+                        e.stopPropagation(); 
+                        openNoteModal(record); 
+                    }} 
+                />
+            </Tooltip>
+        </div>
       )
     }
   ];
@@ -407,6 +470,27 @@ export default function AdmissionStaffAppointmentPage() {
                 <p><strong>SĐT:</strong> {selectedPatient.phone}</p>
             </div>
         )}
+      </Modal>
+
+      <Modal
+        title="Cập nhật ghi chú lịch hẹn"
+        open={isNoteModalOpen}
+        onCancel={() => setIsNoteModalOpen(false)}
+        onOk={() => noteForm.submit()}
+        okText="Lưu ghi chú"
+        cancelText="Hủy"
+      >
+        <Form form={noteForm} layout="vertical" onFinish={handleNoteForAppointment}>
+            <Form.Item 
+                name="note" 
+                label={`Ghi chú cho bệnh nhân: ${selectedPatient?.patientName}`}
+            >
+                <Input.TextArea 
+                    rows={4} 
+                    placeholder="Nhập nội dung ghi chú nội bộ, nhắc nhở mang theo giấy tờ, dặn dò..." 
+                />
+            </Form.Item>
+        </Form>
       </Modal>
 
     </Layout>

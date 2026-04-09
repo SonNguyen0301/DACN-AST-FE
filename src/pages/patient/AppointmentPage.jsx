@@ -276,10 +276,10 @@ export default function AppointmentPage() {
            const hasNotesOrFiles = isUpcomingTab && (apt.description || (apt.images && apt.images.length > 0));
 
            return (
-            <Card key={apt.id} variant="borderless" style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
-              <Row gutter={24} align="middle"> 
+            <Card key={apt.id} variant="borderless" style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" ,height: '100%', display: 'flex', flexDirection: 'column'}}>
+              <Row gutter={24} align="stretch" style={{ flex: 1 }}> 
                 
-                <Col xs={24} md={9}>
+                <Col xs={24} md={9} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <Space align="start" size="middle">
                     <Avatar size={80} src={apt.avatarUrl} icon={<UserOutlined />} />
                     <div style={{ width: '100%' }}>
@@ -302,6 +302,10 @@ export default function AppointmentPage() {
                       padding: '12px 16px',
                       border: '1px solid #d6e4ff', 
                       height: '100%', 
+                      minHeight: isUpcomingTab ? '140px' : 'auto', 
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center'
                     }}>
                         {apt.description && (
                             <div style={{ marginBottom: (apt.files && apt.files.length > 0) ? 8 : 0 }}>
@@ -331,8 +335,8 @@ export default function AppointmentPage() {
                                           {apt.images.map((f, idx) => (
                                               <Image
                                                   key={idx}
-                                                  width={100}
-                                                  height={100}
+                                                  width={60}
+                                                  height={60}
                                                   src={f.base64} 
                                                   alt={f.description || 'Hình ảnh đính kèm'}
                                                   fallback="https://via.placeholder.com/60?text=L%E1%BB%97i"

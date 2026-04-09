@@ -58,9 +58,7 @@ export default function BookingPage() {
               sortDirection: 'DESC', 
           };
 
-          // Nếu có chọn chuyên khoa thì gửi lên (API đang nhận chuỗi string)
           if (selectedDepartments.length > 0) {
-              // Tạm thời lấy chuyên khoa đầu tiên nếu API chỉ hỗ trợ 1, hoặc join(',') nếu hỗ trợ mảng
               params.department = selectedDepartments[0]; 
           }
 
@@ -69,7 +67,6 @@ export default function BookingPage() {
           }
 
           const res = await getDoctorsAPI(params);
-        //  console.log("API response for doctors:", res);
           
           if (res.data.data) {
               let dataArray = [];
