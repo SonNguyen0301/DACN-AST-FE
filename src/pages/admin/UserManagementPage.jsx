@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Layout, 
   Menu, 
@@ -32,6 +32,8 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/Footer"; 
+import adminService from "../../services/adminService";
+import { getDoctorsAPI } from "../../services/doctorService";
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -46,14 +48,42 @@ export default function UserManagementPage() {
   const [searchText, setSearchText] = useState('');
   const [activeTab, setActiveTab] = useState('all');
 
-  const initialUsers = [
-    { id: 1, name: 'BS. CK2 Trần Thị Hoa', email: 'hoa.tran@astcare.com', phone: '0909123456', role: 'doctor', department: 'Da liễu', status: 'active' },
-    { id: 2, name: 'Nguyễn Văn Nam', email: 'nam.nguyen@astcare.com', phone: '0912345678', role: 'doctor', department: 'Nội khoa', status: 'active' },
-    { id: 3, name: 'Lê Thị Bích', email: 'bich.le@astcare.com', phone: '0987654321', role: 'staff', department: 'Tiếp nhận', status: 'active' },
-    { id: 4, name: 'Phạm Văn Hùng', email: 'hung.pham@gmail.com', phone: '0933445566', role: 'patient', department: null, status: 'active' },
-    { id: 5, name: 'Hoàng Thị Mai', email: 'mai.hoang@gmail.com', phone: '0977889900', role: 'patient', department: null, status: 'inactive' },
-  ];
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const mockStaffs = [
+          { id: 'mock-s-1', name: 'Lê Thị Bích', email: 'bich.le@astcare.com', phone: '0987654321', role: 'staff', department: 'Tiếp nhận', status: 'active', staffCode: 'NV01' }
+      ];
+
+      const res = await getDoctorsAPI({ take: 10, page: 1 });
+      const doctorData = res.data?.data?.data || res.data?.data || [];
+      const formattedDoctors = doctorData.map(doc => ({
+          ...doc,
+          id: doc.id || doc.userId,
+          name: `${doc.lastName || ''} ${doc.firstName || ''}`.trim() || doc.name,
+          role: 'doctor',
+          email: doc.email,
+          phone: doc.phoneNumber || doc.phone,
+          department: doc.department,
+          status: doc.user?.status || 'active',
+          doctorCode: doc.doctorCode
+      }));
+
+      setUsers([...formattedDoctors, ...mockStaffs]);
+    } catch (error) {
+      console.error(error);
+      message.error("Lỗi khi tải danh sách Bác sĩ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const user = { name: "Administrator", role: "admin" };
 
@@ -92,23 +122,62 @@ export default function UserManagementPage() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id) => {
-    const newUsers = users.filter(item => item.id !== id);
-    setUsers(newUsers);
-    message.success('Đã xóa tài khoản thành công');
+  const handleDelete = async (record) => {
+    try {
+      if (record.role === 'doctor') {
+        await adminService.deleteDoctorAccount(record.id);
+      } else if (record.role === 'staff') {
+        await adminService.deleteAdmissionStaffAccount(record.id);
+      } else {
+        return message.warning('Chỉ có thể xoá Bác sĩ và Nhân viên');
+      }
+      message.success('Đã xóa tài khoản thành công');
+      fetchUsers();
+    } catch (err) {
+      message.error(err?.response?.data?.message || 'Có lỗi khi xóa');
+    }
   };
 
-  const handleSave = (values) => {
-    if (editingUser) {
-      const updatedUsers = users.map(u => u.id === editingUser.id ? { ...u, ...values } : u);
-      setUsers(updatedUsers);
-      message.success('Cập nhật thông tin thành công');
-    } else {
-      const newUser = { id: Date.now(), ...values };
-      setUsers([newUser, ...users]);
-      message.success('Đã tạo tài khoản mới');
+  const handleSave = async (values) => {
+    try {
+      const parts = values.name.split(' ');
+      const firstName = parts.pop();
+      const lastName = parts.join(' ') || firstName;
+      
+      const payload = {
+        email: values.email,
+        firstName,
+        lastName,
+        phoneNumber: values.phone,
+        phoneCode: '+84',
+        department: values.department,
+        gender: values.gender || 'MALE',
+      };
+
+      if (values.password) payload.password = values.password;
+
+      if (editingUser) {
+        if (editingUser.role === 'doctor') {
+          await adminService.updateDoctorAccount(editingUser.id, payload);
+        } else if (editingUser.role === 'staff') {
+          await adminService.updateAdmissionStaffAccount(editingUser.id, payload);
+        }
+        message.success('Cập nhật thông tin thành công');
+      } else {
+        if (values.role === 'doctor') {
+          payload.doctorCode = 'BS' + Math.floor(Math.random() * 10000);
+          await adminService.createDoctorAccount(payload);
+        } else {
+          payload.staffCode = 'NV' + Math.floor(Math.random() * 10000);
+          await adminService.createAdmissionStaffAccount(payload);
+        }
+        message.success('Đã tạo tài khoản mới');
+      }
+      setIsModalOpen(false);
+      fetchUsers();
+    } catch (e) {
+      message.error(e?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại');
     }
-    setIsModalOpen(false);
   };
 
   const filteredUsers = users.filter(u => {
@@ -162,7 +231,7 @@ export default function UserManagementPage() {
       render: (_, record) => (
         <Space>
           <Button type="text" icon={<EditOutlined style={{ color: '#1677ff' }} />} onClick={() => handleEdit(record)} />
-          <Popconfirm title="CHẮC CHẮN xóa tài khoản?" onConfirm={() => handleDelete(record.id)} okText="Xóa" cancelText="Hủy">
+          <Popconfirm title="CHẮC CHẮN xóa tài khoản?" onConfirm={() => handleDelete(record)} okText="Xóa" cancelText="Hủy">
             <Button type="text" icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />} />
           </Popconfirm>
         </Space>
@@ -262,7 +331,7 @@ export default function UserManagementPage() {
         >
             <Form form={form} layout="vertical" onFinish={handleSave}>
                 <Form.Item label="Vai trò (Phân quyền)" name="role" rules={[{ required: true }]}>
-                    <Select onChange={() => {}}>
+                    <Select disabled={!!editingUser}>
                         <Option value="doctor">Bác sĩ (Doctor)</Option>
                         <Option value="staff">Nhân viên (Staff)</Option>
                     </Select>
@@ -299,11 +368,11 @@ export default function UserManagementPage() {
                 </Form.Item>
 
                 <Form.Item label="Email" name="email" rules={[{ required: true, type: 'email', message: 'Email không hợp lệ' }]}>
-                    <Input placeholder="example@astcare.com" />
+                    <Input placeholder="example@astcare.com" disabled={!!editingUser} />
                 </Form.Item>
                 
-                <Form.Item label="Password" name="password" rules={[{ required: true, type: 'password', message: 'Password không hợp lệ' }]}>
-                    <Input placeholder="••••••••" />
+                <Form.Item label="Password" name="password" rules={[{ required: !editingUser, message: 'Password không hợp lệ' }]}>
+                    <Input.Password placeholder="••••••••" />
                 </Form.Item>
 
                 <Form.Item label="Số điện thoại" name="phone" style={{ flex: 1 }} rules={[{ required: true, message: 'Nhập SĐT' }]}>

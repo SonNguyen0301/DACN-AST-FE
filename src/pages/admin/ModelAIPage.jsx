@@ -1,52 +1,22 @@
-import  { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  Layout, 
-  Menu, 
-  Avatar, 
-  Typography, 
-  Row, 
-  Col, 
-  Card, 
-  Table, 
-  Tag, 
-  Button, 
-  Space, 
-  Dropdown, 
-  Tabs,
-  Modal,
-  Form,
-  Select,
-  Input,
-  Upload,
-  message,
-  List,
-  Popconfirm
-} from "antd";
+  Layout, Menu, Avatar, Typography, Row, Col, Card, Table, Tag, Button, Space, Dropdown, Tabs, Modal, Form, Input, message, Popconfirm, Switch
+} from 'antd';
 import { 
-  UserOutlined, 
-  LogoutOutlined,
-  PlusOutlined,
-  CheckCircleOutlined,
-  DeleteOutlined,
-  KeyOutlined,
-  FileTextOutlined,
-  RobotOutlined,
-  ScanOutlined,
-  InboxOutlined
-} from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
-import Footer from "../../components/common/Footer"; 
+  UserOutlined, LogoutOutlined, PlusOutlined, DeleteOutlined, RobotOutlined, ScanOutlined, EditOutlined, KeyOutlined, LinkOutlined, FileTextOutlined
+} from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import Footer from '../../components/common/Footer';
+import adminService from '../../services/adminService';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
-const { Dragger } = Upload;
-const { Option } = Select;
 
 export default function ModelAIPage() {
   const navigate = useNavigate();
   const [form] = Form.useForm();
   
-  const user = { name: "Administrator", role: "admin" };
+  const user = { name: 'Administrator', role: 'admin' };
   const menuItems = [
     { key: 'dashboard', label: 'Trang chủ' },
     { key: 'users', label: 'Quản lý tài khoản' },
@@ -59,21 +29,31 @@ export default function ModelAIPage() {
 
   const [activeTab, setActiveTab] = useState('chatbot');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingModel, setEditingModel] = useState(null);
+  const [loading, setLoading] = useState(false);
   
-  const [chatbotModels, setChatbotModels] = useState([
-    { key: '1', name: 'GPT-4o (Customer Support)', provider: 'OpenAI', version: 'v2.1', created: '10/12/2025', status: 'active', apiKey: 'sk-proj-...' },
-    { key: '2', name: 'Gemini 1.5 Pro', provider: 'Google', version: 'v1.0', created: '01/12/2025', status: 'inactive', apiKey: 'AIzaSy...' },
-  ]);
+  const [chatbotModels, setChatbotModels] = useState([]);
+  const [diagnosisModels, setDiagnosisModels] = useState([]);
 
-  const [diagnosisModels, setDiagnosisModels] = useState([
-    { key: '1', name: 'Derma-Net (Skin Lesion)', provider: 'Custom (PyTorch)', version: 'v3.5', created: '15/11/2025', status: 'active', apiKey: 'N/A (Local)' },
-    { key: '2', name: 'Derma-Net Legacy', provider: 'Custom (TensorFlow)', version: 'v2.0', created: '10/05/2025', status: 'inactive', apiKey: 'N/A (Local)' },
-  ]);
+  const fetchModels = async () => {
+    setLoading(true);
+    try {
+      const [chatRes, diagRes] = await Promise.all([
+        adminService.getChatbotModels({ page: 1, take: 10 }),
+        adminService.getDiagnoseModels({ page: 1, take: 10 })
+      ]);
+      setChatbotModels(chatRes.data?.data?.data || chatRes.data?.data || chatRes.data || []);
+      setDiagnosisModels(diagRes.data?.data?.data || diagRes.data?.data || diagRes.data || []);
+    } catch (error) {
+      message.error('Lỗi khi tải danh sách Model');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const [knowledgeFiles, setKnowledgeFiles] = useState([
-    { uid: '1', name: 'quy_trinh_kham_benh.pdf', status: 'done' },
-    { uid: '2', name: 'danh_sach_thuoc_2025.xlsx', status: 'done' },
-  ]);
+  useEffect(() => {
+    fetchModels();
+  }, []);
 
   const handleMenuClick = ({ key }) => {
     switch (key) {
@@ -84,118 +64,131 @@ export default function ModelAIPage() {
     }
   };
 
-  const handleActivate = (record, type) => {
-    if (type === 'chatbot') {
-        const updated = chatbotModels.map(m => ({ ...m, status: m.key === record.key ? 'active' : 'inactive' }));
-        setChatbotModels(updated);
-    } else {
-        const updated = diagnosisModels.map(m => ({ ...m, status: m.key === record.key ? 'active' : 'inactive' }));
-        setDiagnosisModels(updated);
-    }
-    message.success(`Đã kích hoạt model: ${record.name}`);
+  const handleEdit = (record) => {
+    form.setFieldsValue(record);
+    setEditingModel(record);
+    setIsModalOpen(true);
   };
 
-  const handleDelete = (key, type) => {
-    if (type === 'chatbot') {
-        setChatbotModels(chatbotModels.filter(m => m.key !== key));
-    } else {
-        setDiagnosisModels(diagnosisModels.filter(m => m.key !== key));
-    }
-    message.success('Đã xóa phiên bản model');
-  };
-
-  const handleAddModel = (values) => {
-    const newModel = {
-        key: Date.now().toString(),
-        name: values.name,
-        provider: values.provider,
-        version: values.version,
-        created: new Date().toLocaleDateString('vi-VN'),
-        status: 'inactive', 
-        apiKey: values.apiKey ? `${values.apiKey.substring(0, 5)}...` : 'N/A'
-    };
-
-    if (activeTab === 'chatbot') {
-        setChatbotModels([newModel, ...chatbotModels]);
-    } else {
-        setDiagnosisModels([newModel, ...diagnosisModels]);
-    }
-    
-    setIsModalOpen(false);
+  const handleAdd = () => {
     form.resetFields();
-    message.success('Thêm phiên bản mới thành công!');
+    form.setFieldsValue({ isPublic: true });
+    setEditingModel(null);
+    setIsModalOpen(true);
   };
 
-  const columns = (type) => [
-    {
-        title: 'Tên Model',
-        dataIndex: 'name',
-        render: (text) => <Text strong>{text}</Text>
-    },
-    {
-        title: 'Nhà cung cấp',
-        dataIndex: 'provider',
-        render: (text) => <Tag color="blue">{text}</Tag>
-    },
-    {
-        title: 'Phiên bản',
-        dataIndex: 'version',
-    },
-    {
-        title: 'API Key',
-        dataIndex: 'apiKey',
-        render: (text) => <Text code>{text}</Text>
-    },
-    {
-        title: 'Ngày tạo',
-        dataIndex: 'created',
-    },
-    {
-        title: 'Trạng thái',
-        dataIndex: 'status',
-        render: (status) => (
-            <Tag icon={status === 'active' ? <CheckCircleOutlined /> : null} color={status === 'active' ? 'success' : 'default'}>
-                {status === 'active' ? 'Đang sử dụng' : 'Không hoạt động'}
+  const handleDelete = async (id, type) => {
+    try {
+        if (type === 'chatbot') {
+            await adminService.deleteChatbotModel(id);
+        } else {
+            await adminService.deleteDiagnoseModel(id);
+        }
+        message.success('Đã xóa phiên bản model');
+        fetchModels();
+    } catch (e) {
+        message.error('Lỗi khi xoá model');
+    }
+  };
+
+  const handleSaveModel = async (values) => {
+    try {
+        if (activeTab === 'chatbot') {
+            if (editingModel) {
+                await adminService.updateChatbotModel(editingModel.id, values);
+            } else {
+                await adminService.createChatbotModel(values);
+            }
+        } else {
+            if (editingModel) {
+                await adminService.updateDiagnoseModel(editingModel.id, values);
+            } else {
+                await adminService.createDiagnoseModel(values);
+            }
+        }
+        message.success('Thao tác thành công!');
+        setIsModalOpen(false);
+        fetchModels();
+    } catch (error) {
+        message.error(error?.response?.data?.message || 'Có lỗi xảy ra!');
+    }
+  };
+
+  const getColumns = (type) => [
+    { title: 'Version', dataIndex: 'version', render: (text) => <Text strong>{text}</Text> },
+    { title: 'Tên Model', dataIndex: 'name' },
+    { 
+        title: 'Trạng thái', 
+        dataIndex: 'isPublic', 
+        render: (isPublic) => (
+            <Tag color={isPublic ? 'success' : 'default'}>
+                {isPublic ? 'Công khai' : 'Nội bộ'}
             </Tag>
-        )
+        ) 
     },
+    ...(type === 'chatbot' ? [
+        { title: 'Dify Token', dataIndex: 'accessToken', render: () => '••••••••' },
+        { title: 'Knowledge Base', dataIndex: 'knowledgeName', render: (t) => t || '-' }
+    ] : [
+        { title: 'Model Key', dataIndex: 'keyModel' },
+        { title: 'URL/Host', dataIndex: 'modelUrl', render: (t) => t ? <a href={t} target="_blank" rel="noreferrer">Link</a> : '-' }
+    ]),
     {
         title: 'Hành động',
         key: 'action',
         render: (_, record) => (
             <Space>
-                <Button 
-                    type="link" 
-                    size="small" 
-                    disabled={record.status === 'active'}
-                    onClick={() => handleActivate(record, type)}
-                >
-                    Kích hoạt
-                </Button>
-                <Popconfirm title="Xóa phiên bản này?" onConfirm={() => handleDelete(record.key, type)}>
-                    <Button type="text" danger icon={<DeleteOutlined />} disabled={record.status === 'active'} />
+                <Button type="text" icon={<EditOutlined style={{ color: '#1677ff' }} />} onClick={() => handleEdit(record)} />
+                <Popconfirm title="Xóa phiên bản này?" onConfirm={() => handleDelete(record.id, type)}>
+                    <Button type="text" danger icon={<DeleteOutlined />} />
                 </Popconfirm>
             </Space>
         )
     }
   ];
 
+  const getTabItems = () => [
+    { 
+        key: 'chatbot', 
+        label: (<span><RobotOutlined /> AI Chatbot </span>),
+        children: (
+            <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <Text strong style={{ fontSize: 16 }}>Danh sách phiên bản Chatbot</Text>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+                        Thêm mô hình Dify mới
+                    </Button>
+                </div>
+                <Table loading={loading} columns={getColumns('chatbot')} dataSource={chatbotModels} rowKey="id" bordered />
+            </div>
+        )
+    },
+    { 
+        key: 'diagnosis', 
+        label: (<span><ScanOutlined /> AI Diagnosis </span>),
+        children: (
+            <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <Text strong style={{ fontSize: 16 }}>Danh sách phiên bản Chẩn đoán</Text>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+                        Thêm Model Chẩn đoán mới
+                    </Button>
+                </div>
+                <Table loading={loading} columns={getColumns('diagnosis')} dataSource={diagnosisModels} rowKey="id" bordered />
+            </div>
+        )
+    }
+  ];
+
   return (
-    <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
-      
-      <Header style={{ background: "#fff", padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", position: 'sticky', top: 0, zIndex: 1000 }}>
+    <Layout style={{ minHeight: '100vh', background: '#f5f7fa' }}>
+      <Header style={{ background: '#fff', padding: '0 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 10px rgba(0,0,0,0.08)', position: 'sticky', top: 0, zIndex: 1000 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => navigate('/admin/dashboard')}>
             <img src="/ASTCare1.png" alt="ATSCare Logo" style={{ height: '40px', objectFit: 'contain' }} />
         </div>
-        <Menu
-            mode="horizontal"
-            defaultSelectedKeys={['AI']}
-            items={menuItems}
-            onClick={handleMenuClick}
-            style={{ fontSize: 15, fontWeight: 500, color: '#555', borderBottom: 'none', flex: 1, justifyContent: 'center', marginLeft: 20 }}
-        />
+        <Menu mode="horizontal" defaultSelectedKeys={['AI']} items={menuItems} onClick={handleMenuClick} style={{ fontSize: 15, fontWeight: 500, color: '#555', borderBottom: 'none', flex: 1, justifyContent: 'center', marginLeft: 20 }} />
         <Dropdown menu={{ items: menuUserItems }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
                     <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.name}</span>
                     <span style={{ fontSize: 12, color: '#888' }}>Quản trị hệ thống</span>
@@ -205,146 +198,75 @@ export default function ModelAIPage() {
         </Dropdown>
       </Header>
 
-      <Content style={{ padding: "30px 40px" }}>
-        
+      <Content style={{ padding: '30px 40px' }}>
         <div style={{ marginBottom: 24 }}>
             <Title level={3} style={{ margin: 0 }}>Quản lý Model AI</Title>
-            <Text type="secondary">Cấu hình phiên bản, API Key và dữ liệu huấn luyện cho Chatbot & Chẩn đoán hình ảnh.</Text>
+            <Text type="secondary">Cấu hình phiên bản và API cấu hình cho Chatbot & Chẩn đoán hình ảnh.</Text>
         </div>
 
-        <Card variant="borderless" style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+        <Card variant="borderless" style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
             <Tabs 
                 activeKey={activeTab} 
                 onChange={setActiveTab}
-                items={[
-                    { 
-                        key: 'chatbot', 
-                        label: (<span><RobotOutlined /> AI Chatbot </span>),
-                        children: (
-                            <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                    <Text strong style={{ fontSize: 16 }}>Danh sách phiên bản Chatbot</Text>
-                                    <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
-                                        Thêm phiên bản mới
-                                    </Button>
-                                </div>
-
-                                <Table 
-                                    columns={columns('chatbot')} 
-                                    dataSource={chatbotModels} 
-                                    pagination={false} 
-                                    style={{ marginBottom: 24 }}
-                                    bordered
-                                />
-
-                                <div style={{ marginTop: 32 }}>
-                                    <Title level={5}><FileTextOutlined /> Dữ liệu kiến thức (Knowledge Base)</Title>
-                                    <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                                        Tải lên các tài liệu y khoa, quy trình bệnh viện để Chatbot học (RAG).
-                                    </Text>
-                                    
-                                    <Row gutter={24}>
-                                        <Col span={16}>
-                                            <Dragger 
-                                                name="file" 
-                                                multiple 
-                                                height={150}
-                                                beforeUpload={() => { message.success('File đã được đưa vào hàng đợi xử lý'); return false; }}
-                                            >
-                                                <p className="ant-upload-drag-icon"><InboxOutlined style={{ color: '#1677ff' }} /></p>
-                                                <p className="ant-upload-text">Kéo thả file PDF, DOCX vào đây</p>
-                                            </Dragger>
-                                        </Col>
-                                        <Col span={8}>
-                                            <Card title="File đang hoạt động" size="small" style={{ height: '100%' }}>
-                                                <List
-                                                    size="small"
-                                                    dataSource={knowledgeFiles}
-                                                    renderItem={item => (
-                                                        <List.Item actions={[<Button key={item.id} type="text" danger icon={<DeleteOutlined />} size="small" />]}>
-                                                            <Space><FileTextOutlined style={{ color: '#52c41a' }} /> {item.name}</Space>
-                                                        </List.Item>
-                                                    )}
-                                                />
-                                            </Card>
-                                        </Col>
-                                    </Row>
-                                </div>
-                            </div>
-                        )
-                    },
-                    { 
-                        key: 'diagnosis', 
-                        label: (<span><ScanOutlined /> AI Diagnosis </span>),
-                        children: (
-                            <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                    <Text strong style={{ fontSize: 16 }}>Danh sách phiên bản Chẩn đoán</Text>
-                                    <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
-                                        Thêm phiên bản mới
-                                    </Button>
-                                </div>
-                                <Table 
-                                    columns={columns('diagnosis')} 
-                                    dataSource={diagnosisModels} 
-                                    pagination={false} 
-                                    bordered
-                                />
-                            </div>
-                        )
-                    }
-                ]}
+                items={getTabItems()}
             />
         </Card>
-
       </Content>
       <Footer />
 
       <Modal
-        title={`Thêm phiên bản mới cho ${activeTab === 'chatbot' ? 'Chatbot' : 'Diagnosis'}`}
+        title={(editingModel ? 'Cập nhật ' : 'Thêm ') + (activeTab === 'chatbot' ? 'Chatbot Dify Model' : 'Diagnose Model AI')}
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         footer={null}
       >
-        <Form form={form} layout="vertical" onFinish={handleAddModel}>
-            <Form.Item label="Tên hiển thị (Model Name)" name="name" rules={[{ required: true, message: 'Nhập tên model' }]}>
-                <Input placeholder="VD: GPT-4o Medical, Derma-v3..." />
-            </Form.Item>
-
+        <Form form={form} layout="vertical" onFinish={handleSaveModel}>
             <Row gutter={16}>
                 <Col span={12}>
-                    <Form.Item label="Nhà cung cấp (Provider)" name="provider" rules={[{ required: true }]}>
-                        <Select placeholder="Chọn provider">
-                            <Option value="OpenAI">OpenAI</Option>
-                            <Option value="Google">Google (Gemini)</Option>
-                            <Option value="Anthropic">Anthropic (Claude)</Option>
-                            <Option value="Custom/Local">Custom / Local Server</Option>
-                        </Select>
+                    <Form.Item label="Phiên bản (Version)" name="version" rules={[{ required: true, message: 'Ví dụ v1.0, 15-05-2025' }]}>
+                        <Input placeholder="VD: v1.0, v2.5,..." disabled={!!editingModel} />
                     </Form.Item>
                 </Col>
                 <Col span={12}>
-                    <Form.Item label="Phiên bản (Version)" name="version" rules={[{ required: true }]}>
-                        <Input placeholder="VD: v1.0" />
+                    <Form.Item label="Trạng thái Public" name="isPublic" valuePropName="checked">
+                        <Switch checkedChildren="Phát hành" unCheckedChildren="Nội bộ / Ẩn" defaultChecked />
                     </Form.Item>
                 </Col>
             </Row>
 
-            <Form.Item 
-                label="API Key / Endpoint Token" 
-                name="apiKey" 
-                rules={[{ required: true, message: 'Cần có Key để model hoạt động' }]}
-                tooltip="Key này sẽ được mã hóa khi lưu trữ"
-            >
-                <Input.Password placeholder="sk-..." prefix={<KeyOutlined />} />
+            <Form.Item label="Tên Model (Hiển thị)" name="name">
+                <Input placeholder="Tùy chọn hiển thị tên (VD: Model da liễu)" />
             </Form.Item>
+
+            {activeTab === 'chatbot' ? (
+                <>
+                    <Form.Item label="Access Token (Dify API)" name="accessToken" rules={[{ required: true }]}>
+                        <Input.Password placeholder="app-xxx..." prefix={<KeyOutlined />} />
+                    </Form.Item>
+                    <Form.Item label="Knowledge Base Name" name="knowledgeName">
+                        <Input prefix={<FileTextOutlined />} placeholder="Tên DB của tài liệu Dify cung cấp" />
+                    </Form.Item>
+                    <Form.Item label="Knowledge Base Url" name="knowledgeUrl" rules={[{ required: true }]}>
+                        <Input prefix={<LinkOutlined />} placeholder="Base URL Dify..." />
+                    </Form.Item>
+                </>
+            ) : (
+                <>
+                    <Form.Item label="Model ID/Key định danh" name="keyModel" rules={[{ required: true }]}>
+                        <Input placeholder="Nhập Key của Model để gọi API" />
+                    </Form.Item>
+                    <Form.Item label="URL Model Server" name="modelUrl" rules={[{ required: true }]}>
+                        <Input prefix={<LinkOutlined />} placeholder="Endpoint Model Server (Local/Remote)" />
+                    </Form.Item>
+                </>
+            )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
                 <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
-                <Button type="primary" htmlType="submit">Thêm & Lưu</Button>
+                <Button type="primary" htmlType="submit">Lưu thay đổi</Button>
             </div>
         </Form>
       </Modal>
-
     </Layout>
   );
 }
