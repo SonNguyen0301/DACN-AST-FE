@@ -67,7 +67,10 @@ export default function ExaminationPage() {
   const [useAI, setUseAI] = useState(true);
   const [isAILoading, setIsAILoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
-  
+
+  const [activePatient, setActivePatient] = useState(location.state?.patient || null);
+  const [consultationId, setConsultationId] = useState(location.state?.consultationId || null);
+
   const [todayPatients, setTodayPatients] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
 
