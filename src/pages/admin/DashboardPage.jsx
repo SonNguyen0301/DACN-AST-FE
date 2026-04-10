@@ -20,7 +20,7 @@ import {
   LogoutOutlined,
   TeamOutlined,
   MedicineBoxOutlined,
-  DollarOutlined,
+  ApiOutlined,
   RiseOutlined,
   FallOutlined,
 } from "@ant-design/icons";
@@ -56,9 +56,20 @@ export default function AdminDashboardPage() {
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [loadingDoctorStats, setLoadingDoctorStats] = useState(false);
+  const [loadingOverview, setLoadingOverview] = useState(false);
   const [topDoctors, setTopDoctors] = useState([]);
   const [departmentDistribution, setDepartmentDistribution] = useState([]);
   const [totalExaminations, setTotalExaminations] = useState(0);
+  const [systemOverview, setSystemOverview] = useState({
+    totalAiUsage: 0,
+    aiUsageGrowth: 0,
+    totalExaminations: 0,
+    examinationGrowth: 0,
+    newPatients: 0,
+    patientGrowth: 0,
+    activeDoctors: 0,
+    doctorGrowth: 0,
+  });
 
   const DEPARTMENT_LABELS = {
     dermatology: 'Da liễu',
@@ -130,47 +141,84 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const fetchSystemOverview = async () => {
+    setLoadingOverview(true);
+    try {
+      const response = await adminService.getSystemOverview({
+        month: selectedMonth,
+        year: selectedYear,
+      });
+      const data = response.data?.data || response.data || {};
+      setSystemOverview({
+        totalAiUsage: data.totalAiUsage || 0,
+        aiUsageGrowth: data.aiUsageGrowth || 0,
+        totalExaminations: data.totalExaminations || 0,
+        examinationGrowth: data.examinationGrowth || 0,
+        newPatients: data.newPatients || 0,
+        patientGrowth: data.patientGrowth || 0,
+        activeDoctors: data.activeDoctors || 0,
+        doctorGrowth: data.doctorGrowth || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching system overview:', error);
+    } finally {
+      setLoadingOverview(false);
+    }
+  };
+
   useEffect(() => {
     fetchDoctorPerformance();
+    fetchSystemOverview();
   }, [selectedMonth, selectedYear]);
+
+  const getTrendType = (growth) => {
+    if (growth > 0) return "up";
+    if (growth < 0) return "down";
+    return "stable";
+  };
+
+  const getTrendIcon = (growth) => {
+    if (growth > 0) return <RiseOutlined />;
+    if (growth < 0) return <FallOutlined />;
+    return null;
+  };
 
   const statsData = [
     { 
-      title: "Tổng doanh thu tháng", 
-      value: "1.2 Tỷ", 
-      prefix: <DollarOutlined />, 
-      suffix: "VNĐ", 
+      title: "Tổng lượt dùng AI", 
+      value: systemOverview.totalAiUsage, 
+      prefix: <ApiOutlined />, 
       color: "#1677ff", 
       bg: "#e6f4ff",
-      trend: "up",
-      trendVal: "12%"
+      trend: getTrendType(systemOverview.aiUsageGrowth),
+      trendVal: `${Math.abs(systemOverview.aiUsageGrowth)}%`
     },
     { 
       title: "Tổng lượt khám", 
-      value: totalExaminations, 
+      value: systemOverview.totalExaminations, 
       prefix: <MedicineBoxOutlined />, 
       color: "#52c41a", 
       bg: "#f6ffed",
-      trend: "up",
-      trendVal: "5%"
+      trend: getTrendType(systemOverview.examinationGrowth),
+      trendVal: `${Math.abs(systemOverview.examinationGrowth)}%`
     },
     { 
       title: "Bệnh nhân mới", 
-      value: 340, 
+      value: systemOverview.newPatients, 
       prefix: <TeamOutlined />, 
       color: "#faad14", 
       bg: "#fffbe6",
-      trend: "down",
-      trendVal: "2%"
+      trend: getTrendType(systemOverview.patientGrowth),
+      trendVal: `${Math.abs(systemOverview.patientGrowth)}%`
     },
     { 
       title: "Bác sĩ đang hoạt động", 
-      value: 45, 
+      value: systemOverview.activeDoctors, 
       prefix: <UserOutlined />, 
       color: "#722ed1", 
       bg: "#f9f0ff",
-      trend: "stable",
-      trendVal: "0%"
+      trend: getTrendType(systemOverview.doctorGrowth),
+      trendVal: `${Math.abs(systemOverview.doctorGrowth)}%`
     },
   ];
 

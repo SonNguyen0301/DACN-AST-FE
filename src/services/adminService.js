@@ -34,6 +34,7 @@ const adminService = {
   deleteChatbotModel: (id) => axios.delete(`/admin/chatbots/${id}`),
 
   // Dashboard - Statistics
+  getSystemOverview: (params) => axios.get('/admin/dashboard/overview', { params }),
   getDoctorPerformanceStatistics: (params) => axios.get('/admin/dashboard/doctor-performance', { params }),
 };
 
