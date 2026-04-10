@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Row, Col, Card, Table, 
   Tag, Space, Button, Input, DatePicker, Select, Dropdown, 
-  Tooltip, Modal, Descriptions, Divider, message, List 
+  Tooltip, Modal, Descriptions, Divider, message, List,
+  Spin, Image
 } from "antd";
 import { 
   UserOutlined, LogoutOutlined, SearchOutlined, EyeOutlined, 
   MedicineBoxOutlined, CalendarOutlined, ClockCircleOutlined,
-  FileTextOutlined, RobotOutlined, CheckCircleOutlined
+  FileTextOutlined, RobotOutlined, CheckCircleOutlined, PhoneOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
 import Footer from "../../components/common/Footer"; 
-import { getConsultationHistoryAPI } from '../../services/doctorService'; 
+import { getConsultationHistoryAPI, getConsultationDetailAPI } from '../../services/doctorService'; 
+import useAuth from "../../hooks/useAuth";
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -21,6 +23,7 @@ const { RangePicker } = DatePicker;
 
 export default function DoctorMedicalHistoryPage() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth(); 
   
   const [searchText, setSearchText] = useState<string>('');
   const [dateRange, setDateRange] = useState<any>([dayjs().startOf('month'), dayjs()]);
@@ -28,12 +31,11 @@ export default function DoctorMedicalHistoryPage() {
   
   const [historyList, setHistoryList] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [pagination, setPagination] = useState<any>({ current: 1, pageSize: 10, total: 0 });
+  const [pagination, setPagination] = useState<any>({ current: 1, pageSize: 10, total: 0, showSizeChanger: false });
   
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
-
-  const doctorInfo = { name: "BS. CK2 Trần Thị Hoa", specialty: "Da liễu" };
+  const [detailLoading, setDetailLoading] = useState<boolean>(false); 
 
   const fetchHistory = async (page: number = 1) => {
       setLoading(true);
@@ -104,9 +106,51 @@ export default function DoctorMedicalHistoryPage() {
   const handleFilterClick = () => fetchHistory(1);
   const handleTableChange = (newPagination: any) => fetchHistory(newPagination.current);
 
-  const handleViewDetail = (record: any) => {
-    setSelectedRecord(record);
+  const handleViewDetail = async (record: any) => {
     setIsModalOpen(true);
+    setSelectedRecord(record); 
+    setDetailLoading(true);
+
+    try {
+        const res = await getConsultationDetailAPI(record.key); 
+        
+        if (res.data?.success && res.data?.data) {
+            const data = res.data.data;
+            const apt = data.appointment || {};
+            const pat = data.patient || {};
+            const result = data.diagnosisResult || {};
+
+            const fromTime = apt.from ? apt.from.substring(0, 5) : '';
+            const toTime = apt.to ? apt.to.substring(0, 5) : '';
+
+            const imageUrls = apt.images 
+                ? Object.values(apt.images)
+                    .map((img: any) => typeof img === 'string' ? img : (img.base64 || img.dataUrl || img.url))
+                    .filter(Boolean)
+                : [];
+
+            setSelectedRecord({
+                ...record,
+                patientName: pat.name || record.patientName,
+                patientAge: pat.dateOfBirth ? dayjs().diff(dayjs(pat.dateOfBirth), 'year') : null,
+                patientGender: pat.gender === 'MALE' ? 'Nam' : (pat.gender === 'FEMALE' ? 'Nữ' : null),
+                patientPhone: pat.phoneNumber,
+                time: fromTime && toTime ? `${fromTime} - ${toTime}` : record.time,
+                createdAt: apt.date || record.createdAt,
+                symptoms: result.symstomsText || record.symptoms,
+                feedBackAI: result.feedBackAI || record.feedBackAI,
+                diagnosis: result.description || record.diagnosis,
+                advices: result.advices || record.advices,
+                prescription: result.prescription || record.prescription || [],
+                images: imageUrls
+            });
+        }
+    } catch (error) {
+        console.error("Lỗi lấy chi tiết ca khám:", error);
+        message.error("Không thể tải chi tiết hồ sơ.");
+    } finally {
+        setDetailLoading(false);
+    }
   };
 
   const handleCloseModal = () => {
@@ -120,7 +164,7 @@ export default function DoctorMedicalHistoryPage() {
         dataIndex: 'createdAt',
         width: 130,
         render: (text: any) => (
-            <Tag color="green" style={{ fontSize: 14 }}>
+            <Tag color="green" style={{ fontSize: 13, padding: '2px 8px' }}>
                 {dayjs(text).format('DD/MM/YYYY')}
             </Tag>
         )
@@ -130,7 +174,7 @@ export default function DoctorMedicalHistoryPage() {
         dataIndex: 'time',
         width: 140,
         render: (text: any) => (
-            <Tag color="blue" style={{ fontSize: 14 }}>
+            <Tag color="blue" style={{ fontSize: 13, padding: '2px 8px' }}>
                 {text}
             </Tag>
         )
@@ -180,7 +224,7 @@ export default function DoctorMedicalHistoryPage() {
     },
   ];
   
-  const handleSignOut = () => navigate('/');
+  const handleSignOut = () => {logout(); navigate('/')};
   const menuUserItems = [
     { key: '1', label: (<a onClick={() => navigate('/doctor/profile')}>Hồ sơ bác sĩ</a>), icon: <UserOutlined /> },
     { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
@@ -212,8 +256,8 @@ export default function DoctorMedicalHistoryPage() {
         <Dropdown menu={{ items: menuUserItems }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{doctorInfo.name}</span>
-                <span style={{ fontSize: 12, color: '#888' }}>Khoa {doctorInfo.specialty}</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{"BS. "+ user?.firstName + " " + user?.lastName}</span>
+                <span style={{ fontSize: 12, color: '#888' }}>Khoa Da liễu</span>
             </div>
             <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
           </div>
@@ -289,69 +333,97 @@ export default function DoctorMedicalHistoryPage() {
         width={750}
         centered
       >
-        {selectedRecord && (
-            <div style={{ marginTop: 20 }}>
-                <Row gutter={24} style={{ marginBottom: 20 }}>
-                    <Col span={12}>
-                        <Text type="secondary"><UserOutlined /> Bệnh nhân</Text>
-                        <Title level={5} style={{ margin: '4px 0' }}>{selectedRecord.patientName}</Title>
-                    </Col>
-                    <Col span={12} style={{ textAlign: 'right' }}>
-                        <Text type="secondary"><CalendarOutlined /> Thời gian khám</Text>
-                        <div style={{ fontWeight: 500, marginTop: 4 }}>
-                            {dayjs(selectedRecord.createdAt).format('DD/MM/YYYY')} <Divider type="vertical" /> {selectedRecord.time}
-                        </div>
-                    </Col>
-                </Row>
+        <Spin spinning={detailLoading}>
+            {selectedRecord && (
+                <div style={{ marginTop: 20 }}>
+                    <div style={{ display: 'flex', gap: 20, marginBottom: 24, alignItems: 'center' }}>
+                          <Avatar 
+                              size={80} 
+                              icon={<UserOutlined />} 
+                              style={{ 
+                                backgroundColor: selectedRecord.patientGender === 'Nữ' ? '#eb2f96' : '#1677ff',
+                                fontSize: 36
+                              }} 
+                          />
+                          <div>
+                              <Title level={4} style={{ margin: 0, marginBottom: 8 }}>{selectedRecord.patientName}</Title>
+                              <Space direction="vertical" size={4}>
+                                  <Text type="secondary" style={{ fontSize: 14 }}>
+                                      <UserOutlined style={{ marginRight: 6 }}/> 
+                                      Giới tính: {selectedRecord.patientGender || 'Không rõ'} 
+                                      {selectedRecord.patientAge ? ` - ${selectedRecord.patientAge} tuổi` : ''}
+                                  </Text>
+                                  <Text type="secondary" style={{ fontSize: 14 }}>
+                                      <PhoneOutlined style={{ marginRight: 6 }}/> 
+                                      SĐT: {selectedRecord.patientPhone || 'Chưa cập nhật'}
+                                  </Text>
+                              </Space>
+                          </div>
+                      </div>
 
-                <Descriptions title="Nội dung Khám & Chẩn đoán" column={1} bordered size="small" labelStyle={{ width: '160px', fontWeight: 'bold', background: '#fafafa' }}>
-                    <Descriptions.Item label="Triệu chứng">
-                        {selectedRecord.symptoms || "Không ghi nhận triệu chứng"}
-                    </Descriptions.Item>
-                    
-                    {selectedRecord.feedBackAI && (
-                        <Descriptions.Item label={<span style={{ color: '#722ed1' }}><RobotOutlined /> AI Phân tích</span>}>
-                            <Text style={{ color: '#722ed1', fontWeight: 500 }}>{selectedRecord.feedBackAI}</Text>
+                    <Descriptions title="Nội dung Khám & Chẩn đoán" column={1} bordered size="small" labelStyle={{ width: '160px', fontWeight: 'bold', background: '#fafafa' }}>
+                        <Descriptions.Item label="Triệu chứng">
+                            {selectedRecord.symptoms || "Không ghi nhận triệu chứng"}
                         </Descriptions.Item>
-                    )}
+                        
+                        {selectedRecord.feedBackAI && (
+                            <Descriptions.Item label={<span style={{ color: '#722ed1' }}><RobotOutlined /> AI Phân tích</span>}>
+                                <Text style={{ color: '#722ed1', fontWeight: 500 }}>{selectedRecord.feedBackAI}</Text>
+                            </Descriptions.Item>
+                        )}
 
-                    <Descriptions.Item label="Chẩn đoán">
-                        <Text strong style={{ color: '#cf1322', fontSize: 16 }}>{selectedRecord.diagnosis}</Text>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Lời khuyên">
-                        {selectedRecord.advices || "Không có lời khuyên thêm"}
-                    </Descriptions.Item>
-                </Descriptions>
+                        <Descriptions.Item label="Chẩn đoán">
+                            <Text strong style={{ color: '#cf1322', fontSize: 16 }}>{selectedRecord.diagnosis}</Text>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Lời khuyên">
+                            {selectedRecord.advices || "Không có lời khuyên thêm"}
+                        </Descriptions.Item>
+                    </Descriptions>
 
-                <div style={{ marginTop: 24 }}>
-                    <Title level={5} style={{ marginBottom: 12 }}><MedicineBoxOutlined /> Đơn thuốc chỉ định</Title>
-                    {selectedRecord.prescription && selectedRecord.prescription.length > 0 ? (
-                        <List
-                            bordered
-                            dataSource={selectedRecord.prescription}
-                            renderItem={(item: any) => (
-                                <List.Item>
-                                    <List.Item.Meta
-                                        avatar={<CheckCircleOutlined style={{ color: '#52c41a', marginTop: 4 }} />}
-                                        title={<Text strong>{item.medicineName}</Text>}
-                                        description={
-                                            <Space split={<Divider type="vertical" />}>
-                                                <span>Liều dùng: <Text strong>{item.dosage}</Text></span>
-                                                <span>Thời gian: <Text strong>{item.durationDays}</Text></span>
-                                            </Space>
-                                        }
-                                    />
-                                </List.Item>
-                            )}
-                        />
-                    ) : (
-                        <div style={{ padding: '20px', background: '#f5f5f5', borderRadius: 8, textAlign: 'center', color: '#999' }}>
-                            Bác sĩ không kê đơn thuốc cho ca khám này.
+                    {selectedRecord.images && selectedRecord.images.length > 0 && (
+                        <div style={{ marginTop: 20 }}>
+                            <Title level={5} style={{ marginBottom: 12 }}>Hình ảnh đính kèm</Title>
+                            <Image.PreviewGroup>
+                                <Space size={8} wrap>
+                                    {selectedRecord.images.map((img: any, idx: number) => {
+                                        const validSrc = img.startsWith('http') || img.startsWith('data:image') ? img : `data:image/png;base64,${img}`;
+                                        return <Image key={idx} width={60} height={60} src={validSrc} style={{ borderRadius: 6, objectFit: 'cover', border: '1px solid #f0f0f0' }} />
+                                    })}
+                                </Space>
+                            </Image.PreviewGroup>
                         </div>
                     )}
+
+                    <div style={{ marginTop: 24 }}>
+                        <Title level={5} style={{ marginBottom: 12 }}><MedicineBoxOutlined /> Đơn thuốc chỉ định</Title>
+                        {selectedRecord.prescription && selectedRecord.prescription.length > 0 ? (
+                            <List
+                                bordered
+                                dataSource={selectedRecord.prescription}
+                                renderItem={(item: any) => (
+                                    <List.Item>
+                                        <List.Item.Meta
+                                            avatar={<CheckCircleOutlined style={{ color: '#52c41a', marginTop: 4 }} />}
+                                            title={<Text strong>{item.medicineName || item.name}</Text>}
+                                            description={
+                                                <Space split={<Divider type="vertical" />}>
+                                                    <span>Liều dùng: <Text strong>{item.dosage}</Text></span>
+                                                    <span>Thời gian: <Text strong>{item.durationDays || item.duration}</Text></span>
+                                                </Space>
+                                            }
+                                        />
+                                    </List.Item>
+                                )}
+                            />
+                        ) : (
+                            <div style={{ padding: '20px', background: '#f5f5f5', borderRadius: 8, textAlign: 'center', color: '#999' }}>
+                                Bác sĩ không kê đơn thuốc cho ca khám này.
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
-        )}
+            )}
+        </Spin>
       </Modal>
 
     </Layout>

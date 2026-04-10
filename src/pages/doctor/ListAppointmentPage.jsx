@@ -41,6 +41,7 @@ import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
 import Footer from "../../components/common/Footer"; 
 import { getDoctorAppointmentsAPI, startExaminationAPI } from '../../services/doctorService';
+import useAuth from "../../hooks/useAuth";
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -51,6 +52,7 @@ const { RangePicker } = DatePicker;
 
 export default function DoctorAppointmentPage() {
   const navigate = useNavigate();
+  const { user, logout} = useAuth(); 
 
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState('SCHEDULED');
@@ -228,12 +230,12 @@ export default function DoctorAppointmentPage() {
           <Avatar size={40} style={{ backgroundColor: record.gender === 'MALE' ? '#1677ff' : '#eb2f96' }} icon={<UserOutlined />} />
           <div>
             <Text strong style={{ display: 'block' }}>{record.patientName}</Text>
-            <Space size={8} style={{ fontSize: 12, color: '#666', minWidth: 200 }}>
+            {/* <Space size={8} style={{ fontSize: 12, color: '#666', minWidth: 200 }}>
               {record.gender === 'MALE' ? <ManOutlined style={{ color: '#1677ff' }}/> : <WomanOutlined style={{ color: '#eb2f96' }}/>} 
               <span>{record.age} tuổi</span>
               <span>|</span>
               <PhoneOutlined /> {record.phone}
-            </Space>
+            </Space> */}
           </div>
         </div>
       ),
@@ -337,6 +339,7 @@ export default function DoctorAppointmentPage() {
   ];
   
   const handleSignOut = () => {
+    logout();
     navigate('/');
   };
   
@@ -372,7 +375,7 @@ export default function DoctorAppointmentPage() {
         <Dropdown menu={{ items: menuUserItems }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>BS. CK2 Trần Thị Hoa</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{"BS. "+ user.firstName + " " + user.lastName}</span>
                 <span style={{ fontSize: 12, color: '#888' }}>Khoa Da liễu</span>
             </div>
             <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
@@ -483,7 +486,6 @@ export default function DoctorAppointmentPage() {
                         <Space direction="vertical" size={2} style={{ marginTop: 8 }}>
                             <Text type="secondary"><UserOutlined /> Giới tính: {selectedPatient.gender === 'MALE' ? 'Nam' : 'Nữ'}</Text>
                             <Text type="secondary"><PhoneOutlined /> SĐT: {selectedPatient.phone}</Text>
-                            <Text type="secondary"><CalendarOutlined /> Giờ hẹn: <Tag color="blue">{selectedPatient.time}</Tag></Text>
                         </Space>
                     </div>
                 </div>
