@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { 
   Layout, 
   Menu, 
@@ -10,7 +11,9 @@ import {
   Tag, 
   Button, 
   Dropdown, 
-  Progress,
+  Select,
+  Spin,
+  Empty,
 } from "antd";
 import { 
   UserOutlined, 
@@ -20,10 +23,11 @@ import {
   DollarOutlined,
   RiseOutlined,
   FallOutlined,
-  ArrowRightOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import Footer from "../../components/common/Footer"; 
+import adminService from "../../services/adminService";
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -48,6 +52,88 @@ export default function AdminDashboardPage() {
     },
   ];
 
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [loadingDoctorStats, setLoadingDoctorStats] = useState(false);
+  const [topDoctors, setTopDoctors] = useState([]);
+  const [departmentDistribution, setDepartmentDistribution] = useState([]);
+  const [totalExaminations, setTotalExaminations] = useState(0);
+
+  const DEPARTMENT_LABELS = {
+    dermatology: 'Da liễu',
+    general_medicine: 'Đa khoa',
+    endocrinology: 'Nội tiết',
+    ent: 'Tai mũi họng',
+    gastroenterology: 'Tiêu hoá',
+    cardiology: 'Tim mạch',
+    dentomaxillofacial: 'Răng hàm mặt',
+    ophthalmology: 'Mắt',
+  };
+
+  const PIE_COLORS = ['#1677ff', '#52c41a', '#faad14', '#13c2c2', '#722ed1', '#eb2f96', '#2f54eb', '#fa8c16'];
+
+  const monthOptions = useMemo(
+    () => Array.from({ length: 12 }, (_, index) => ({
+      value: index + 1,
+      label: `Tháng ${index + 1}`,
+    })),
+    [],
+  );
+
+  const yearOptions = useMemo(() => {
+    const currentYear = now.getFullYear();
+    return Array.from({ length: 6 }, (_, index) => {
+      const year = currentYear - index;
+      return { value: year, label: `${year}` };
+    });
+  }, [now]);
+
+  const toDepartmentLabel = (departmentCode) => DEPARTMENT_LABELS[departmentCode] || departmentCode || 'Khác';
+
+  const fetchDoctorPerformance = async () => {
+    setLoadingDoctorStats(true);
+    try {
+      const response = await adminService.getDoctorPerformanceStatistics({
+        month: selectedMonth,
+        year: selectedYear,
+      });
+      const payload = response.data?.data || response.data || {};
+
+      const doctors = (payload.topDoctors || []).map((item, index) => ({
+        key: item.doctorId || `${item.doctorName}-${index}`,
+        name: item.doctorName,
+        dept: toDepartmentLabel(item.department),
+        patients: item.totalExaminations,
+        uniquePatients: item.uniquePatients,
+        aiUsageRate: item.aiUsageRate,
+      }));
+
+      const distribution = (payload.departmentDistribution || []).map((item, index) => ({
+        name: toDepartmentLabel(item.department),
+        value: item.totalExaminations,
+        percentage: item.percentage,
+        color: PIE_COLORS[index % PIE_COLORS.length],
+      }));
+
+      setTopDoctors(doctors);
+      setDepartmentDistribution(distribution);
+      setTotalExaminations(payload.totalExaminations || 0);
+    }
+    catch (error) {
+      setTopDoctors([]);
+      setDepartmentDistribution([]);
+      setTotalExaminations(0);
+    }
+    finally {
+      setLoadingDoctorStats(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDoctorPerformance();
+  }, [selectedMonth, selectedYear]);
+
   const statsData = [
     { 
       title: "Tổng doanh thu tháng", 
@@ -61,7 +147,7 @@ export default function AdminDashboardPage() {
     },
     { 
       title: "Tổng lượt khám", 
-      value: 1250, 
+      value: totalExaminations, 
       prefix: <MedicineBoxOutlined />, 
       color: "#52c41a", 
       bg: "#f6ffed",
@@ -88,14 +174,6 @@ export default function AdminDashboardPage() {
     },
   ];
 
-  const topDoctors = [
-    { key: 1, name: 'BS. CK2 Trần Thị Hoa', dept: 'Da liễu', patients: 120, rating: 4.9, revenue: '150tr' },
-    { key: 2, name: 'BS. Nguyễn Văn Nam', dept: 'Nội khoa', patients: 98, rating: 4.8, revenue: '120tr' },
-    { key: 3, name: 'BS. Lê Thị Tú', dept: 'Nhi khoa', patients: 85, rating: 4.7, revenue: '90tr' },
-    { key: 4, name: 'BS. Phạm Minh', dept: 'Tai Mũi Họng', patients: 70, rating: 4.6, revenue: '85tr' },
-  ];
-
-
   const columns = [
     {
       title: 'Bác sĩ',
@@ -113,14 +191,13 @@ export default function AdminDashboardPage() {
       sorter: (a, b) => a.patients - b.patients,
     },
     {
-      title: 'Đánh giá',
-      dataIndex: 'rating',
-      render: (rate) => <span style={{ color: '#faad14' }}>★ {rate}</span>
+      title: 'Bệnh nhân duy nhất',
+      dataIndex: 'uniquePatients',
     },
     {
-      title: 'Doanh thu',
-      dataIndex: 'revenue',
-      render: (text) => <Text type="success" strong>{text}</Text>
+      title: 'Tỷ lệ dùng AI',
+      dataIndex: 'aiUsageRate',
+      render: (rate) => <Text strong>{rate}%</Text>
     },
   ];
 
@@ -214,56 +291,85 @@ export default function AdminDashboardPage() {
                 <Col xs={24} lg={16}>
 
                     <Card 
-                        title="Top bác sĩ tiêu biểu tháng này" 
-                        extra={<Button type="link">Xem tất cả <ArrowRightOutlined /></Button>}
+                    title={`Top 5 bác sĩ có lượt khám cao nhất - Tháng ${selectedMonth}/${selectedYear}`}
+                    extra={(
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <Select
+                          value={selectedMonth}
+                          style={{ width: 120 }}
+                          options={monthOptions}
+                          onChange={setSelectedMonth}
+                        />
+                        <Select
+                          value={selectedYear}
+                          style={{ width: 100 }}
+                          options={yearOptions}
+                          onChange={setSelectedYear}
+                        />
+                      </div>
+                    )}
                         variant="borderless" 
                         style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
                     >
-                        <Table 
-                            columns={columns} 
-                            dataSource={topDoctors} 
-                            pagination={false} 
-                            size="middle"
-                        />
+                    <Table
+                      loading={loadingDoctorStats}
+                      columns={columns}
+                      dataSource={topDoctors}
+                      pagination={false}
+                      size="middle"
+                      locale={{ emptyText: 'Không có dữ liệu khám trong tháng đã chọn' }}
+                    />
                     </Card>
                 </Col>
 
                 <Col xs={24} lg={8}>
                     <Card 
-                        title="Phân bổ bệnh nhân theo khoa" 
+                    title="Phân bổ kết quả khám theo chuyên khoa" 
                         variant="borderless" 
                         style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", marginBottom: 24 }}
                     >
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                            <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                    <Text>Da liễu</Text>
-                                    <Text strong>45%</Text>
-                                </div>
-                                <Progress percent={45} showInfo={false} strokeColor="#1677ff" />
-                            </div>
-                            <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                    <Text>Nội khoa</Text>
-                                    <Text strong>25%</Text>
-                                </div>
-                                <Progress percent={25} showInfo={false} strokeColor="#52c41a" />
-                            </div>
-                            <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                    <Text>Nhi khoa</Text>
-                                    <Text strong>20%</Text>
-                                </div>
-                                <Progress percent={20} showInfo={false} strokeColor="#faad14" />
-                            </div>
-                            <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                    <Text>Khác</Text>
-                                    <Text strong>10%</Text>
-                                </div>
-                                <Progress percent={10} showInfo={false} strokeColor="#bfbfbf" />
-                            </div>
+                    {loadingDoctorStats ? (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 280 }}>
+                        <Spin />
+                      </div>
+                    ) : departmentDistribution.length === 0 ? (
+                      <Empty description="Không có dữ liệu" />
+                    ) : (
+                      <>
+                        <div style={{ width: '100%', height: 280 }}>
+                          <ResponsiveContainer>
+                            <PieChart>
+                              <Pie
+                                data={departmentDistribution}
+                                dataKey="value"
+                                nameKey="name"
+                                innerRadius={50}
+                                outerRadius={95}
+                                paddingAngle={2}
+                              >
+                                {departmentDistribution.map((entry, index) => (
+                                  <Cell key={`cell-${entry.name}-${index}`} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip formatter={(value, name, props) => [
+                                `${value} ca`,
+                                `${name} (${props?.payload?.percentage ?? 0}%)`,
+                              ]}
+                              />
+                              <Legend />
+                            </PieChart>
+                          </ResponsiveContainer>
                         </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {departmentDistribution.map((item) => (
+                            <div key={item.name} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <Text>{item.name}</Text>
+                              <Text strong>{item.value} ca ({item.percentage}%)</Text>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
                     </Card>
 
                 

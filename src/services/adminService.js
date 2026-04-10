@@ -32,6 +32,9 @@ const adminService = {
   createChatbotModel: (data) => axios.post('/admin/chatbots', data),
   updateChatbotModel: (id, data) => axios.put(`/admin/chatbots/${id}`, data),
   deleteChatbotModel: (id) => axios.delete(`/admin/chatbots/${id}`),
+
+  // Dashboard - Statistics
+  getDoctorPerformanceStatistics: (params) => axios.get('/admin/dashboard/doctor-performance', { params }),
 };
 
 export default adminService;
