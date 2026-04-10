@@ -66,9 +66,7 @@ export default function ExaminationPage() {
   const [viewState, setViewState] = useState('input'); 
   const [useAI, setUseAI] = useState(true);
   const [isAILoading, setIsAILoading] = useState(false);
-
-  const [activePatient, setActivePatient] = useState(location.state?.patient || null);
-  const [consultationId, setConsultationId] = useState(location.state?.consultationId || null);
+  const [aiResult, setAiResult] = useState(null);
   
   const [todayPatients, setTodayPatients] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
@@ -146,18 +144,6 @@ export default function ExaminationPage() {
     { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
   ];
 
-  const mockAIResult = {
-    diagnoses: [
-      { name: "Viêm da cơ địa (Atopic Dermatitis)", probability: 85, severity: "Trung bình" },
-      { name: "Viêm da tiếp xúc (Contact Dermatitis)", probability: 10, severity: "Nhẹ" },
-      { name: "Nhiễm nấm da (Fungal Infection)", probability: 5, severity: "Thấp" }
-    ],
-    explanation: "Dựa trên hình ảnh tổn thương có tính chất sưng đỏ, bong tróc vảy và vị trí ở vùng cổ/ngực, cộng với tiền sử dị ứng của bệnh nhân, hệ thống nghiêng nhiều về chẩn đoán Viêm da cơ địa đợt cấp.",
-    severityLevel: "medium", 
-    analyzedImage: "https://dalieuhanoi.com/wp-content/uploads/2023/07/viem-da-co-dia-o-tay-1.jpg", 
-    advice: "Nên sử dụng thuốc bôi Corticoid liều thấp kết hợp dưỡng ẩm. Tránh tiếp xúc với hóa chất lạ."
-  };
-
   const handleAIAssist = () => {
     form.validateFields().then(async values => {
           console.log('Input Values (AI Assist):', values);
@@ -178,10 +164,12 @@ export default function ExaminationPage() {
               formData.append('description', values.description || values.symptom || "Không có mô tả");
 
               let hasImage = false;
+              let imageUrl = '';
               if (values.images && values.images.fileList && values.images.fileList.length > 0) {
                   const file = values.images.fileList[0].originFileObj;
                   formData.append('file', file);
                   hasImage = true;
+                  imageUrl = URL.createObjectURL(file);
               }
 
               if (!hasImage) {
@@ -201,12 +189,25 @@ export default function ExaminationPage() {
                           setIsAILoading(false);
                           message.success("AI đã hoàn tất phân tích!");
                           
-                          const aiResult = res.data.data;
+                          const aiResData = res.data.data;
+                          
+                          setAiResult({
+                              diagnoses: (aiResData.diseases || []).map(d => ({
+                                  name: d.diseaseName,
+                                  probability: Math.round(d.accuracy * 100),
+                                  severity: "Tiềm năng"
+                              })),
+                              explanation: aiResData.suggestedDiagnosis || "AI không thể cung cấp lời giải thích chi tiết vào lúc này.",
+                              severityLevel: aiResData.severityLevel || "medium",
+                              analyzedImage: imageUrl,
+                              advice: aiResData.aiAdvice || "Cần theo dõi thêm và kết hợp chỉ định y khoa."
+                          });
+
                           resultForm.setFieldsValue({
-                              finalDiagnosis: aiResult.diseases?.[0]?.diseaseName || mockAIResult.diagnoses[0].name,
+                              finalDiagnosis: aiResData.diseases?.[0]?.diseaseName || "",
                               department: "dermatology",
-                              doctorAdvice: aiResult.aiAdvice || mockAIResult.advice,
-                              currentCondition: aiResult.suggestedDiagnosis || values.description || values.symptom
+                              doctorAdvice: aiResData.aiAdvice || "",
+                              currentCondition: aiResData.suggestedDiagnosis || values.description || values.symptom
                           });
                       }
                   } catch (e) {
@@ -457,26 +458,28 @@ export default function ExaminationPage() {
                                     <div style={{ textAlign: 'center', padding: "80px 0", minHeight: "300px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                                         <Spin size="large" tip="AI đang phân tích hình ảnh và dữ liệu, vui lòng đợi..." />
                                     </div>
-                                ) : (
+                                ) : aiResult ? (
                                     <>
+                                        {aiResult.analyzedImage && (
                                         <div style={{ textAlign: 'center', marginBottom: 20, position: 'relative' }}>
                                             <Image 
-                                                src={mockAIResult.analyzedImage} 
+                                                src={aiResult.analyzedImage} 
                                                 style={{ borderRadius: 8, maxHeight: 250, objectFit: 'contain' }} 
                                             />
                                             <Tag color="cyan" style={{ position: 'absolute', top: 10, right: 10 }}>AI Analyzed</Tag>
                                         </div>
+                                        )}
 
                                         <Alert 
-                                            message={`Mức độ nghiêm trọng: ${mockAIResult.severityLevel === 'medium' ? 'TRUNG BÌNH' : 'CAO'}`}
-                                            type={mockAIResult.severityLevel === 'medium' ? 'warning' : 'error'}
+                                            message={`Mức độ nghiêm trọng: ${aiResult.severityLevel === 'medium' ? 'TRUNG BÌNH' : aiResult.severityLevel === 'high' ? 'CAO' : 'CHƯA XÁC ĐỊNH'}`}
+                                            type={aiResult.severityLevel === 'medium' ? 'warning' : aiResult.severityLevel === 'high' ? 'error' : 'info'}
                                             showIcon
                                             style={{ marginBottom: 20, fontWeight: 'bold' }}
                                         />
 
                                         <Title level={5}>Chẩn đoán có khả năng cao nhất:</Title>
                                         <List
-                                            dataSource={mockAIResult.diagnoses}
+                                            dataSource={aiResult.diagnoses}
                                             renderItem={item => (
                                                 <List.Item style={{ display: 'block', borderBottom: '1px dashed #f0f0f0' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -491,17 +494,21 @@ export default function ExaminationPage() {
                                         <div style={{ marginTop: 20 }}>
                                             <Title level={5}>Giải thích:</Title>
                                             <Paragraph type="secondary" style={{ background: '#f5f7fa', padding: 12, borderRadius: 8 }}>
-                                                {mockAIResult.explanation}
+                                                {aiResult.explanation}
                                             </Paragraph>
                                         </div>
                                         
                                         <div style={{ marginTop: 20 }}>
                                             <Title level={5}>Lời khuyên đề xuất:</Title>
                                             <Paragraph>
-                                                <CheckCircleOutlined style={{ color: '#52c41a' }} /> {mockAIResult.advice}
+                                                <CheckCircleOutlined style={{ color: '#52c41a' }} /> {aiResult.advice}
                                             </Paragraph>
                                         </div>
                                     </>
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: "80px 0", color: '#888' }}>
+                                        Chưa có kết quả AI
+                                    </div>
                                 )}
                             </Card>
                         </Col>
