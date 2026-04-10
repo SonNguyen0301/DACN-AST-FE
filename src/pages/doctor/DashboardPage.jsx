@@ -72,7 +72,7 @@ export default function DoctorDashboardPage() {
   const [dashboardStats, setDashboardStats] = useState(null);
   const [diseaseData, setDiseaseData] = useState([]);
 
-  const currentMonth = dayjs().month() - 1;
+  const currentMonth = dayjs().month();
 
   useEffect(() => {
       const fetchDashboardData = async () => {
@@ -560,12 +560,14 @@ const getListData = (value) => {
             { key: "1", label: "Trang chủ" },
             { key: "2", label: "Lịch đặt khám" },
             { key: "3", label: "Khám bệnh" },
+            { key: "4", label: "Lịch sử khám bệnh" },
           ]}
           onClick ={({ key }) => {
             switch (key) {
               case "1": navigate('/doctor/dashboard'); break;
               case "2": navigate('/doctor/appointments'); break;
               case "3": navigate('/doctor/consulting'); break;
+              case "4": navigate('/doctor/medical-history'); break;
               default: break;
             }
           }}
@@ -781,6 +783,7 @@ const getListData = (value) => {
                                                     e.stopPropagation(); 
                                                     navigate('/doctor/consulting', { state: { patient: item } }); 
                                                 }}
+                                                disabled={!isTodaySelected}
                                             >
                                                 Bắt đầu khám
                                             </Button>
@@ -834,6 +837,7 @@ const getListData = (value) => {
                     setIsDetailModalOpen(false);
                     navigate('/doctor/consulting', { state: { patient: selectedPatient } }); 
                 }}
+                disabled={!isTodaySelected}
             >
                 Bắt đầu khám
             </Button>

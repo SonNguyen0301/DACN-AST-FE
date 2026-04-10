@@ -2,13 +2,13 @@
 import { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Card, Button, Select,
-  Space, Dropdown, Row, Col, Tag, Tabs, Input, Upload, message, Calendar, Empty, Divider , Spin, Modal
+  Space, Dropdown, Row, Col, Tag, Tabs, Input, Upload, message, Calendar, Empty, Divider , Spin, Modal, Image
 } from "antd";
 import { 
   UserOutlined, LogoutOutlined, SafetyOutlined,
   BookOutlined, ReadOutlined, TeamOutlined,
   LeftOutlined, InboxOutlined, SunOutlined, 
-  CalendarOutlined, ClockCircleOutlined, CloudOutlined, MoonOutlined
+  CalendarOutlined, ClockCircleOutlined, CloudOutlined, MoonOutlined, DeleteOutlined
 } from "@ant-design/icons";
 import ChatBotIcon from "../../components/common/ChatBotIcon";
 import { useNavigate, useParams } from 'react-router-dom';
@@ -76,63 +76,6 @@ export default function DoctorProfilePage() {
           });
         }
 
-        // const firstRes = await getDoctorShiftsAPI(id, { page: 1, take: 50, sortDirection: 'ASC' });
-        
-        // let allShifts = firstRes.data?.data?.data || [];
-        // const meta = firstRes.data?.data?.meta;
-
-        // if (meta && meta.pageCount > 1) {
-        //     const fetchPromises = [];
-            
-        //     for (let i = 2; i <= meta.pageCount; i++) {
-        //         fetchPromises.push(
-        //             getDoctorShiftsAPI(id, { page: i, take: 50, sortDirection: 'ASC' }) 
-        //         );
-        //     }
-
-        //     const nextResponses = await Promise.all(fetchPromises);
-            
-        //     nextResponses.forEach(res => {
-        //         const pageData = res.data?.data?.data || [];
-        //         allShifts = [...allShifts, ...pageData];
-        //     });
-        // }
-        
-        // const map = {};
-
-        // allShifts.forEach(item => {
-        //     if (!item.shift.date || !item.shift.from || !item.shift.to) return;
-
-        //     const dateObj = dayjs(item.shift.date);
-        //     const dStr = dateObj.format('DD-MM-YYYY');
-        //     if(!map[dStr]) map[dStr] = [];
-            
-        //     const startTimeStr = item.shift.from.substring(0, 5);
-        //     const endTimeStr = item.shift.to.substring(0, 5);
-        //     const startHour = parseInt(startTimeStr.substring(0, 2));
-
-        //     const currentStatus = item.status || 'AVAILABLE';
-
-        //     map[dStr].push({
-        //       shiftId: item.shiftId,
-        //       status: currentStatus,
-        //       displayTime: `${startTimeStr} - ${endTimeStr}`,
-        //       startHour: startHour
-        //     });
-        // });
-        
-        //   const today = dayjs();
-        //   setCalendarValue(today); 
-
-        //   const todayStr = today.format('DD-MM-YYYY');
-          
-        //   if (map[todayStr] && map[todayStr].length > 0) {
-        //     setSelectedDateStr(todayStr);
-        //   } else {
-        //     setSelectedDateStr(null);
-        //   }
-        // setScheduleMap(map);
-
       } catch (error) {
         console.error("Lỗi lấy dữ liệu:", error);
         message.error("Không thể tải thông tin lúc này.");
@@ -151,8 +94,6 @@ export default function DoctorProfilePage() {
       setLoadingShifts(true);
       
       try {
-        // const startDate = calendarValue.startOf('month').subtract(7, 'day').format('YYYY-MM-DD');
-        // const endDate = calendarValue.endOf('month').add(7, 'day').format('YYYY-MM-DD');
         const startDate = dayjs(calendarValue).format('YYYY-MM-DD');
         const endDate = startDate;
         const res = await getDoctorShiftsAPI(id, { startDate, endDate });
@@ -228,8 +169,6 @@ export default function DoctorProfilePage() {
   };
 
   const disabledDate = (current) => {
-    // const dateStr = current.format('DD-MM-YYYY');
-    // return current.isBefore(dayjs().startOf('day')) || !scheduleMap[dateStr] || scheduleMap[dateStr].length === 0;
     return current && current.isBefore(dayjs().startOf('day'));
   };
 
@@ -271,7 +210,6 @@ export default function DoctorProfilePage() {
         formData.append('shiftId', selectedShift.shiftId);
         formData.append('patientId', user.id);
         
-        // Convert DD-MM-YYYY to YYYY-MM-DD for ISO8601 validation
         const [dd, mm, yyyy] = selectedDateStr.split('-');
         formData.append('date', `${yyyy}-${mm}-${dd}`); 
         
@@ -301,6 +239,9 @@ export default function DoctorProfilePage() {
     } finally {
         setBookingLoading(false);
     }
+  };
+  const handleRemoveFile = (fileToRemove) => {
+      setFileList(prevList => prevList.filter(file => file.uid !== fileToRemove.uid));
   };
 
   const menuItems = [
@@ -574,6 +515,56 @@ export default function DoctorProfilePage() {
                     <p className="ant-upload-text">Chọn tệp tin hoặc kéo thả vào đây</p>
                     <p className="ant-upload-hint">Hỗ trợ ảnh định dạng PNG, JPG, JPEG</p>
                   </Dragger>
+                  {fileList.length > 0 && (
+                      <div style={{ marginTop: 16 }}>
+                          <Image.PreviewGroup>
+                              <Space size={[8, 8]} wrap>
+                                  {fileList.map((file, index) => {
+                                      const imgSrc = file.url || file.thumbUrl;
+                                      
+                                      if (!imgSrc) return null;
+
+                                      return (
+                                          <div key={file.uid || index} style={{ position: 'relative', display: 'inline-block' }}>
+                                              <Image
+                                                  width={80}
+                                                  height={80}
+                                                  src={imgSrc}
+                                                  alt={`preview-${index}`}
+                                                  style={{ 
+                                                      objectFit: 'cover', 
+                                                      borderRadius: 8, 
+                                                      border: '1px solid #d9d9d9',
+                                                      cursor: 'pointer'
+                                                  }}
+                                              />
+                                              <Button 
+                                                  type="primary" 
+                                                  danger 
+                                                  shape="circle" 
+                                                  size="small" 
+                                                  icon={<DeleteOutlined />} 
+                                                  style={{ 
+                                                      position: 'absolute', 
+                                                      top: -6, 
+                                                      right: -6, 
+                                                      zIndex: 10,
+                                                      width: 24,
+                                                      height: 24,
+                                                      minWidth: 24
+                                                  }}
+                                                  onClick={(e) => {
+                                                      e.stopPropagation(); 
+                                                      handleRemoveFile(file);
+                                                  }}
+                                              />
+                                          </div>
+                                      );
+                                  })}
+                              </Space>
+                          </Image.PreviewGroup>
+                      </div>
+                  )}
                </div>
             </Card>
           </Col>

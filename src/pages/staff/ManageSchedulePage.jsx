@@ -40,7 +40,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
 import Footer from "../../components/common/Footer"; 
-import { getStaffScheduleAPI, createStaffScheduleAPI, importStaffScheduleCSVAPI, exportStaffScheduleCSVAPI } from '../../services/staffService';
+import { getStaffScheduleAPI, createStaffScheduleAPI, importStaffScheduleCSVAPI, exportStaffScheduleCSVAPI, updateStaffScheduleAPI, deleteStaffScheduleAPI } from '../../services/staffService';
 import { getDoctorsAPI } from '../../services/doctorService';
 
 const { Header, Content } = Layout;
@@ -63,6 +63,9 @@ export default function ManageStaffSchedulePage() {
   const [selectedDateShifts, setSelectedDateShifts] = useState([]);
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
 
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingScheduleId, setEditingScheduleId] = useState(null);
+
   const [exporting, setExporting] = useState(false); 
 
   const fetchSchedule = async (dateObj) => {
@@ -76,7 +79,7 @@ export default function ManageStaffSchedulePage() {
               const rawData = res.data.data || [];
               const map = {};
 
-              rawData.forEach((item, index) => {
+              rawData.forEach((item) => {
                   const dateStr = item.date;
                   if (!map[dateStr]) map[dateStr] = [];
 
@@ -84,8 +87,9 @@ export default function ManageStaffSchedulePage() {
                   const toTime = item.to ? item.to.substring(0, 5) : '';
 
                   map[dateStr].push({
-                      id: index, 
+                      id: item.id, 
                       doctor: item.doctorName,
+                      doctorId: item.doctorId || item.doctorCode,
                       dept: 'Da liễu', 
                       time: `${fromTime} - ${toTime}`,
                       room: item.room
@@ -106,7 +110,7 @@ export default function ManageStaffSchedulePage() {
   useEffect(() => {
       const fetchDoctorsList = async () => {
           try {
-              const res = await getDoctorsAPI({ page: 1, take: 100, sortDirection: 'ASC' });
+              const res = await getDoctorsAPI({ page: 1, take: 50, sortDirection: 'ASC' });
               
               if (res.data?.success) {
                   const docs = res.data.data.data || res.data.data;
@@ -265,6 +269,8 @@ export default function ManageStaffSchedulePage() {
   };
 
   const handleAddNew = () => {
+    setIsEditMode(false);
+    setEditingScheduleId(null);
     form.resetFields();
     form.setFieldsValue({ date: selectedDate });
     setIsModalOpen(true);
@@ -331,10 +337,15 @@ export default function ManageStaffSchedulePage() {
               to: toTime
           };
 
-          const res = await createStaffScheduleAPI(payload);
+          let res;
+          if (isEditMode) {
+              res = await updateStaffScheduleAPI(editingScheduleId, payload);
+          } else {
+              res = await createStaffScheduleAPI(payload);
+          }
           
           if (res.data?.success) {
-              message.success("Đã thêm lịch trực thành công!");
+              message.success(isEditMode ? "Đã cập nhật lịch trực!" : "Đã thêm lịch trực thành công!");
               setIsModalOpen(false);
               fetchSchedule(currentMonthView); 
           }
@@ -344,17 +355,45 @@ export default function ManageStaffSchedulePage() {
       }
   };
 
-  const handleDeleteShift = () => {
+  const handleDeleteShift = (scheduleId) => {
     Modal.confirm({
         title: 'Xác nhận xóa ca trực',
         content: 'Bạn có chắc chắn muốn xóa lịch làm việc này không?',
         okText: 'Xóa',
         okType: 'danger',
         cancelText: 'Hủy',
-        onOk() {
-            message.success('Đã xóa ca trực');
-        }
+        onOk: async () => {
+              try {
+                  const res = await deleteStaffScheduleAPI(scheduleId);
+                  if (res.data?.success) {
+                      message.success('Đã xóa ca trực thành công');
+                      fetchSchedule(currentMonthView); 
+                      
+                      setSelectedDateShifts(prev => prev.filter(item => item.id !== scheduleId));
+                  }
+              } catch (error) {
+                  console.error("Lỗi xóa ca trực:", error);
+                  message.error(error.response?.data?.message || 'Có lỗi xảy ra khi xóa ca trực.');
+              }
+          }
     });
+  };
+  const handleEditShift = (shift) => {
+      const [fromStr, toStr] = shift.time.split(' - ');
+      const fromTime = dayjs(fromStr, 'HH:mm:ss+07');
+      const toTime = dayjs(toStr, 'HH:mm:ss+07');
+
+      form.setFieldsValue({
+          doctor: shift.doctorId || shift.doctor, 
+          date: dayjs(selectedDate),
+          time: [fromTime, toTime],
+          room: shift.room.replace('Room ', '').replace('P', '')
+      });
+
+      setEditingScheduleId(shift.id);
+      setIsEditMode(true);
+      setViewDetailsOpen(false); 
+      setIsModalOpen(true); 
   };
 
   const handleSignOut = () => navigate('/');
@@ -491,7 +530,7 @@ export default function ManageStaffSchedulePage() {
                 renderItem={(item) => (
                     <List.Item
                         actions={[
-                            <Tooltip key="edit" title="Chỉnh sửa"><Button type="text" icon={<EditOutlined />} /></Tooltip>,
+                            <Tooltip key="edit" title="Chỉnh sửa"><Button type="text" icon={<EditOutlined />} onClick={() => handleEditShift(item)} /></Tooltip>,
                             <Tooltip key="delete" title="Xóa"><Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDeleteShift(item.id)} /></Tooltip>
                         ]}
                     >
@@ -524,9 +563,14 @@ export default function ManageStaffSchedulePage() {
       </Modal>
 
       <Modal
-        title="Thêm lịch làm việc mới"
+        title={isEditMode ? "Chỉnh sửa ca trực" : "Thêm lịch làm việc mới"}
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
+        onCancel={() => {
+            setIsModalOpen(false);
+            setIsEditMode(false);
+            setEditingScheduleId(null);
+            form.resetFields();
+        }}
         onOk={() => form.submit()}
       >
         <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
