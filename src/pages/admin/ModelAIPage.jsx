@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  Layout, Menu, Avatar, Typography, Row, Col, Card, Table, Tag, Button, Space, Dropdown, Tabs, Modal, Form, Input, message, Popconfirm, Switch
+  Layout, Menu, Avatar, Typography, Row, Col, Card, Table, Tag, Button, Space, Dropdown, Tabs, Modal, Form, Input, message, Popconfirm, Switch, Select
 } from 'antd';
 import { 
   UserOutlined, LogoutOutlined, PlusOutlined, DeleteOutlined, RobotOutlined, ScanOutlined, EditOutlined, KeyOutlined, LinkOutlined, FileTextOutlined
@@ -32,15 +32,21 @@ export default function ModelAIPage() {
   const [editingModel, setEditingModel] = useState(null);
   const [loading, setLoading] = useState(false);
   
+  const [isPublicFilter, setIsPublicFilter] = useState('all');
   const [chatbotModels, setChatbotModels] = useState([]);
   const [diagnosisModels, setDiagnosisModels] = useState([]);
 
   const fetchModels = async () => {
     setLoading(true);
     try {
+      const filterParams = { page: 1, take: 10 };
+      if (isPublicFilter !== 'all') {
+        filterParams.isPublic = isPublicFilter === 'public';
+      }
+      
       const [chatRes, diagRes] = await Promise.all([
-        adminService.getChatbotModels({ page: 1, take: 10 }),
-        adminService.getDiagnoseModels({ page: 1, take: 10 })
+        adminService.getChatbotModels(filterParams),
+        adminService.getDiagnoseModels(filterParams)
       ]);
       setChatbotModels(chatRes.data?.data?.data || chatRes.data?.data || chatRes.data || []);
       setDiagnosisModels(diagRes.data?.data?.data || diagRes.data?.data || diagRes.data || []);
@@ -53,7 +59,7 @@ export default function ModelAIPage() {
 
   useEffect(() => {
     fetchModels();
-  }, []);
+  }, [isPublicFilter]);
 
   const handleMenuClick = ({ key }) => {
     switch (key) {
@@ -199,9 +205,24 @@ export default function ModelAIPage() {
       </Header>
 
       <Content style={{ padding: '30px 40px' }}>
-        <div style={{ marginBottom: 24 }}>
-            <Title level={3} style={{ margin: 0 }}>Quản lý Model AI</Title>
-            <Text type="secondary">Cấu hình phiên bản và API cấu hình cho Chatbot & Chẩn đoán hình ảnh.</Text>
+        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+                <Title level={3} style={{ margin: 0 }}>Quản lý Model AI</Title>
+                <Text type="secondary">Cấu hình phiên bản và API cấu hình cho Chatbot & Chẩn đoán hình ảnh.</Text>
+            </div>
+            <Space>
+                <Text strong>Lọc trạng thái:</Text>
+                <Select 
+                    value={isPublicFilter} 
+                    style={{ width: 160 }} 
+                    onChange={setIsPublicFilter}
+                    options={[
+                        { value: 'all', label: 'Tất cả' },
+                        { value: 'public', label: 'Mô hình Công khai' },
+                        { value: 'private', label: 'Mô hình Nội bộ' },
+                    ]}
+                />
+            </Space>
         </div>
 
         <Card variant="borderless" style={{ borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>

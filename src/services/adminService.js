@@ -1,5 +1,15 @@
 import axios from './api';
 
+const serializeBooleanQueryParams = (params = {}) => {
+  const normalizedParams = { ...params };
+
+  if (typeof normalizedParams.isPublic === 'boolean') {
+    normalizedParams.isPublic = normalizedParams.isPublic ? 'true' : 'false';
+  }
+
+  return normalizedParams;
+};
+
 const adminService = {
   // Accounts - Doctor
   createDoctorAccount: (data) => axios.post('/admin/doctors', data),
@@ -12,13 +22,13 @@ const adminService = {
   deleteAdmissionStaffAccount: (id) => axios.delete(`/admin/staffs/${id}`),
 
   // AI Models - Diagnose
-  getDiagnoseModels: (params) => axios.get('/admin/ai-models', { params }),
+  getDiagnoseModels: (params) => axios.get('/admin/ai-models', { params: serializeBooleanQueryParams(params) }),
   createDiagnoseModel: (data) => axios.post('/admin/ai-models', data),
   updateDiagnoseModel: (id, data) => axios.put(`/admin/ai-models/${id}`, data),
   deleteDiagnoseModel: (id) => axios.delete(`/admin/ai-models/${id}`),
 
   // AI Models - Chatbot
-  getChatbotModels: (params) => axios.get('/admin/chatbots', { params }),
+  getChatbotModels: (params) => axios.get('/admin/chatbots', { params: serializeBooleanQueryParams(params) }),
   createChatbotModel: (data) => axios.post('/admin/chatbots', data),
   updateChatbotModel: (id, data) => axios.put(`/admin/chatbots/${id}`, data),
   deleteChatbotModel: (id) => axios.delete(`/admin/chatbots/${id}`),

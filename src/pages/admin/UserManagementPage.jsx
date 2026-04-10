@@ -47,6 +47,7 @@ export default function UserManagementPage() {
   const [editingUser, setEditingUser] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -183,8 +184,11 @@ export default function UserManagementPage() {
   const filteredUsers = users.filter(u => {
     const matchRole = activeTab === 'all' || u.role === activeTab;
     const matchSearch = u.name.toLowerCase().includes(searchText.toLowerCase()) || u.phone.includes(searchText);
-    return matchRole && matchSearch;
+    const matchDept = departmentFilter === 'all' || u.department === departmentFilter;
+    return matchRole && matchSearch && matchDept;
   });
+
+  const departments = Array.from(new Set(users.map(u => u.department).filter(Boolean))).sort();
 
   const columns = [
     {
@@ -300,18 +304,34 @@ export default function UserManagementPage() {
                         ]}
                         style={{ marginBottom: -16 }}
                     />
-                    <Input 
-                        placeholder="Tìm kiếm tên, email, sđt..." 
-                        prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />} 
-                        style={{ width: 300 }}
-                        onChange={(e) => setSearchText(e.target.value)}
-                        allowClear
-                    />
+                    
+                    <Space>
+                        {(activeTab === 'doctor' || activeTab === 'staff' || activeTab === 'all') && (
+                            <Select
+                                value={departmentFilter}
+                                onChange={setDepartmentFilter}
+                                style={{ width: 180 }}
+                                placeholder="Lọc chuyên khoa"
+                                options={[
+                                    { value: 'all', label: 'Tất cả Khoa/Ban' },
+                                    ...departments.map(dept => ({ value: dept, label: dept }))
+                                ]}
+                            />
+                        )}
+                        <Input 
+                            placeholder="Tìm kiếm tên, SĐT..." 
+                            prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />} 
+                            style={{ width: 250 }}
+                            onChange={(e) => setSearchText(e.target.value)}
+                            allowClear
+                        />
+                    </Space>
                 </div>
             </Card>
 
             <Card variant="borderless" style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
                 <Table 
+                    loading={loading}
                     columns={columns} 
                     dataSource={filteredUsers} 
                     rowKey="id"
