@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect} from 'react';
 import { 
   Layout, 
   Menu, 
@@ -18,7 +18,7 @@ import {
   message,
   Upload,
   Input,
-  Form
+  Form,
 } from "antd";
 import { 
   UserOutlined, 
@@ -36,46 +36,75 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/Footer"; 
+import { getDoctorInfoAPI } from '../../services/doctorService';
+import useAuth from '../../hooks/useAuth';
 
 const { Header, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
 export default function DoctorProfilePage() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
 
   const [doctorInfo, setDoctorInfo] = useState({
-    name: "BS. CK2 Trần Thị Hoa",
-    specialty: "Da liễu",
-    position: "Trưởng khoa Da liễu",
-    hospital: "Bệnh viện Da Liễu TP.HCM",
+    name: "",
+    specialty: "",
+    position: "Bác sĩ điều trị", 
+    hospital: "Bệnh viện ASTCare", 
     avatar: "/doctor-avatar.png",  
-    email: "tranthihoa@astcare.com",
-    phone: "0909 123 456",
-    address: "Quận 3, TP. Hồ Chí Minh",
-    about: "Bác sĩ Trần Thị Hoa có hơn 15 năm kinh nghiệm trong việc khám và điều trị các bệnh lý về da. Bà từng tu nghiệp tại Pháp và Hàn Quốc, chuyên sâu về điều trị mụn, sẹo và thẩm mỹ da công nghệ cao.",
-    experience: 15,  
+    email: "",
+    phone: "",
+    address: "Đang cập nhật...", 
+    about: "",
+    experienceText: "", 
+    gender: "",
+    
     rating: 4.8,
     reviews: 1250,
     education: [
       { year: "1998 - 2004", title: "Bác sĩ đa khoa", place: "Đại học Y Dược TP.HCM" },
-      { year: "2006 - 2008", title: "Thạc sĩ Da liễu", place: "Đại học Y Dược TP.HCM" },
-      { year: "2015", title: "Tu nghiệp Thẩm mỹ da", place: "Seoul, Hàn Quốc" },
+      { year: "2006 - 2008", title: "Thạc sĩ", place: "Đại học Y Dược TP.HCM" },
     ],
     workHistory: [
-        { period: "2004 - 2010", role: "Bác sĩ điều trị", place: "Bệnh viện Quận 5" },
-        { period: "2010 - 2018", role: "Phó khoa Da liễu", place: "Bệnh viện Da Liễu TP.HCM" },
-        { period: "2018 - Nay", role: "Trưởng khoa Da liễu", place: "Bệnh viện Da Liễu TP.HCM" },
+        { period: "2018 - Nay", role: "Bác sĩ", place: "Bệnh viện ASTCare" },
     ],
     certifications: [
-        "Chứng chỉ hành nghề khám chữa bệnh Da liễu",
-        "Chứng chỉ Ứng dụng Laser và Ánh sáng trong Da liễu",
-        "Thành viên Hội Da liễu Việt Nam"
+        "Chứng chỉ hành nghề khám chữa bệnh",
     ]
   });
 
+  useEffect(() => {
+      const fetchDoctorProfile = async () => {
+          if (!user?.id) return; 
+          try {
+              const res = await getDoctorInfoAPI(user.id);
+              if (res.data?.success) {
+                  const data = res.data.data;
+                  
+                  setDoctorInfo(prev => ({
+                      ...prev,
+                      name: `BS. ${data.lastName} ${data.firstName}`,
+                      specialty: data.department || "Đa khoa",
+                      email: data.email,
+                      phone: `${data.phoneCode} ${data.phoneNumber}`,
+                      about: data.description || "Bác sĩ chưa cập nhật thông tin giới thiệu.",
+                      avatar: data.avatarUrl || "/doctor-avatar.png",
+                      experienceText: data.experience || "Nhiều năm",
+                      gender: data.gender === 'MALE' ? 'Nam' : 'Nữ',
+                      doctorCode: data.doctorCode
+                  }));
+              }
+          } catch (error) {
+              console.error("Lỗi lấy thông tin bác sĩ:", error);
+              message.error("Không thể tải thông tin hồ sơ lúc này.");
+          }
+      };
+
+      fetchDoctorProfile();
+  }, [user?.id]);
   const handleSignOut = () => {
-    console.log("Đã đăng xuất!");
+    logout();
     navigate('/');
   };
 
@@ -98,7 +127,7 @@ export default function DoctorProfilePage() {
 
         <Descriptions title="Thông tin cá nhân" column={1} labelStyle={{ fontWeight: 'bold', width: '150px' }}>
             <Descriptions.Item label="Họ và tên">{doctorInfo.name}</Descriptions.Item>
-            <Descriptions.Item label="Giới tính">Nữ</Descriptions.Item>
+            <Descriptions.Item label="Giới tính">{doctorInfo.gender || 'Đang cập nhật'}</Descriptions.Item>
             <Descriptions.Item label="Ngày sinh">15/08/1980</Descriptions.Item>
             <Descriptions.Item label="Quốc tịch">Việt Nam</Descriptions.Item>
             <Descriptions.Item label="Ngôn ngữ">Tiếng Việt, Tiếng Anh, Tiếng Pháp</Descriptions.Item>
@@ -218,12 +247,14 @@ const SettingsTab = () => (
             { key: "1", label: "Trang chủ" },
             { key: "2", label: "Lịch đặt khám" },
             { key: "3", label: "Khám bệnh" },
+            { key: "4", label: "Lịch sử khám bệnh" },
           ]}
           onClick ={({ key }) => {
             switch (key) {
               case "1": navigate('/doctor/dashboard'); break;
               case "2": navigate('/doctor/appointments'); break;
               case "3": navigate('/doctor/consulting'); break;
+              case "4": navigate('/doctor/medical-history'); break;
               default: break;
             }
           }}
@@ -272,7 +303,7 @@ const SettingsTab = () => (
                     
                     <div style={{ marginTop: 12 }}>
                         <Tag color="blue">{doctorInfo.specialty}</Tag>
-                        <Tag color="purple">15 năm KN</Tag>
+                        <Tag color="purple">{doctorInfo.experienceText}</Tag>
                     </div>
 
                     <Divider />
