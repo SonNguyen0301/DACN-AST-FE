@@ -204,6 +204,7 @@ export default function ExaminationPage() {
                           const aiResult = res.data.data;
                           resultForm.setFieldsValue({
                               finalDiagnosis: aiResult.diseases?.[0]?.diseaseName || mockAIResult.diagnoses[0].name,
+                              department: "dermatology",
                               doctorAdvice: aiResult.aiAdvice || mockAIResult.advice,
                               currentCondition: aiResult.suggestedDiagnosis || values.description || values.symptom
                           });
@@ -238,7 +239,8 @@ export default function ExaminationPage() {
           resultForm.resetFields(); 
 
           resultForm.setFieldsValue({
-              currentCondition: values.description || ""
+              department: "dermatology",
+              currentCondition: values.description || values.symptom || ""
           });
       }).catch(info => {
           console.log('Validate Failed:', info);
@@ -254,6 +256,7 @@ export default function ExaminationPage() {
           await finishExaminationAPI({
               consultationId: consultationId,
               finalDiagnosis: values.finalDiagnosis,
+              department: values.department,
               currentCondition: values.currentCondition,
               medicines: values.medicines
           });
@@ -443,7 +446,7 @@ export default function ExaminationPage() {
                 )}
 
                 {viewState === 'result' && (
-                    <Row gutter={[24, 24]}>
+                    <Row gutter={[24, 24]} justify={!useAI ? "center" : "start"}>
                         {useAI && (
                         <Col xs={24} lg={10}>
                             <Card 
@@ -503,7 +506,7 @@ export default function ExaminationPage() {
                             </Card>
                         </Col>
                         )}
-                        <Col xs={24} lg={useAI ? 14 : 24}>
+                        <Col xs={24} lg={useAI ? 14 : 16} xl={useAI ? 14 : 14}>
                             <Card 
                                 title={<><FileProtectOutlined style={{ color: '#52c41a', marginRight: 8 }} /> Kết luận & Kê đơn của Bác sĩ</>}
                                 style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
@@ -513,9 +516,27 @@ export default function ExaminationPage() {
                                     layout="vertical"
                                     onFinish={onFinishResult}
                                 >
-                                    <Form.Item label="Chẩn đoán xác định" name="finalDiagnosis" rules={[{ required: true }]}>
-                                        <Input size="large" style={{ fontWeight: 600, color: '#1677ff' }} />
-                                    </Form.Item>
+                                    <Row gutter={16}>
+                                        <Col span={16}>
+                                            <Form.Item label="Chẩn đoán xác định" name="finalDiagnosis" rules={[{ required: true }]}>
+                                                <Input size="large" style={{ fontWeight: 600, color: '#1677ff' }} />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={8}>
+                                            <Form.Item label="Chuyên khoa" name="department" rules={[{ required: true }]}>
+                                                <Select size="large" placeholder="Chọn chuyên khoa" options={[
+                                                    { value: 'dermatology', label: 'Da liễu' },
+                                                    { value: 'general_medicine', label: 'Đa khoa' },
+                                                    { value: 'endocrinology', label: 'Nội tiết' },
+                                                    { value: 'ent', label: 'Tai mũi họng' },
+                                                    { value: 'gastroenterology', label: 'Tiêu hoá' },
+                                                    { value: 'cardiology', label: 'Tim mạch' },
+                                                    { value: 'dentomaxillofacial', label: 'Răng hàm mặt' },
+                                                    { value: 'ophthalmology', label: 'Mắt' },
+                                                ]} />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
 
                                     <Form.Item label="Mô tả tình trạng bệnh" name="currentCondition">
                                         <TextArea rows={2} />
