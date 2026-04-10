@@ -18,7 +18,8 @@ import {
   Space,
   Empty,
   Modal,
-  Spin
+  Spin,
+  message
 } from "antd";
 import { 
   UserOutlined, 
@@ -42,7 +43,7 @@ import { useState } from 'react';
 import dayjs from 'dayjs';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useEffect } from "react";
-import { getAppointmentCalendarAPI, getAppointmentsByDateAPI, getDoctorDashboardInfoAPI, getStatisticMonthlyDiseaseAPI } from "../../services/doctorService";
+import { getAppointmentCalendarAPI, getAppointmentsByDateAPI, getDoctorDashboardInfoAPI, getStatisticMonthlyDiseaseAPI, startExaminationAPI } from "../../services/doctorService";
 import useAuth from "../../hooks/useAuth";
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -282,6 +283,29 @@ export default function DoctorDashboardPage() {
       fetchAppointmentsByDate();
   }, [currentDate.format('YYYY-MM-DD'), user?.id]);
   
+const handleStartConsultation = async (patient) => {
+      try {
+          
+          const res = await startExaminationAPI({
+              appointmentId: patient.id, 
+              patientId: patient.patientId
+          });
+          
+          if (res.data?.success || res.status === 201 || res.status === 200) {
+              message.success({ content: 'Đã bắt đầu ca khám', key: 'startExam' });
+              
+              const consultationId = res.data?.data?.consultationId || res.data?.consultationId;
+              setIsDetailModalOpen(false);
+              
+              navigate('/doctor/consulting', { state: { patient: patient, consultationId } });
+          } else {
+              message.error({ content: 'Không thể bắt đầu ca khám', key: 'startExam' });
+          }
+      } catch (error) {
+          console.error("Lỗi khi bắt đầu khám:", error);
+          message.error({ content: error.response?.data?.message || "Không thể bắt đầu ca khám.", key: 'startExam' });
+      }
+  };
 
 const isTodaySelected = currentDate.isSame(dayjs(), 'day');
 
@@ -576,7 +600,7 @@ const getListData = (value) => {
          <Dropdown menu={{ items: menuUserItems }} placement="bottomRight" arrow>
            <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                 <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.firstName + " " + user.lastName}</span>
+                 <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{"BS. "+ user.firstName + " " + user.lastName}</span>
                  <span style={{ fontSize: 12, color: '#888' }}>Khoa Da liễu</span>
              </div>
              <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
@@ -724,6 +748,7 @@ const getListData = (value) => {
                     <div style={{ display: 'flex', gap: 16 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Badge status="warning" /><Text style={{ fontSize: 12 }}>Chờ khám</Text></div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Badge status="success" /><Text style={{ fontSize: 12 }}>Đã khám</Text></div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Badge status="processing" /><Text style={{ fontSize: 12 }}>Đang khám</Text></div>
                     </div>
                 </div>
                 <Card variant="borderless" style={{ borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }} styles={{ body: { padding: 0, height: '100%' } }}>
@@ -781,11 +806,11 @@ const getListData = (value) => {
                                                 type="primary" 
                                                 onClick={(e) => {
                                                     e.stopPropagation(); 
-                                                    navigate('/doctor/consulting', { state: { patient: item } }); 
+                                                    handleStartConsultation(item);
                                                 }}
                                                 disabled={!isTodaySelected}
                                             >
-                                                Bắt đầu khám
+                                                {item.status === 'EXAMINING' ? 'Tiếp tục khám' : 'Bắt đầu khám'}
                                             </Button>
                                         ) : null
                                     ]}
@@ -835,11 +860,11 @@ const getListData = (value) => {
                 type="primary" 
                 onClick={() => {
                     setIsDetailModalOpen(false);
-                    navigate('/doctor/consulting', { state: { patient: selectedPatient } }); 
+                    handleStartConsultation(selectedPatient);
                 }}
                 disabled={!isTodaySelected}
             >
-                Bắt đầu khám
+                {selectedPatient?.status === 'EXAMINING' ? 'Tiếp tục khám' : 'Bắt đầu khám'}
             </Button>
         ]}
         centered

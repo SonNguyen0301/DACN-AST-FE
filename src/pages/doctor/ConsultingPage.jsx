@@ -45,7 +45,7 @@ import {
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import Footer from "../../components/common/Footer"; 
-import { getAppointmentsByDateAPI, createAiDiagnosisAPI, getAiDiagnosisResultAPI, finishExaminationAPI, startExaminationAPI } from '../../services/doctorService';
+import { getAppointmentsByDateAPI, createAiDiagnosisAPI, getAiDiagnosisResultAPI, finishExaminationAPI, startExaminationAPI, getConsultationDetailAPI } from '../../services/doctorService';
 import useAuth from '../../hooks/useAuth';
 import dayjs from 'dayjs';
 
@@ -122,6 +122,63 @@ export default function ExaminationPage() {
 
       fetchTodayPatients();
   }, [activePatient, user?.id]);
+
+  useEffect(() => {
+      const fetchConsultationDetail = async () => {
+          if (consultationId) {
+              try {
+                  const res = await getConsultationDetailAPI(consultationId);
+
+                  if (res.data?.success && res.data?.data) {
+                      const data = res.data.data;
+                      const apt = data.appointment;
+                      const pat = data.patient;
+
+                      const fromTime = apt.from ? apt.from.substring(0, 5) : '';
+                      const toTime = apt.to ? apt.to.substring(0, 5) : '';
+                      
+                      const imageUrls = apt.images 
+                          ? Object.values(apt.images)
+                              .map(img => typeof img === 'string' ? img : (img.base64 || img.dataUrl || img.url))
+                              .filter(Boolean)
+                          : [];
+
+                      const patientData = {
+                          key: apt.id,
+                          patientId: pat.id,
+                          patientName: pat.name,
+                          age: pat.dateOfBirth ? dayjs().diff(dayjs(pat.dateOfBirth), 'year') : 'N/A',
+                          gender: pat.gender,
+                          phone: pat.phoneNumber || 'Không có',
+                          time: `${fromTime} - ${toTime}`,
+                          reason: apt.description || 'Không có ghi chú',
+                          detailedSymptoms: apt.description || 'Chưa có mô tả chi tiết',
+                          history: data.pastConsultations?.length > 0 ? `${data.pastConsultations.length} lần khám trước` : 'Không có ghi nhận',
+                          images: imageUrls,
+                          status: apt.status,
+                          pastConsultations: data.pastConsultations 
+                      };
+
+                      setActivePatient(patientData);
+
+                      form.setFieldsValue({
+                          gender: patientData.gender,
+                          age: patientData.age,
+                          history: patientData.history,
+                          symptom: patientData.reason, 
+                          description: patientData.detailedSymptoms,
+                          genetic: 'no' 
+                      });
+                  }
+              } catch (error) {
+                  console.error("Lỗi lấy chi tiết ca khám:", error);
+                  message.error("Không thể lấy thông tin chi tiết ca khám.");
+              }
+          }
+      };
+
+      fetchConsultationDetail();
+  }, [consultationId]);
 
   useEffect(() => {
       if (activePatient && form) {
@@ -330,7 +387,7 @@ export default function ExaminationPage() {
         <Dropdown menu={{ items: menuUserItems }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>BS. CK2 Trần Thị Hoa</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{"BS. "+ user.firstName + " " + user.lastName}</span>
                 <span style={{ fontSize: 12, color: '#888' }}>Khoa Da liễu</span>
             </div>
             <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
