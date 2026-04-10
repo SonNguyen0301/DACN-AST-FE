@@ -11,6 +11,7 @@ import DoctorDashboardPage from "../pages/doctor/DashboardPage";
 import ListAppointmentPage from "../pages/doctor/ListAppointmentPage";
 import DoctorProfile from "../pages/doctor/DoctorProfilePage";
 import ConsultingPage from "../pages/doctor/ConsultingPage";
+import MedicalHistoryPage from "../pages/doctor/MedicalHistoryPage";
 
 import StaffDashboardPage from "../pages/staff/DashboardPage";
 import ListAppointmentStaffPage from "../pages/staff/ListAppointmentPage";
@@ -43,6 +44,7 @@ export default function AppRouter() {
       <Route path="/doctor/appointments" element={<ListAppointmentPage />} />
       <Route path="/doctor/profile" element={<DoctorProfile />} />
       <Route path="/doctor/consulting" element={<ConsultingPage />} />
+      <Route path="/doctor/medical-history" element={<MedicalHistoryPage />} />
       
       {/* Staff routes */}
       <Route path="/staff/dashboard" element={<StaffDashboardPage />} />

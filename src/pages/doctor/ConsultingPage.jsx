@@ -311,6 +311,7 @@ export default function ExaminationPage() {
             { key: "1", label: "Trang chủ" },
             { key: "2", label: "Lịch đặt khám" },
             { key: "3", label: "Khám bệnh" },
+            { key: "4", label: "Lịch sử khám bệnh" },
           ]}
           onClick={({ key }) => {
              if (key === '1') navigate('/doctor/dashboard');
@@ -319,6 +320,9 @@ export default function ExaminationPage() {
                  setActivePatient(null);
                  setViewState('input');
                  navigate('/doctor/consulting');
+             }
+             if (key === '4') {
+                 navigate('/doctor/medical-history');
              }
           }}
           style={{ fontSize: 16, fontWeight: 500, color: '#555', borderBottom: 'none', flex: 1, justifyContent: 'center' }}

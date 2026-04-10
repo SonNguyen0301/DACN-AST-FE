@@ -59,4 +59,8 @@ const getAiDiagnosisResultAPI = (consultationId) => {
     return axios.get(`/doctors/ai-diagnosis/${consultationId}`);
 };
 
-export { getDoctorsAPI, getDoctorInfoAPI, getDoctorShiftsAPI, bookAppointmentAPI, getDoctorAppointmentsAPI, getAppointmentCalendarAPI, getAppointmentsByDateAPI, getDoctorDashboardInfoAPI, getStatisticMonthlyDiseaseAPI, startExaminationAPI, finishExaminationAPI, createAiDiagnosisAPI, getAiDiagnosisResultAPI };
+const getConsultationHistoryAPI = (params) => {
+    return axios.get('/doctors/consultation-history', { params });
+};
+
+export { getDoctorsAPI, getDoctorInfoAPI, getDoctorShiftsAPI, bookAppointmentAPI, getDoctorAppointmentsAPI, getAppointmentCalendarAPI, getAppointmentsByDateAPI, getDoctorDashboardInfoAPI, getStatisticMonthlyDiseaseAPI, startExaminationAPI, finishExaminationAPI, createAiDiagnosisAPI, getAiDiagnosisResultAPI, getConsultationHistoryAPI };

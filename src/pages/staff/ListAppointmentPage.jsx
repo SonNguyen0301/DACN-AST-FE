@@ -479,6 +479,7 @@ export default function AdmissionStaffAppointmentPage() {
         onOk={() => noteForm.submit()}
         okText="Lưu ghi chú"
         cancelText="Hủy"
+        destroyOnClose
       >
         <Form form={noteForm} layout="vertical" onFinish={handleNoteForAppointment}>
             <Form.Item 
