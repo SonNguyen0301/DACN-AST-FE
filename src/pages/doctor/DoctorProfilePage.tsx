@@ -332,9 +332,9 @@ const SettingsTab = () => (
                         </div>
                     </div>
 
-                    <Button type="primary" ghost icon={<EditOutlined />} block style={{ marginTop: 24 }}>
+                    {/* <Button type="primary" ghost icon={<EditOutlined />} block style={{ marginTop: 24 }}>
                         Chỉnh sửa hồ sơ
-                    </Button>
+                    </Button> */}
                 </Card>
             </Col>
 

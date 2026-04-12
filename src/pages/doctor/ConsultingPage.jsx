@@ -143,6 +143,12 @@ export default function ExaminationPage() {
                               .filter(Boolean)
                           : [];
 
+                        const pastDiseases = data.pastConsultations
+                          ? [...new Set(data.pastConsultations
+                              .map(c => c.diagnosisResult?.description)
+                              .filter(Boolean))] 
+                          : [];
+
                       const patientData = {
                           key: apt.id,
                           patientId: pat.id,
@@ -153,7 +159,7 @@ export default function ExaminationPage() {
                           time: `${fromTime} - ${toTime}`,
                           reason: apt.description || 'Không có ghi chú',
                           detailedSymptoms: apt.description || 'Chưa có mô tả chi tiết',
-                          history: data.pastConsultations?.length > 0 ? `${data.pastConsultations.length} lần khám trước` : 'Không có ghi nhận',
+                          history: pastDiseases.length > 0 ? pastDiseases.join(', ') : 'Không có ghi nhận',
                           images: imageUrls,
                           status: apt.status,
                           pastConsultations: data.pastConsultations 
@@ -465,7 +471,7 @@ export default function ExaminationPage() {
                                                 </div>
                                             </div>
                                         )}
-                                        <Button type="dashed" icon={<HistoryOutlined />} block>Xem lịch sử khám cũ</Button>
+                                        {/* <Button type="dashed" icon={<HistoryOutlined />} block>Xem lịch sử khám cũ</Button> */}
                                     </div>
                                 </Card>
                             </Col>
