@@ -356,11 +356,18 @@ export default function ManageStaffSchedulePage() {
         cancelText: 'Hủy',
         onOk: async () => {
               try {
-                  const res = await deleteStaffScheduleAPI(scheduleId);
+                  const payload = {
+                      scheduleIds: [scheduleId],
+                      startWeekDate: selectedDate.startOf('week').format('YYYY-MM-DD'),
+                      endWeekDate: selectedDate.endOf('week').format('YYYY-MM-DD'),
+                      currentDate: dayjs().format('YYYY-MM-DD')
+                  };
+
+                  const res = await deleteStaffScheduleAPI(payload);
+                  
                   if (res.data?.success) {
                       message.success('Đã xóa ca trực thành công');
                       fetchSchedule(currentMonthView); 
-                      
                       setSelectedDateShifts(prev => prev.filter(item => item.id !== scheduleId));
                   }
               } catch (error) {
@@ -370,6 +377,7 @@ export default function ManageStaffSchedulePage() {
           }
     });
   };
+
   const handleEditShift = (shift) => {
       const [fromStr, toStr] = shift.time.split(' - ');
       const fromTime = dayjs(fromStr, 'HH:mm');
@@ -401,7 +409,14 @@ export default function ManageStaffSchedulePage() {
             try {
                 message.loading({ content: 'Đang xóa...', key: 'bulkDelete' });
                 
-                await Promise.all(selectedIds.map(id => deleteStaffScheduleAPI(id)));
+                const payload = {
+                    scheduleIds: selectedIds, 
+                    startWeekDate: selectedDate.startOf('week').format('YYYY-MM-DD'),
+                    endWeekDate: selectedDate.endOf('week').format('YYYY-MM-DD'),
+                    currentDate: dayjs().format('YYYY-MM-DD')
+                };
+
+                await deleteStaffScheduleAPI(payload);
 
                 message.success({ content: 'Đã xóa các ca trực thành công', key: 'bulkDelete' });
                 fetchSchedule(currentMonthView);
@@ -412,12 +427,13 @@ export default function ManageStaffSchedulePage() {
                 
                 if (remainingShifts.length === 0) setViewDetailsOpen(false);
             } catch (error) {
-                message.error({ content: 'Có lỗi xảy ra khi xóa hàng loạt', key: 'bulkDelete' });
                 console.error("Lỗi xóa hàng loạt:", error);
+                message.error({ content: error.response?.data?.message || 'Có lỗi xảy ra khi xóa hàng loạt', key: 'bulkDelete' });
             }
         }
     });
-};
+  };
+
   const handleSignOut = () => navigate('/');
   const menuUserItems = [
     { key: '1', label: (<a onClick={() => navigate('/staff/profile')}>Hồ sơ nhân viên</a>), icon: <UserOutlined /> },

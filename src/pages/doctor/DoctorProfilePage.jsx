@@ -16,39 +16,43 @@ import {
   Divider,
   Dropdown,
   message,
-  Upload,
   Input,
   Form,
+  Modal
 } from "antd";
 import { 
   UserOutlined, 
   LogoutOutlined,
-  CalendarOutlined, 
   PhoneOutlined, 
   MailOutlined, 
   EnvironmentOutlined,
   EditOutlined,
   SafetyCertificateOutlined,
   GlobalOutlined,
-  UploadOutlined,
   CameraOutlined,
   BankOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/Footer"; 
-import { getDoctorInfoAPI } from '../../services/doctorService';
+import { getDoctorInfoAPI, updateDoctorInfoAPI } from '../../services/doctorService';
 import useAuth from '../../hooks/useAuth';
 
 const { Header, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
+
 export default function DoctorProfilePage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [editForm] = Form.useForm();
 
   const [doctorInfo, setDoctorInfo] = useState({
-    name: "",
+    firstName: "", 
+    lastName: "",
+    phoneNumber: "",
     specialty: "",
     position: "Bác sĩ điều trị", 
     hospital: "Bệnh viện ASTCare", 
@@ -74,8 +78,7 @@ export default function DoctorProfilePage() {
     ]
   });
 
-  useEffect(() => {
-      const fetchDoctorProfile = async () => {
+        const fetchDoctorProfile = async () => {
           if (!user?.id) return; 
           try {
               const res = await getDoctorInfoAPI(user.id);
@@ -85,9 +88,12 @@ export default function DoctorProfilePage() {
                   setDoctorInfo(prev => ({
                       ...prev,
                       name: `BS. ${data.lastName} ${data.firstName}`,
+                      firstName: data.firstName, 
+                      lastName: data.lastName,
                       specialty: data.department || "Đa khoa",
                       email: data.email,
                       phone: `${data.phoneCode} ${data.phoneNumber}`,
+                      phoneNumber: data.phoneNumber,
                       about: data.description || "Bác sĩ chưa cập nhật thông tin giới thiệu.",
                       avatar: data.avatarUrl || "/doctor-avatar.png",
                       experienceText: data.experience || "Nhiều năm",
@@ -101,6 +107,7 @@ export default function DoctorProfilePage() {
           }
       };
 
+  useEffect(() => {
       fetchDoctorProfile();
   }, [user?.id]);
   const handleSignOut = () => {
@@ -112,6 +119,44 @@ export default function DoctorProfilePage() {
     { key: '1', label: (<a onClick={() => navigate('/doctor/profile')}>Hồ sơ bác sĩ</a>), icon: <UserOutlined /> },
     { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
   ];
+
+  const handleOpenEditModal = () => {
+    editForm.setFieldsValue({
+        lastName: doctorInfo.lastName,
+        firstName: doctorInfo.firstName,
+        phoneNumber: doctorInfo.phoneNumber,
+        experience: doctorInfo.experienceText !== "Nhiều năm" ? doctorInfo.experienceText : "", 
+        description: doctorInfo.about !== "Bác sĩ chưa cập nhật thông tin giới thiệu." ? doctorInfo.about : ""
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdateProfile = async (values) => {
+    setUpdating(true);
+    try {
+        const payload = {
+            lastName: values.lastName,
+            firstName: values.firstName,
+            phoneNumber: values.phoneNumber,
+            experience: values.experience,
+            description: values.description
+        };
+
+        const res = await updateDoctorInfoAPI(payload);
+        
+        if (res.data?.success) {
+            message.success("Cập nhật thông tin thành công!");
+            setIsEditModalOpen(false);
+            fetchDoctorProfile(); 
+        } else {
+            message.error("Không thể cập nhật thông tin lúc này.");
+        }
+    } catch (error) {
+        console.error("Lỗi cập nhật profile:", error);
+    } finally {
+        setUpdating(false);
+    }
+  };
 
 
   const OverviewTab = () => (
@@ -126,7 +171,7 @@ export default function DoctorProfilePage() {
         <Divider />
 
         <Descriptions title="Thông tin cá nhân" column={1} labelStyle={{ fontWeight: 'bold', width: '150px' }}>
-            <Descriptions.Item label="Họ và tên">{doctorInfo.name}</Descriptions.Item>
+            <Descriptions.Item label="Họ và tên">{doctorInfo.firstName} {doctorInfo.lastName}</Descriptions.Item>
             <Descriptions.Item label="Giới tính">{doctorInfo.gender || 'Đang cập nhật'}</Descriptions.Item>
             <Descriptions.Item label="Ngày sinh">15/08/1980</Descriptions.Item>
             <Descriptions.Item label="Quốc tịch">Việt Nam</Descriptions.Item>
@@ -263,7 +308,7 @@ const SettingsTab = () => (
         <Dropdown menu={{ items: menuUserItems }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{doctorInfo.name}</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{doctorInfo.firstName} {doctorInfo.lastName}</span>
                 <span style={{ fontSize: 12, color: '#888' }}>Khoa {doctorInfo.specialty}</span>
             </div>
             <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
@@ -298,7 +343,7 @@ const SettingsTab = () => (
                         />
                     </div>
                     
-                    <Title level={4} style={{ marginTop: 16, marginBottom: 4 }}>{doctorInfo.name}</Title>
+                    <Title level={4} style={{ marginTop: 16, marginBottom: 4 }}>{doctorInfo.firstName} {doctorInfo.lastName}</Title>
                     <Text type="secondary" style={{ fontSize: 16 }}>{doctorInfo.position}</Text>
                     
                     <div style={{ marginTop: 12 }}>
@@ -332,9 +377,9 @@ const SettingsTab = () => (
                         </div>
                     </div>
 
-                    {/* <Button type="primary" ghost icon={<EditOutlined />} block style={{ marginTop: 24 }}>
+                    <Button type="primary" ghost icon={<EditOutlined />} block style={{ marginTop: 24 }} onClick={handleOpenEditModal}>
                         Chỉnh sửa hồ sơ
-                    </Button> */}
+                    </Button>
                 </Card>
             </Col>
 
@@ -355,8 +400,62 @@ const SettingsTab = () => (
             </Col>
          </Row>
       </Content>
-
       <Footer />
+
+      <Modal
+          title="Chỉnh sửa Thông tin Cá nhân"
+          open={isEditModalOpen}
+          onCancel={() => setIsEditModalOpen(false)}
+          onOk={() => editForm.submit()}
+          confirmLoading={updating}
+          okText="Lưu thay đổi"
+          cancelText="Hủy"
+          width={600}
+      >
+          <Form 
+              form={editForm} 
+              layout="vertical" 
+              onFinish={handleUpdateProfile}
+              style={{ marginTop: 20 }}
+          >
+              <Row gutter={16}>
+                  <Col span={12}>
+                      <Form.Item 
+                          name="lastName" 
+                          label="Họ" 
+                          rules={[{ required: true, message: 'Vui lòng nhập Họ' }]}
+                      >
+                          <Input placeholder="Nhập họ..." />
+                      </Form.Item>
+                  </Col>
+                  <Col span={12}>
+                      <Form.Item 
+                          name="firstName" 
+                          label="Tên" 
+                          rules={[{ required: true, message: 'Vui lòng nhập Tên' }]}
+                      >
+                          <Input placeholder="Nhập tên..." />
+                      </Form.Item>
+                  </Col>
+              </Row>
+
+              <Form.Item 
+                  name="phoneNumber" 
+                  label="Số điện thoại" 
+                  rules={[{ required: true, message: 'Vui lòng nhập SĐT' }]}
+              >
+                  <Input placeholder="Nhập số điện thoại..." />
+              </Form.Item>
+
+              <Form.Item 
+                  name="description" 
+                  label="Giới thiệu bản thân" 
+              >
+                  <Input.TextArea rows={4} placeholder="Viết một đoạn ngắn giới thiệu về chuyên môn và bản thân..." />
+              </Form.Item>
+          </Form>
+      </Modal>
+
     </Layout>
   );
 }
