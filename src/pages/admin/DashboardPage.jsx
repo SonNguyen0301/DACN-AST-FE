@@ -23,11 +23,14 @@ import {
   ApiOutlined,
   RiseOutlined,
   FallOutlined,
+  MessageOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import Footer from "../../components/common/Footer"; 
 import adminService from "../../services/adminService";
+import DoctorPatientsDrawer from "./components/DoctorPatientsDrawer";
+import MonthlyDiseasesChart from "./components/MonthlyDiseasesChart";
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -55,10 +58,18 @@ export default function AdminDashboardPage() {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [topLimit, setTopLimit] = useState(5);
   const [loadingDoctorStats, setLoadingDoctorStats] = useState(false);
   const [loadingOverview, setLoadingOverview] = useState(false);
   const [topDoctors, setTopDoctors] = useState([]);
   const [departmentDistribution, setDepartmentDistribution] = useState([]);
+  const [topDiseases, setTopDiseases] = useState([]);
+  const [loadingDiseases, setLoadingDiseases] = useState(false);
+  
+  // Drawer states
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedDoctorForDrawer, setSelectedDoctorForDrawer] = useState(null);
+
   const [totalExaminations, setTotalExaminations] = useState(0);
   const [systemOverview, setSystemOverview] = useState({
     totalAiUsage: 0,
@@ -67,8 +78,8 @@ export default function AdminDashboardPage() {
     examinationGrowth: 0,
     newPatients: 0,
     patientGrowth: 0,
-    activeDoctors: 0,
-    doctorGrowth: 0,
+    chatbotUsage: 0,
+    chatbotUsageGrowth: 0,
   });
 
   const DEPARTMENT_LABELS = {
@@ -100,6 +111,13 @@ export default function AdminDashboardPage() {
     });
   }, [now]);
 
+  const topLimitOptions = [
+    { value: 5, label: 'Top 5' },
+    { value: 10, label: 'Top 10' },
+    { value: 20, label: 'Top 20' },
+    { value: 50, label: 'Top 50' },
+  ];
+
   const toDepartmentLabel = (departmentCode) => DEPARTMENT_LABELS[departmentCode] || departmentCode || 'Khác';
 
   const fetchDoctorPerformance = async () => {
@@ -108,6 +126,7 @@ export default function AdminDashboardPage() {
       const response = await adminService.getDoctorPerformanceStatistics({
         month: selectedMonth,
         year: selectedYear,
+        limit: topLimit,
       });
       const payload = response.data?.data || response.data || {};
 
@@ -156,8 +175,8 @@ export default function AdminDashboardPage() {
         examinationGrowth: data.examinationGrowth || 0,
         newPatients: data.newPatients || 0,
         patientGrowth: data.patientGrowth || 0,
-        activeDoctors: data.activeDoctors || 0,
-        doctorGrowth: data.doctorGrowth || 0,
+        chatbotUsage: data.chatbotUsage || 0,
+        chatbotUsageGrowth: data.chatbotUsageGrowth || 0,
       });
     } catch (error) {
       console.error('Error fetching system overview:', error);
@@ -166,10 +185,26 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const fetchTopDiseases = async () => {
+    setLoadingDiseases(true);
+    try {
+      const response = await adminService.getTopDiseases({ month: selectedMonth, year: selectedYear });
+      setTopDiseases(response.data?.data || response.data || []);
+    } catch (error) {
+      console.error("Error fetching top diseases:", error);
+    } finally {
+      setLoadingDiseases(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSystemOverview();
+    fetchTopDiseases();
+  }, [selectedMonth, selectedYear]);
+
   useEffect(() => {
     fetchDoctorPerformance();
-    fetchSystemOverview();
-  }, [selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear, topLimit]);
 
   const getTrendType = (growth) => {
     if (growth > 0) return "up";
@@ -212,13 +247,13 @@ export default function AdminDashboardPage() {
       trendVal: `${Math.abs(systemOverview.patientGrowth)}%`
     },
     { 
-      title: "Bác sĩ đang hoạt động", 
-      value: systemOverview.activeDoctors, 
-      prefix: <UserOutlined />, 
+      title: "Sử dụng Chatbot", 
+      value: systemOverview.chatbotUsage, 
+      prefix: <MessageOutlined />, 
       color: "#722ed1", 
       bg: "#f9f0ff",
-      trend: getTrendType(systemOverview.doctorGrowth),
-      trendVal: `${Math.abs(systemOverview.doctorGrowth)}%`
+      trend: getTrendType(systemOverview.chatbotUsageGrowth),
+      trendVal: `${Math.abs(systemOverview.chatbotUsageGrowth)}%`
     },
   ];
 
@@ -226,7 +261,14 @@ export default function AdminDashboardPage() {
     {
       title: 'Bác sĩ',
       dataIndex: 'name',
-      render: (text) => <Text strong>{text}</Text>
+      render: (text, record) => (
+        <a onClick={() => {
+          setSelectedDoctorForDrawer(record);
+          setDrawerOpen(true);
+        }}>
+          <Text strong style={{ color: '#1677ff', cursor: 'pointer' }}>{text}</Text>
+        </a>
+      )
     },
     {
       title: 'Chuyên khoa',
@@ -339,9 +381,15 @@ export default function AdminDashboardPage() {
                 <Col xs={24} lg={16}>
 
                     <Card 
-                    title={`Top 5 bác sĩ có lượt khám cao nhất - Tháng ${selectedMonth}/${selectedYear}`}
+                    title={`Top bác sĩ có lượt khám cao nhất - Tháng ${selectedMonth}/${selectedYear}`}
                     extra={(
                       <div style={{ display: 'flex', gap: 8 }}>
+                        <Select
+                          value={topLimit}
+                          style={{ width: 100 }}
+                          options={topLimitOptions}
+                          onChange={setTopLimit}
+                        />
                         <Select
                           value={selectedMonth}
                           style={{ width: 120 }}
@@ -365,6 +413,7 @@ export default function AdminDashboardPage() {
                       dataSource={topDoctors}
                       pagination={false}
                       size="middle"
+                      scroll={{ y: 350 }}
                       locale={{ emptyText: 'Không có dữ liệu khám trong tháng đã chọn' }}
                     />
                     </Card>
@@ -424,9 +473,39 @@ export default function AdminDashboardPage() {
                 </Col>
             </Row>
 
-        </Content>
-        
+            <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
+                <Col xs={24} lg={16}>
+                    <Card 
+                        title={`Top 10 Bệnh lý phổ biến nhất - Tháng ${selectedMonth}/${selectedYear}`}
+                        variant="borderless" 
+                        style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
+                    >
+                        <MonthlyDiseasesChart data={topDiseases} loading={loadingDiseases} />
+                    </Card>
+                </Col>
+                <Col xs={24} lg={8}>
+                    {/* Space for AI Consensus Rate - Next Feature */}
+                    <Card 
+                        title="Tỷ lệ Đồng thuận AI" 
+                        variant="borderless" 
+                        style={{ borderRadius: 12, height: '100%', boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
+                    >
+                        <div style={{ display: 'flex', height: 350, justifyContent: 'center', alignItems: 'center' }}>
+                            <Text type="secondary">Đang thiết kế tính năng...</Text>
+                        </div>
+                    </Card>
+                </Col>
+            </Row>
+            </Content>        
         <Footer />
+
+        <DoctorPatientsDrawer 
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          doctor={selectedDoctorForDrawer}
+          month={selectedMonth}
+          year={selectedYear}
+        />
     </Layout>
   );
 }

@@ -17,9 +17,21 @@ const adminService = {
   deleteDoctorAccount: (id) => axios.delete(`/admin/doctors/${id}`),
 
   // Accounts - Admission Staff
+  getListStaffs: (params) => axios.get('/admin/staffs', { params }),
   createAdmissionStaffAccount: (data) => axios.post('/admin/staffs', data),
   updateAdmissionStaffAccount: (id, data) => axios.put(`/admin/staffs/${id}`, data),
   deleteAdmissionStaffAccount: (id) => axios.delete(`/admin/staffs/${id}`),
+
+  // Accounts - Patient
+  getListPatients: (params) => axios.get('/admin/patients', { params }),
+
+  // User Statistics
+  getUserStatistics: () => axios.get('/admin/users/statistics'),
+
+  // Dashboard Drill-down
+  getDoctorPatients: (doctorId, params) => axios.get(`/admin/dashboard/doctors/${doctorId}/patients`, { params }),
+  getPatientConsultations: (doctorId, patientId, params) => axios.get(`/admin/dashboard/doctors/${doctorId}/patients/${patientId}/consultations`, { params }),
+  getTopDiseases: (params) => axios.get('/admin/dashboard/top-diseases', { params }),
 
   // AI Models - Diagnose
   getDiagnoseModels: (params) => axios.get('/admin/ai-models', { params: serializeBooleanQueryParams(params) }),
