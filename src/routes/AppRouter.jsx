@@ -23,6 +23,9 @@ import ModelAIPage from "../pages/admin/ModelAIPage";
 
 import SignInPage from "../pages/public/SignInPage";
 import SignUpPage from "../pages/public/SignUpPage";
+import ForgotPasswordPage from "../pages/public/ForgotPasswordPage";
+import ResetPasswordPage from "../pages/public/ResetPasswordPage";
+
 export default function AppRouter() {
   return (
     <Routes>
@@ -30,6 +33,8 @@ export default function AppRouter() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<SignInPage />} />
       <Route path="/register" element={<SignUpPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Patient routes */}
       <Route path="/patient/dashboard" element={<PatientDashboardPage />} />

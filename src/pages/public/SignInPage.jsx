@@ -196,7 +196,7 @@ const onFinish = async (values) => {
                     <Form.Item name="remember" valuePropName="checked" noStyle>
                       <Checkbox style={{ color: '#6b7280' }}>Ghi nhớ tôi</Checkbox>
                     </Form.Item>
-                    <Link href="/forgot-password" style={{ color: primaryColor, fontWeight: 600 }}>
+                    <Link onClick={() => navigate('/forgot-password')} style={{ color: primaryColor, fontWeight: 600 }}>
                       Quên mật khẩu?
                     </Link>
                   </div>
