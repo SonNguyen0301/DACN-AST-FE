@@ -41,6 +41,8 @@ import { Progress } from "antd";
 import Footer from "../../components/common/Footer";
 import { useState } from 'react';
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+dayjs.extend(isoWeek);
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useEffect } from "react";
 import { getAppointmentCalendarAPI, getAppointmentsByDateAPI, getDoctorDashboardInfoAPI, getStatisticMonthlyDiseaseAPI, startExaminationAPI } from "../../services/doctorService";
@@ -85,8 +87,8 @@ export default function DoctorDashboardPage() {
                   currentDate: now.format('YYYY-MM-DD'),
                   startWeekDate: now.startOf('week').format('YYYY-MM-DD'),
 
-                  lastStartWeekDate: now.subtract(1, 'week').startOf('week').format('YYYY-MM-DD'),
-                  lastEndWeekDate: now.subtract(1, 'week').endOf('week').format('YYYY-MM-DD'),
+                  lastStartWeekDate: now.subtract(1, 'week').startOf('isoWeek').format('YYYY-MM-DD'),
+                  lastEndWeekDate: now.subtract(1, 'week').endOf('isoWeek').format('YYYY-MM-DD'),
                   
                   startMonthDate: now.startOf('month').format('YYYY-MM-DD'),
 

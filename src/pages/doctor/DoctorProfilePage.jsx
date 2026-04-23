@@ -43,7 +43,7 @@ const { Title, Text, Paragraph } = Typography;
 
 export default function DoctorProfilePage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -148,6 +148,13 @@ export default function DoctorProfilePage() {
             message.success("Cập nhật thông tin thành công!");
             setIsEditModalOpen(false);
             fetchDoctorProfile(); 
+
+            if (updateUser) {
+                updateUser({
+                    firstName: values.firstName,
+                    lastName: values.lastName
+                });
+            }
         } else {
             message.error("Không thể cập nhật thông tin lúc này.");
         }

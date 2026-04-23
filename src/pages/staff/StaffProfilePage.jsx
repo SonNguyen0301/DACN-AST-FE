@@ -39,7 +39,7 @@ const { Title, Text, Paragraph } = Typography;
 
 export default function StaffProfilePage() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -132,6 +132,13 @@ export default function StaffProfilePage() {
             message.success("Cập nhật thông tin thành công!");
             setIsEditModalOpen(false);
             fetchStaffProfile(); 
+
+            if (updateUser) {
+                updateUser({
+                    firstName: values.firstName,
+                    lastName: values.lastName
+                });
+            }
         } else {
             message.error("Không thể cập nhật thông tin lúc này.");
         }
@@ -241,7 +248,7 @@ const SettingsTab = () => (
         <Dropdown menu={{ items: menuUserItems }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{staffInfo.name}</span>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.firstName} {user.lastName}</span>
                 <span style={{ fontSize: 12, color: '#888' }}>Khoa {staffInfo.department}</span>
             </div>
             <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#faad14' }} />
@@ -276,7 +283,7 @@ const SettingsTab = () => (
                         />
                     </div>
                     
-                    <Title level={4} style={{ marginTop: 16, marginBottom: 4 }}>{staffInfo.name}</Title>
+                    <Title level={4} style={{ marginTop: 16, marginBottom: 4 }}>{user.firstName} {user.lastName}</Title>
                     <Text type="secondary" style={{ fontSize: 16 }}>{staffInfo.position}</Text>
                     
                     <div style={{ marginTop: 12 }}>
