@@ -21,7 +21,9 @@ import {
   Tooltip,
   Popconfirm,
   Space,
-  Form
+  Form,
+  Descriptions,
+  Divider
 } from "antd";
 import { 
   UserOutlined, 
@@ -32,7 +34,8 @@ import {
   MedicineBoxOutlined,
   ClockCircleOutlined,
   CloseCircleOutlined,
-  EditOutlined
+  EditOutlined,
+  CalendarOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
@@ -60,7 +63,7 @@ export default function AdmissionStaffAppointmentPage() {
   const [appointments, setAppointments] = useState([]);
   const [doctorList, setDoctorList] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0, showSizeChanger: false});
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -94,12 +97,12 @@ export default function AdmissionStaffAppointmentPage() {
         if (res.data?.success) {
             const rawData = res.data.data.data;
             
-            const mappedData = rawData.map((item, index) => {
+            const mappedData = rawData.map((item) => {
                 const fromTime = item.from ? item.from.substring(0, 5) : '';
                 const toTime = item.to ? item.to.substring(0, 5) : '';
 
                 return {
-                    key: item.id || index, 
+                    key: item.appointmentId, 
                     date: item.date,
                     time: `${fromTime} - ${toTime}`,
                     patientName: item.patientName,
@@ -150,6 +153,7 @@ export default function AdmissionStaffAppointmentPage() {
                 return item;
             });
             setAppointments(newData);
+            fetchAppointments(pagination.current);
             
             message.success(res.data?.message || 'Đã hủy lịch hẹn thành công!');
         } else {
@@ -232,7 +236,7 @@ export default function AdmissionStaffAppointmentPage() {
       width: 250,
       render: (_, record) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Avatar size={40} style={{ backgroundColor: record.gender === 'male' ? '#1677ff' : '#eb2f96' }} icon={<UserOutlined />} />
+          <Avatar size={40} style={{ backgroundColor: record.gender === 'MALE' ? '#1677ff' : '#eb2f96' }} icon={<UserOutlined />} />
           <div>
             <Text strong style={{ display: 'block' }}>{record.patientName}</Text>
             <div style={{ fontSize: 12, color: '#666' }}>
@@ -270,13 +274,36 @@ export default function AdmissionStaffAppointmentPage() {
         return <Tag color={color} style={{ minWidth: 80, textAlign: 'center' }}>{label.toUpperCase()}</Tag>;
       }
     },
+        {
+      title: 'Ghi chú',
+      dataIndex: 'note',
+      width: 200,
+      render: (text, record) => (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <Text ellipsis style={{ maxWidth: 140 }} type={text ? 'default' : 'secondary'}>
+                {text || 'Chưa có ghi chú'}
+            </Text>
+            <Tooltip title="Thêm/Sửa ghi chú">
+                <Button 
+                    type="text" 
+                    size="small" 
+                    icon={<EditOutlined style={{ color: '#1677ff' }} />} 
+                    onClick={(e) => { 
+                        e.stopPropagation(); 
+                        openNoteModal(record); 
+                    }} 
+                />
+            </Tooltip>
+        </div>
+      )
+    },
     {
-      title: 'Thao tác',
+      title: 'Hủy lịch',
       key: 'action',
       width: 100,
       render: (_, record) => (
         <Space>
-          {record.status === 'pending' && (
+          {record.status === 'SCHEDULED' && (
              <Tooltip title="Hủy lịch">
                <Popconfirm
                  title="Hủy lịch khám"
@@ -303,29 +330,6 @@ export default function AdmissionStaffAppointmentPage() {
         </Space>
       ),
     },
-    {
-      title: 'Ghi chú',
-      dataIndex: 'note',
-      width: 200,
-      render: (text, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <Text ellipsis style={{ maxWidth: 140 }} type={text ? 'default' : 'secondary'}>
-                {text || 'Chưa có ghi chú'}
-            </Text>
-            <Tooltip title="Thêm/Sửa ghi chú">
-                <Button 
-                    type="text" 
-                    size="small" 
-                    icon={<EditOutlined style={{ color: '#1677ff' }} />} 
-                    onClick={(e) => { 
-                        e.stopPropagation(); 
-                        openNoteModal(record); 
-                    }} 
-                />
-            </Tooltip>
-        </div>
-      )
-    }
   ];
 
   const handleSignOut = () => navigate('/');
@@ -389,7 +393,7 @@ export default function AdmissionStaffAppointmentPage() {
                     <Text strong style={{ display: 'block', marginBottom: 4 }}>Khoảng giờ hẹn:</Text>
                     <TimePicker.RangePicker 
                         format="HH:mm"
-                        minuteStep={15}
+                        minuteStep={30}
                         onChange={setTimeRange}
                         placeholder={['Từ giờ', 'Đến giờ']}
                         style={{ width: '100%' }}
@@ -432,7 +436,7 @@ export default function AdmissionStaffAppointmentPage() {
                     </Select>
                 </Col>
                 <Col xs={24} md={2} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button type="primary" loading={loading} onClick={handleFilterClick} icon={<FilterOutlined />}>Lọc dữ liệu</Button>
+                    <Button type="primary" loading={loading} onClick={handleFilterClick} icon={<FilterOutlined />}>Lọc </Button>
                 </Col>
             </Row>
         </Card>
@@ -455,19 +459,89 @@ export default function AdmissionStaffAppointmentPage() {
       <Footer />
 
       <Modal
-        title="Thông tin chi tiết lịch hẹn"
+        title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <CalendarOutlined style={{ color: '#1677ff', fontSize: 24 }} />
+                <span style={{ fontSize: 20 }}>Chi tiết lịch hẹn</span>
+            </div>
+        }
         open={isModalOpen}
         onCancel={handleCloseModal}
-        footer={[<Button key="close" onClick={handleCloseModal}>Đóng</Button>]}
+        footer={[
+            <Button key="close" type="primary" onClick={handleCloseModal}>Đóng</Button>
+        ]}
+        width={700}
+        centered
       >
         {selectedPatient && (
-            <div style={{ padding: '10px 0' }}>
-                <p><strong>Bệnh nhân:</strong> {selectedPatient.patientName}</p>
-                <p><strong>Ngày khám:</strong> {dayjs(selectedPatient.date).format('DD/MM/YYYY')}</p>
-                <p><strong>Giờ hẹn:</strong> {selectedPatient.time}</p>
-                <p><strong>Bác sĩ:</strong> {selectedPatient.doctor}</p>
-                <p><strong>Lý do khám:</strong> {selectedPatient.reason}</p>
-                <p><strong>SĐT:</strong> {selectedPatient.phone}</p>
+            <div style={{ marginTop: 20 }}>
+                <div style={{ display: 'flex', gap: 20, marginBottom: 24, alignItems: 'center' }}>
+                    <Avatar 
+                        size={80} 
+                        icon={<UserOutlined />} 
+                        style={{ 
+                            backgroundColor: selectedPatient.gender === 'FEMALE' ? '#eb2f96' : '#1677ff', 
+                            fontSize: 36 
+                        }} 
+                    />
+                    <div>
+                        <Title level={4} style={{ margin: 0, marginBottom: 8 }}>{selectedPatient.patientName}</Title>
+                        <Space direction="vertical" size={4}>
+                            <Text type="secondary" style={{ fontSize: 14 }}>
+                                <UserOutlined style={{ marginRight: 6 }}/> 
+                                Giới tính: {selectedPatient.gender === 'MALE' ? 'Nam' : (selectedPatient.gender === 'FEMALE' ? 'Nữ' : 'Không rõ')}
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 14 }}>
+                                <PhoneOutlined style={{ marginRight: 6 }}/> 
+                                SĐT: {selectedPatient.phone || 'Chưa cập nhật'}
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 14, display: 'flex', alignItems: 'center' }}>
+                                <CalendarOutlined style={{ marginRight: 6 }}/> 
+                                Giờ hẹn: 
+                                <Tag color="blue" bordered={false} style={{ marginLeft: 6, borderRadius: 4, fontSize: 13, padding: '2px 8px' }}>
+                                    {selectedPatient.time}
+                                </Tag>
+                                <span style={{ marginLeft: 4 }}>({dayjs(selectedPatient.date).format('DD/MM/YYYY')})</span>
+                            </Text>
+                        </Space>
+                    </div>
+                </div>
+
+                <Divider />
+
+                <Descriptions column={1} bordered size="small" labelStyle={{ width: '160px', fontWeight: 'bold', background: '#fafafa' }}>
+                    <Descriptions.Item label="Trạng thái">
+                        {(() => {
+                            let color = 'default';
+                            let label = 'Không rõ';
+                            switch (selectedPatient.status) {
+                                case 'SCHEDULED': color = 'processing'; label = 'Đã đặt lịch'; break;
+                                case 'EXAMINING': color = 'warning'; label = 'Đang khám'; break;
+                                case 'EXAMINED': color = 'success'; label = 'Đã khám xong'; break;
+                                case 'CANCELLED': color = 'error'; label = 'Đã hủy'; break;
+                            }
+                            return <Tag color={color} style={{ minWidth: 80, textAlign: 'center' }}>{label.toUpperCase()}</Tag>;
+                        })()}
+                    </Descriptions.Item>
+                    
+                    <Descriptions.Item label="Bác sĩ phụ trách">
+                        <MedicineBoxOutlined style={{ color: '#1677ff', marginRight: 6 }} />
+                        <Text strong>{selectedPatient.doctor}</Text> 
+                        {selectedPatient.department && <Text type="secondary"> (Khoa {selectedPatient.department})</Text>}
+                    </Descriptions.Item>
+                    
+                    <Descriptions.Item label="Lý do khám">
+                        {selectedPatient.reason}
+                    </Descriptions.Item>
+                    
+                    <Descriptions.Item label="Ghi chú nội bộ">
+                        {selectedPatient.note ? (
+                            <Text style={{ color: '#d48806', fontWeight: 500 }}>{selectedPatient.note}</Text>
+                        ) : (
+                            <Text type="secondary" style={{ fontStyle: 'italic' }}>Chưa có ghi chú nào cho lịch hẹn này.</Text>
+                        )}
+                    </Descriptions.Item>
+                </Descriptions>
             </div>
         )}
       </Modal>

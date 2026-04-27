@@ -39,12 +39,22 @@ const updateAppointmentNoteAPI = (appointmentId, note) => {
     return axios.patch(`/appointments/${appointmentId}/note`, { note }); 
 };
 
-const deleteStaffScheduleAPI = (scheduleId) => {
-    return axios.delete(`/staffs/schedule/${scheduleId}`);
+const deleteStaffScheduleAPI = (payload) => {
+    return axios.delete('/staffs/schedule', { 
+        data: payload 
+    });
 };
 
 const updateStaffScheduleAPI = (scheduleId, data) => {
     return axios.put(`/staffs/schedule/${scheduleId}`, data);
 };
 
-export { getTodayAppointments, getActiveDoctors, getStaffAppointmentsAPI, getStaffDashboardInfo, getStaffScheduleAPI, createStaffScheduleAPI, importStaffScheduleCSVAPI, exportStaffScheduleCSVAPI, updateAppointmentNoteAPI, deleteStaffScheduleAPI, updateStaffScheduleAPI };
+const getStaffInfoAPI = () => {
+    return axios.get('/staffs/info');
+};
+
+const updateStaffInfoAPI = (data) => {
+    return axios.patch('/staffs/info', data);
+};
+
+export { getTodayAppointments, getActiveDoctors, getStaffAppointmentsAPI, getStaffDashboardInfo, getStaffScheduleAPI, createStaffScheduleAPI, importStaffScheduleCSVAPI, exportStaffScheduleCSVAPI, updateAppointmentNoteAPI, deleteStaffScheduleAPI, updateStaffScheduleAPI, getStaffInfoAPI, updateStaffInfoAPI };

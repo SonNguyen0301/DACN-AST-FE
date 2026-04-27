@@ -14,7 +14,8 @@ import {
   Dropdown, 
   List,
   Badge,
-  Space
+  Space,
+  Modal
 } from "antd";
 import { 
   UserOutlined, 
@@ -31,6 +32,7 @@ import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/Footer"; 
 import { getTodayAppointments, getActiveDoctors, getStaffDashboardInfo } from '../../services/staffService'; 
 import dayjs from 'dayjs';
+import useAuth from "../../hooks/useAuth";
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -55,7 +57,7 @@ const getTimeRange = () => {
 
 export default function AdmissionStaffDashboardPage() {
   const navigate = useNavigate();
-  const user = { name: "Lê Thị Bích", role: "admission" };
+  const { user, logout} = useAuth(); 
 
   const [bookingRequests, setBookingRequests] = useState([]);
   const [doctorsOnDuty, setDoctorsOnDuty] = useState([]);
@@ -64,6 +66,9 @@ export default function AdmissionStaffDashboardPage() {
       todayAppointments: 0,
       nextAvailableShift: "Hết ca trống"
   });
+
+  const [availableShifts, setAvailableShifts] = useState([]);
+  const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
 
   const fetchAppointments = async () => {
         try {
@@ -136,6 +141,7 @@ export default function AdmissionStaffDashboardPage() {
                   todayAppointments: data.todayAppointmentsCount || 0,
                   nextAvailableShift: nextShift
               });
+              setAvailableShifts(data.shifts || []);
           }
       } catch (error) {
           console.error("Lỗi lấy thống kê dashboard:", error);
@@ -158,7 +164,14 @@ export default function AdmissionStaffDashboardPage() {
 
   const statsData = [
     { title: "Lịch hẹn hôm nay", value: dashboardStats.todayAppointments, icon: <CalendarOutlined />, color: "#1677ff", bg: "#e6f4ff" },
-    { title: "Ca trống gần nhất", value: dashboardStats.nextAvailableShift, icon: <ThunderboltOutlined />, color: "#13c2c2", bg: "#e6fffb" },
+    { 
+        title: "Ca trống gần nhất", 
+        value: dashboardStats.nextAvailableShift, 
+        icon: <ThunderboltOutlined />, 
+        color: "#13c2c2", bg: "#e6fffb", 
+        isClickable: true, 
+        onClick: () => setIsShiftModalOpen(true) 
+    },
     { title: "Bác sĩ đang trực", value: doctorsOnDuty.length, icon: <TeamOutlined />, color: "#722ed1", bg: "#f9f0ff" },
   ];
 
@@ -180,11 +193,12 @@ export default function AdmissionStaffDashboardPage() {
   // ];
 
   const handleSignOut = () => {
+    logout();
     navigate('/');
   };
 
   const menuUserItems = [
-    { key: '1', label: 'Thông tin tài khoản', icon: <UserOutlined /> },
+    { key: '1', label: (<a onClick={() => navigate('/staff/profile')}>Hồ sơ nhân viên</a>), icon: <UserOutlined /> },
     { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
   ];
 
@@ -301,7 +315,10 @@ export default function AdmissionStaffDashboardPage() {
             <Row gutter={[24, 24]}>
                 {statsData.map((stat, index) => (
                     <Col xs={24} sm={8} key={index}>
-                        <Card variant="borderless" style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                        <Card variant="borderless" style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)",cursor: stat.isClickable ? 'pointer' : 'default', transition: 'all 0.2s' }}
+                          hoverable={stat.isClickable}
+                          onClick={stat.onClick} 
+                        >
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <div>
                                     <Text type="secondary">{stat.title}</Text>
@@ -375,6 +392,53 @@ export default function AdmissionStaffDashboardPage() {
 
       </Content>
       <Footer />
+      <Modal
+        title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <ThunderboltOutlined style={{ color: '#13c2c2', fontSize: 20 }} />
+                <span>Danh sách các ca trống tiếp theo</span>
+            </div>
+        }
+        open={isShiftModalOpen}
+        onCancel={() => setIsShiftModalOpen(false)}
+        footer={[
+            <Button key="close" type="primary" onClick={() => setIsShiftModalOpen(false)}>Đóng</Button>
+        ]}
+      >
+        {availableShifts.length > 0 ? (
+            <List
+                itemLayout="horizontal"
+                dataSource={availableShifts}
+                renderItem={(shift) => (
+                    <List.Item>
+                        <List.Item.Meta
+                            avatar={<Avatar icon={<ClockCircleOutlined />} style={{ backgroundColor: '#e6fffb', color: '#13c2c2' }} />}
+                            title={<Text strong style={{ fontSize: 16 }}>Khung giờ: {shift.startTime.substring(0, 5)}</Text>}
+                            description={
+                                <div style={{ marginTop: 8 }}>
+                                    <Text type="secondary" style={{ display: 'block', marginBottom: 6 }}>Bác sĩ sẵn sàng nhận bệnh:</Text>
+                                    <Space wrap>
+                                        {shift.doctorName && shift.doctorName.map((docName, idx) => (
+                                            <Tag color="cyan" key={idx} style={{ padding: '2px 8px', fontSize: 13 }}>
+                                                <UserOutlined style={{ marginRight: 4 }}/>
+                                                {docName}
+                                            </Tag>
+                                        ))}
+                                    </Space>
+                                </div>
+                            }
+                        />
+                    </List.Item>
+                )}
+            />
+        ) : (
+            <div style={{ textAlign: 'center', padding: '30px' }}>
+                <CalendarOutlined style={{ fontSize: 32, color: '#d9d9d9', marginBottom: 12 }} />
+                <p style={{ color: '#999', margin: 0 }}>Không còn ca trống nào trong hôm nay.</p>
+            </div>
+        )}
+      </Modal>
+
     </Layout>
   );
 }

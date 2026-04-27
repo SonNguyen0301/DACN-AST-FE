@@ -78,6 +78,13 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    const updateUser = (newInfo) => {
+        setUser((prevUser) => ({
+            ...prevUser,
+            ...newInfo
+        }));
+    };
+
     // Khi F5 trang, nạp lại cả 2 token
     useEffect(() => {
         const token = localStorage.getItem('accessToken');
@@ -96,7 +103,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, chatToken, login, logout, user }}>
+        <AuthContext.Provider value={{ isAuthenticated, chatToken, login, logout, user, updateUser }}>
             {children}
         </AuthContext.Provider>
     );

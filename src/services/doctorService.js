@@ -9,6 +9,10 @@ const getDoctorInfoAPI = (doctorId) => {
     return axios.get(`/doctors/info/${doctorId}`);
 };
 
+const updateDoctorInfoAPI = (data) => {
+    return axios.patch('/doctors/info', data);
+};
+
 const getDoctorShiftsAPI = (doctorId, params) => {
     return axios.get(`/shifts/${doctorId}`, { params });
 };
@@ -67,4 +71,4 @@ const getConsultationDetailAPI = (consultationId) => {
     return axios.get(`/doctors/consultations/${consultationId}/detail`);
 };
 
-export { getDoctorsAPI, getDoctorInfoAPI, getDoctorShiftsAPI, bookAppointmentAPI, getDoctorAppointmentsAPI, getAppointmentCalendarAPI, getAppointmentsByDateAPI, getDoctorDashboardInfoAPI, getStatisticMonthlyDiseaseAPI, startExaminationAPI, finishExaminationAPI, createAiDiagnosisAPI, getAiDiagnosisResultAPI, getConsultationHistoryAPI, getConsultationDetailAPI };
+export { getDoctorsAPI, updateDoctorInfoAPI, getDoctorInfoAPI, getDoctorShiftsAPI, bookAppointmentAPI, getDoctorAppointmentsAPI, getAppointmentCalendarAPI, getAppointmentsByDateAPI, getDoctorDashboardInfoAPI, getStatisticMonthlyDiseaseAPI, startExaminationAPI, finishExaminationAPI, createAiDiagnosisAPI, getAiDiagnosisResultAPI, getConsultationHistoryAPI, getConsultationDetailAPI };

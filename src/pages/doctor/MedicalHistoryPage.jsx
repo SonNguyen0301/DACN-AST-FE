@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Row, Col, Card, Table, 
   Tag, Space, Button, Input, DatePicker, Select, Dropdown, 
@@ -7,7 +7,7 @@ import {
 } from "antd";
 import { 
   UserOutlined, LogoutOutlined, SearchOutlined, EyeOutlined, 
-  MedicineBoxOutlined, CalendarOutlined, ClockCircleOutlined,
+  MedicineBoxOutlined,
   FileTextOutlined, RobotOutlined, CheckCircleOutlined, PhoneOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
@@ -25,22 +25,22 @@ export default function DoctorMedicalHistoryPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth(); 
   
-  const [searchText, setSearchText] = useState<string>('');
-  const [dateRange, setDateRange] = useState<any>([dayjs().startOf('month'), dayjs()]);
-  const [sortDirection, setSortDirection] = useState<string>('DESC');
+  const [searchText, setSearchText] = useState('');
+  const [dateRange, setDateRange] = useState([dayjs().startOf('month'), dayjs()]);
+  const [sortDirection, setSortDirection] = useState('DESC');
   
-  const [historyList, setHistoryList] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [pagination, setPagination] = useState<any>({ current: 1, pageSize: 10, total: 0, showSizeChanger: false });
+  const [historyList, setHistoryList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0, showSizeChanger: false });
   
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [selectedRecord, setSelectedRecord] = useState<any>(null);
-  const [detailLoading, setDetailLoading] = useState<boolean>(false); 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false); 
 
-  const fetchHistory = async (page: number = 1) => {
+  const fetchHistory = async (page = 1) => {
       setLoading(true);
       try {
-          const params: any = {
+          const params = {
               page: page,
               take: pagination.pageSize,
               sort: 'createdAt', 
@@ -59,7 +59,7 @@ export default function DoctorMedicalHistoryPage() {
           if (res.data?.success) {
               const rawData = res.data.data.data || res.data.data; 
               
-              const mappedData = rawData.map((item: any, index: any) => {
+              const mappedData = rawData.map((item, index) => {
                   const fromTime = item.startTime ? item.startTime.substring(0, 5) : '';
                   const toTime = item.endTime ? item.endTime.substring(0, 5) : '';
                   const result = item.diagnosisResult || {};
@@ -81,7 +81,7 @@ export default function DoctorMedicalHistoryPage() {
               setHistoryList(mappedData);
               
               if (res.data.data.meta) {
-                  setPagination((prev: any) => ({
+                  setPagination((prev) => ({
                       ...prev,
                       current: res.data.data.meta.page,
                       total: res.data.data.meta.itemCount
@@ -100,13 +100,13 @@ export default function DoctorMedicalHistoryPage() {
       fetchHistory();
   }, []);
 
-  const handleSearch = (val: any) => setSearchText(val.toLowerCase());
-  const handleDateRangeChange = (dates: any) => setDateRange(dates);
-  const handleSortChange = (val: any) => setSortDirection(val);
+  const handleSearch = (val) => setSearchText(val.toLowerCase());
+  const handleDateRangeChange = (dates) => setDateRange(dates);
+  const handleSortChange = (val) => setSortDirection(val);
   const handleFilterClick = () => fetchHistory(1);
-  const handleTableChange = (newPagination: any) => fetchHistory(newPagination.current);
+  const handleTableChange = (newPagination) => fetchHistory(newPagination.current);
 
-  const handleViewDetail = async (record: any) => {
+  const handleViewDetail = async (record) => {
     setIsModalOpen(true);
     setSelectedRecord(record); 
     setDetailLoading(true);
@@ -125,7 +125,7 @@ export default function DoctorMedicalHistoryPage() {
 
             const imageUrls = apt.images 
                 ? Object.values(apt.images)
-                    .map((img: any) => typeof img === 'string' ? img : (img.base64 || img.dataUrl || img.url))
+                    .map((img) => typeof img === 'string' ? img : (img.base64 || img.dataUrl || img.url))
                     .filter(Boolean)
                 : [];
 
@@ -158,12 +158,12 @@ export default function DoctorMedicalHistoryPage() {
     setSelectedRecord(null);
   };
 
-  const columns: any[] = [
+  const columns = [
     {
         title: 'Ngày khám',
         dataIndex: 'createdAt',
         width: 130,
-        render: (text: any) => (
+        render: (text) => (
             <Tag color="green" style={{ fontSize: 13, padding: '2px 8px' }}>
                 {dayjs(text).format('DD/MM/YYYY')}
             </Tag>
@@ -173,7 +173,7 @@ export default function DoctorMedicalHistoryPage() {
         title: 'Thời gian',
         dataIndex: 'time',
         width: 140,
-        render: (text: any) => (
+        render: (text) => (
             <Tag color="blue" style={{ fontSize: 13, padding: '2px 8px' }}>
                 {text}
             </Tag>
@@ -183,7 +183,7 @@ export default function DoctorMedicalHistoryPage() {
       title: 'Bệnh nhân',
       key: 'patient',
       width: 220,
-      render: (_: any, record: any) => (
+      render: (_, record) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Avatar style={{ backgroundColor: '#1677ff' }} icon={<UserOutlined />} />
           <Text strong>{record.patientName}</Text>
@@ -193,13 +193,13 @@ export default function DoctorMedicalHistoryPage() {
     {
       title: 'Chẩn đoán',
       dataIndex: 'diagnosis',
-      render: (text: any) => <Text strong style={{ color: '#333' }}>{text}</Text>,
+      render: (text) => <Text strong style={{ color: '#333' }}>{text}</Text>,
     },
     {
       title: 'Đơn thuốc',
       key: 'prescription',
       width: 120,
-      render: (_: any, record: any) => (
+      render: (_, record) => (
           <Tag color={record.prescription.length > 0 ? "cyan" : "default"}>
               {record.prescription.length > 0 ? `${record.prescription.length} loại thuốc` : 'Không kê đơn'}
           </Tag>
@@ -209,7 +209,7 @@ export default function DoctorMedicalHistoryPage() {
       title: '',
       key: 'action',
       width: 100,
-      render: (_: any, record: any) => (
+      render: (_, record) => (
         <Tooltip title="Xem chi tiết bệnh án">
           <Button 
               type="default" 
@@ -385,7 +385,7 @@ export default function DoctorMedicalHistoryPage() {
                             <Title level={5} style={{ marginBottom: 12 }}>Hình ảnh đính kèm</Title>
                             <Image.PreviewGroup>
                                 <Space size={8} wrap>
-                                    {selectedRecord.images.map((img: any, idx: number) => {
+                                    {selectedRecord.images.map((img, idx) => {
                                         const validSrc = img.startsWith('http') || img.startsWith('data:image') ? img : `data:image/png;base64,${img}`;
                                         return <Image key={idx} width={60} height={60} src={validSrc} style={{ borderRadius: 6, objectFit: 'cover', border: '1px solid #f0f0f0' }} />
                                     })}
@@ -400,7 +400,7 @@ export default function DoctorMedicalHistoryPage() {
                             <List
                                 bordered
                                 dataSource={selectedRecord.prescription}
-                                renderItem={(item: any) => (
+                                renderItem={(item) => (
                                     <List.Item>
                                         <List.Item.Meta
                                             avatar={<CheckCircleOutlined style={{ color: '#52c41a', marginTop: 4 }} />}

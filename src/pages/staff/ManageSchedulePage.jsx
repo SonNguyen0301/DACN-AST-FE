@@ -23,6 +23,7 @@ import {
   Tag,
   Divider,
   Popover, 
+  Checkbox
 } from "antd";
 import { 
   UserOutlined, 
@@ -68,6 +69,8 @@ export default function ManageStaffSchedulePage() {
 
   const [exporting, setExporting] = useState(false); 
 
+  const [selectedIds, setSelectedIds] = useState([]);
+
   const fetchSchedule = async (dateObj) => {
       try {
           const startDate = dateObj.startOf('month').startOf('week').format('YYYY-MM-DD');
@@ -87,7 +90,7 @@ export default function ManageStaffSchedulePage() {
                   const toTime = item.to ? item.to.substring(0, 5) : '';
 
                   map[dateStr].push({
-                      id: item.id, 
+                      id: item.scheduleId, 
                       doctor: item.doctorName,
                       doctorId: item.doctorId || item.doctorCode,
                       dept: 'Da liễu', 
@@ -163,18 +166,6 @@ export default function ManageStaffSchedulePage() {
 
   const user = { name: "Lê Thị Bích", role: "admission" };
 
-//   const [scheduleData, setScheduleData] = useState({
-//     '2026-01-01': [
-//       { id: 1, doctor: 'BS. CK2 Trần Thị Hoa', dept: 'Da liễu', time: '08:00 - 12:00', room: 'P.201', },
-//       { id: 2, doctor: 'BS. Nguyễn Văn Nam', dept: 'Nội khoa', time: '13:00 - 17:00', room: 'P.305' },
-//     ],
-//     '2026-01-12': [
-//       { id: 3, doctor: 'BS. Lê Thị Tú', dept: 'Nhi khoa', time: '08:00 - 16:00', room: 'P.102' },
-//     ],
-//     '2026-01-13': [
-//        { id: 4, doctor: 'BS. Phạm Minh', dept: 'Tai Mũi Họng', time: '08:00 - 12:00', room: 'P.401' },
-//     ]
-//   });
 
   const getListData = (value) => {
     const dateString = value.format('YYYY-MM-DD');
@@ -264,6 +255,7 @@ export default function ManageStaffSchedulePage() {
         const dateString = date.format('YYYY-MM-DD');
         setSelectedDate(date);
         setSelectedDateShifts(scheduleData[dateString] || []);
+        setSelectedIds([]);
         setViewDetailsOpen(true);
     }
   };
@@ -364,11 +356,18 @@ export default function ManageStaffSchedulePage() {
         cancelText: 'Hủy',
         onOk: async () => {
               try {
-                  const res = await deleteStaffScheduleAPI(scheduleId);
+                  const payload = {
+                      scheduleIds: [scheduleId],
+                      startWeekDate: selectedDate.startOf('week').format('YYYY-MM-DD'),
+                      endWeekDate: selectedDate.endOf('week').format('YYYY-MM-DD'),
+                      currentDate: dayjs().format('YYYY-MM-DD')
+                  };
+
+                  const res = await deleteStaffScheduleAPI(payload);
+                  
                   if (res.data?.success) {
                       message.success('Đã xóa ca trực thành công');
                       fetchSchedule(currentMonthView); 
-                      
                       setSelectedDateShifts(prev => prev.filter(item => item.id !== scheduleId));
                   }
               } catch (error) {
@@ -378,10 +377,11 @@ export default function ManageStaffSchedulePage() {
           }
     });
   };
+
   const handleEditShift = (shift) => {
       const [fromStr, toStr] = shift.time.split(' - ');
-      const fromTime = dayjs(fromStr, 'HH:mm:ss+07');
-      const toTime = dayjs(toStr, 'HH:mm:ss+07');
+      const fromTime = dayjs(fromStr, 'HH:mm');
+      const toTime = dayjs(toStr, 'HH:mm');
 
       form.setFieldsValue({
           doctor: shift.doctorId || shift.doctor, 
@@ -394,6 +394,44 @@ export default function ManageStaffSchedulePage() {
       setIsEditMode(true);
       setViewDetailsOpen(false); 
       setIsModalOpen(true); 
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.length === 0) return;
+
+    Modal.confirm({
+        title: `Xác nhận xóa ${selectedIds.length} ca trực`,
+        content: `Bạn có chắc chắn muốn xóa tất cả các ca trực đã chọn trong ngày ${selectedDate.format('DD/MM/YYYY')} không?`,
+        okText: 'Xóa hàng loạt',
+        okType: 'danger',
+        cancelText: 'Hủy',
+        onOk: async () => {
+            try {
+                message.loading({ content: 'Đang xóa...', key: 'bulkDelete' });
+                
+                const payload = {
+                    scheduleIds: selectedIds, 
+                    startWeekDate: selectedDate.startOf('week').format('YYYY-MM-DD'),
+                    endWeekDate: selectedDate.endOf('week').format('YYYY-MM-DD'),
+                    currentDate: dayjs().format('YYYY-MM-DD')
+                };
+
+                await deleteStaffScheduleAPI(payload);
+
+                message.success({ content: 'Đã xóa các ca trực thành công', key: 'bulkDelete' });
+                fetchSchedule(currentMonthView);
+                
+                const remainingShifts = selectedDateShifts.filter(s => !selectedIds.includes(s.id));
+                setSelectedDateShifts(remainingShifts);
+                setSelectedIds([]);
+                
+                if (remainingShifts.length === 0) setViewDetailsOpen(false);
+            } catch (error) {
+                console.error("Lỗi xóa hàng loạt:", error);
+                message.error({ content: error.response?.data?.message || 'Có lỗi xảy ra khi xóa hàng loạt', key: 'bulkDelete' });
+            }
+        }
+    });
   };
 
   const handleSignOut = () => navigate('/');
@@ -518,42 +556,74 @@ export default function ManageStaffSchedulePage() {
         open={viewDetailsOpen}
         onCancel={() => setViewDetailsOpen(false)}
         footer={[
-            <Button key="add" icon={<PlusOutlined />} onClick={() => { setViewDetailsOpen(false); handleAddNew(); }}>Thêm ca vào ngày này</Button>,
-            <Button key="close" type="primary" onClick={() => setViewDetailsOpen(false)}>Đóng</Button>
+            selectedIds.length > 0 && (
+                <Button key="bulk-delete" danger type="primary" icon={<DeleteOutlined />} onClick={handleBulkDelete}>
+                    Xóa đã chọn ({selectedIds.length})
+                </Button>
+            ),
+            <Button key="add" icon={<PlusOutlined />} onClick={() => { setViewDetailsOpen(false); handleAddNew(); }}>
+                Thêm ca trực
+            </Button>,
+            <Button key="close" onClick={() => setViewDetailsOpen(false)}>Đóng</Button>
         ]}
         width={700}
       >
         {selectedDateShifts.length > 0 ? (
-            <List
-                itemLayout="horizontal"
-                dataSource={selectedDateShifts}
-                renderItem={(item) => (
-                    <List.Item
-                        actions={[
-                            <Tooltip key="edit" title="Chỉnh sửa"><Button type="text" icon={<EditOutlined />} onClick={() => handleEditShift(item)} /></Tooltip>,
-                            <Tooltip key="delete" title="Xóa"><Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDeleteShift(item.id)} /></Tooltip>
-                        ]}
+            <>
+                <div style={{ marginBottom: 12, padding: '0 12px' }}>
+                    <Checkbox 
+                        indeterminate={selectedIds.length > 0 && selectedIds.length < selectedDateShifts.length}
+                        checked={selectedIds.length === selectedDateShifts.length}
+                        onChange={(e) => {
+                            const checked = e.target.checked;
+                            setSelectedIds(checked ? selectedDateShifts.map(s => s.id) : []);
+                        }}
                     >
-                        <List.Item.Meta
-                            avatar={<Avatar style={{ backgroundColor: '#1677ff' }}>{item.doctor[0]}</Avatar>} 
-                            title={
-                                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                                    <Text strong>{item.doctor}</Text>
-                                    <Tag color="blue">{item.dept}</Tag>
+                        Chọn tất cả ({selectedDateShifts.length} ca)
+                    </Checkbox>
+                </div>
+                <Divider style={{ margin: '8px 0' }} />
+                <List
+                    itemLayout="horizontal"
+                    dataSource={selectedDateShifts}
+                    renderItem={(item) => {
+                        const isPastDate = selectedDate.isBefore(dayjs().startOf('day'));
+                        return (
+                            <List.Item
+                                actions={[
+                                    <Tooltip key="edit" title="Chỉnh sửa"><Button type="text" disabled={isPastDate} icon={<EditOutlined />} onClick={() => handleEditShift(item)} /></Tooltip>,
+                                    <Tooltip key="delete" title="Xóa"><Button type="text" danger disabled={isPastDate} icon={<DeleteOutlined />} onClick={() => handleDeleteShift(item.id)} /></Tooltip>
+                                ]}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 16 }}>
+                                    <Checkbox 
+                                        checked={selectedIds.includes(item.id)}
+                                        onChange={(e) => {
+                                            const checked = e.target.checked;
+                                            setSelectedIds(prev => checked ? [...prev, item.id] : prev.filter(id => id !== item.id));
+                                        }}
+                                    />
+                                    <List.Item.Meta
+                                        avatar={<Avatar style={{ backgroundColor: '#1677ff' }}>{item.doctor[0]}</Avatar>} 
+                                        title={
+                                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                                <Text strong>{item.doctor}</Text>
+                                                <Tag color="blue">{item.dept}</Tag>
+                                            </div>
+                                        }
+                                        description={
+                                            <Space split={<Divider type="vertical" />}>
+                                                <Text style={{ fontSize: 13 }}><ClockCircleOutlined /> {item.time}</Text>
+                                                <Text style={{ fontSize: 13 }}><HomeOutlined /> Phòng: {item.room}</Text>
+                                            </Space>
+                                        }
+                                    />
                                 </div>
-                            }
-                            description={
-                                <div style={{ marginTop: 4 }}>
-                                    <Space split={<Divider type="vertical" />}>
-                                        <Text style={{ fontSize: 13 }}><ClockCircleOutlined /> {item.time}</Text>
-                                        <Text style={{ fontSize: 13 }}><UserOutlined /> Phòng: {item.room}</Text>
-                                    </Space>
-                                </div>
-                            }
-                        />
-                    </List.Item>
-                )}
-            />
+                            </List.Item>
+                        );
+                    }}
+                />
+            </>
         ) : (
             <div style={{ textAlign: 'center', padding: '30px', background: '#f5f5f5', borderRadius: 8 }}>
                 <CalendarOutlined style={{ fontSize: 32, color: '#d9d9d9', marginBottom: 12 }} />
@@ -596,11 +666,11 @@ export default function ManageStaffSchedulePage() {
             </Form.Item>
             
                     <Form.Item label="Ngày trực" name="date" rules={[{ required: true, message: 'Chọn ngày' }]}>
-                        <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                        <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY"  disabledDate={(current) => current && current < dayjs().startOf('day')} />
                     </Form.Item>
 
                     <Form.Item label="Khung giờ (Bắt đầu - Kết thúc)" name="time" rules={[{ required: true, message: 'Chọn giờ' }]}>
-                        <TimePicker.RangePicker format="HH:mm" style={{ width: '100%' }} />
+                        <TimePicker.RangePicker format="HH:mm" minuteStep={30} style={{ width: '100%' }} />
                     </Form.Item>
 
 
@@ -621,14 +691,6 @@ export default function ManageStaffSchedulePage() {
         okText="Tiến hành nhập liệu"
       >
         <Form form={uploadForm} layout="vertical">
-            {/* <Form.Item 
-                label="Áp dụng cho tháng" 
-                name="month" 
-                rules={[{ required: true, message: 'Vui lòng chọn tháng cần nhập lịch' }]}
-                initialValue={dayjs()}
-            >
-                <DatePicker picker="month" format="MM/YYYY" style={{ width: '100%' }} />
-            </Form.Item> */}
 
             <div style={{ marginBottom: 16 }}>
                 <Text type="secondary">Vui lòng tải lên file theo mẫu quy định (.csv). </Text>
