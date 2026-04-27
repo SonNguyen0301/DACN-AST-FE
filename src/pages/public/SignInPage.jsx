@@ -79,7 +79,7 @@ const onFinish = async (values) => {
           />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <Button type="text" style={{ fontSize: '16px', fontWeight: '600', color: '#1677ff' }} onClick={() => navigate('/login')}>
+            <Button className="hide-on-mobile" type="text" style={{ fontSize: '16px', fontWeight: '600', color: '#1677ff' }} onClick={() => navigate('/login')}>
                 Đăng nhập
             </Button>
             <Button type="primary" style={btnPrimaryStyle} onClick={() => navigate('/register')}>
@@ -202,13 +202,13 @@ const onFinish = async (values) => {
                   </div>
                 </Form.Item>
 
-
                 <Form.Item style={{ marginBottom: 20, textAlign: 'center' }}>
                   <Button 
                     type="primary" 
                     htmlType="submit" 
-                    style={btnPrimaryStyle}
+                    style={{ ...btnPrimaryStyle, width: '100%' }} 
                     loading={loading} 
+                    block
                   >
                     {loading ? 'Đang xử lý...' : 'Đăng nhập ngay'}
                   </Button>
@@ -218,7 +218,7 @@ const onFinish = async (values) => {
 
               <div style={{ textAlign: 'center', marginTop: 30 }}>
                 <Text type="secondary">Bạn chưa có tài khoản? </Text>
-                <Link href="/register" style={{ color: primaryColor, fontWeight: 'bold' }}>Đăng ký miễn phí</Link>
+                <Link onClick={() => navigate('/register')} style={{ color: primaryColor, fontWeight: 'bold' }}>Đăng ký miễn phí</Link>
               </div>
             </div>
           </Col>
@@ -231,6 +231,11 @@ const onFinish = async (values) => {
           0% { transform: translateY(0px); }
           50% { transform: translateY(-10px); }
           100% { transform: translateY(0px); }
+        }
+
+        /* Ẩn bớt phần tử trên điện thoại */
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
         }
       `}</style>
     </Layout>

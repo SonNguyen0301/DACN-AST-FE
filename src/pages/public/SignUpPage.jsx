@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { 
   Layout, Form, Input, Button, Typography, 
-  Row, Col, Image, message, Steps, Select , Space
+  Row, Col, Image, message, Steps, Select, Space
 } from 'antd';
 import { 
  LockOutlined, MailOutlined,
@@ -38,7 +38,7 @@ const phoneCodeSelector = (
     <Form.Item name="phoneCode" noStyle>
         <Select
             showSearch
-            style={{ minWidth: 120, }} 
+            style={{ minWidth: 120 }} 
             dropdownStyle={{ borderRadius: 12, minWidth: 220, padding: 5 }}
             optionFilterProp="children"
             filterOption={(input, option) =>
@@ -106,7 +106,6 @@ export default function SignUpPage() {
         }
     } catch (error) {
         message.error(error.response?.data?.message || "Lỗi gửi OTP");
-        // setCurrentStep(1);
     } finally {
         setLoading(false);
     }
@@ -130,7 +129,6 @@ export default function SignUpPage() {
         }
     } catch (error) {
         const errorMsg = error.response?.data?.message || "Lỗi xác thực";
-        // setCurrentStep(2);
         if (errorMsg === 'OTP is expired') {
             message.error("Mã OTP đã hết hạn. Vui lòng lấy mã mới.");
             setCurrentStep(0); 
@@ -245,21 +243,20 @@ export default function SignUpPage() {
                     </div>
 
                     <Row gutter={16}>
-                        <Col span={12}>
+                        <Col xs={24} sm={12}>
                             <Form.Item name="lastName" rules={[{ required: true, message: 'Thiếu họ!' }]}>
                                 <Input placeholder="Họ" style={inputStyle} />
                             </Form.Item>
                         </Col>
-                        <Col span={12}>
+                        <Col xs={24} sm={12}>
                             <Form.Item name="firstName" rules={[{ required: true, message: 'Thiếu tên!' }]}>
                                 <Input placeholder="Tên" style={inputStyle} />
                             </Form.Item>
                         </Col>
                     </Row>
 
-                    {/* --- 4. Cấu trúc lại phần nhập SĐT để sửa lỗi giao diện --- */}
                     <Form.Item label={<span style={{ fontWeight: 600, color: '#374151' }}>Số điện thoại</span>} required>
-                        <Input.Group compact style={{ display: 'flex', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'hidden', focus: 'border-color: #40a9ff' }}>
+                        <Input.Group compact style={{ display: 'flex', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
                             <div style={{
                                 background: '#f9fafb',
                                 borderRight: '1px solid #e5e7eb',
@@ -281,16 +278,15 @@ export default function SignUpPage() {
                                         height: '50px',
                                         fontSize: '15px',
                                         border: 'none', 
-                                        boxShadow: 'none', // Bỏ shadow khi focus
+                                        boxShadow: 'none', 
                                         background: '#f9fafb',
                                         flex: 1,
-                                        borderRadius: 0 // Không bo tròn để khớp với select
+                                        borderRadius: 0 
                                     }}
                                 />
                             </Form.Item>
                         </Input.Group>
                     </Form.Item>
-
 
                     <Form.Item name="gender" label={<span style={{ fontWeight: 600, color: '#374151' }}>Giới tính</span>} rules={[{ required: true, message: 'Vui lòng chọn giới tính!' }]}>
                         <Select style={{ height: 50 }} dropdownStyle={{ borderRadius: 12 }}>
@@ -329,7 +325,7 @@ export default function SignUpPage() {
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <Button type="text" style={{ fontSize: '16px', fontWeight: '600', color: '#1677ff' }} onClick={() => navigate('/login')}>
+            <Button className="hide-on-mobile" type="text" style={{ fontSize: '16px', fontWeight: '600', color: '#1677ff' }} onClick={() => navigate('/login')}>
                 Đăng nhập
             </Button>
             <Button type="primary" style={btnPrimaryStyle} onClick={() => navigate('/register')}>
@@ -340,7 +336,6 @@ export default function SignUpPage() {
 
       <Content>
         <Row style={{ minHeight: 'calc(100vh - 80px)' }}> 
-          {/* CỘT TRÁI - ẢNH */}
           <Col xs={0} md={12} lg={14} style={{ 
             background: 'linear-gradient(135deg, #f0f7ff 0%, #e6f4ff 100%)',
             display: 'flex',
@@ -391,7 +386,6 @@ export default function SignUpPage() {
             </div>
           </Col>
 
-          {/* CỘT PHẢI - FORM */}
           <Col xs={24} md={12} lg={10} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '40px 8%', background: '#fff' }}>
             <div style={{ maxWidth: 450, width: '100%', margin: '0 auto' }}>
               
@@ -410,7 +404,16 @@ export default function SignUpPage() {
           </Col>
         </Row>
       </Content>
-      <style>{`@keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }`}</style>
+      <style>{`
+        @keyframes float { 
+          0% { transform: translateY(0px); } 
+          50% { transform: translateY(-10px); } 
+          100% { transform: translateY(0px); } 
+        }
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
+        }
+      `}</style>
     </Layout>
   );
 }

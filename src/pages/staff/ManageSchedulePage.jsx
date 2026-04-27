@@ -40,6 +40,8 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+dayjs.extend(isoWeek);
 import Footer from "../../components/common/Footer"; 
 import { getStaffScheduleAPI, createStaffScheduleAPI, importStaffScheduleCSVAPI, exportStaffScheduleCSVAPI, updateStaffScheduleAPI, deleteStaffScheduleAPI } from '../../services/staffService';
 import { getDoctorsAPI } from '../../services/doctorService';
@@ -314,7 +316,12 @@ export default function ManageStaffSchedulePage() {
     try {
           const fromTime = values.time[0].format('HH:mm:00+07');
           const toTime = values.time[1].format('HH:mm:00+07');
-          const dateStr = values.date.format('YYYY-MM-DD');
+          const dateStr = values.date.format('YYYY-MM-DD'); 
+          const currentDate = dayjs().format('YYYY-MM-DD');
+          const startWeekDate = dayjs().startOf('isoWeek').format('YYYY-MM-DD');
+          const endWeekDate = dayjs().endOf('isoWeek').format('YYYY-MM-DD');
+          
+          
           
           let roomStr = values.room.toString();
           if (!roomStr.toUpperCase().startsWith('P')) {
@@ -326,7 +333,10 @@ export default function ManageStaffSchedulePage() {
               room: roomStr,
               date: dateStr,
               from: fromTime,
-              to: toTime
+              to: toTime    ,
+                currentDate,
+                startWeekDate,
+                endWeekDate
           };
 
           let res;
@@ -358,8 +368,8 @@ export default function ManageStaffSchedulePage() {
               try {
                   const payload = {
                       scheduleIds: [scheduleId],
-                      startWeekDate: selectedDate.startOf('week').format('YYYY-MM-DD'),
-                      endWeekDate: selectedDate.endOf('week').format('YYYY-MM-DD'),
+                      startWeekDate: dayjs().startOf('week').format('YYYY-MM-DD'),
+                      endWeekDate: dayjs().endOf('week').format('YYYY-MM-DD'),
                       currentDate: dayjs().format('YYYY-MM-DD')
                   };
 
@@ -411,8 +421,8 @@ export default function ManageStaffSchedulePage() {
                 
                 const payload = {
                     scheduleIds: selectedIds, 
-                    startWeekDate: selectedDate.startOf('week').format('YYYY-MM-DD'),
-                    endWeekDate: selectedDate.endOf('week').format('YYYY-MM-DD'),
+                    startWeekDate: dayjs().startOf('week').format('YYYY-MM-DD'),
+                    endWeekDate: dayjs().endOf('week').format('YYYY-MM-DD'),
                     currentDate: dayjs().format('YYYY-MM-DD')
                 };
 

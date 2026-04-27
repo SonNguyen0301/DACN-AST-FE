@@ -125,7 +125,11 @@ export default function AdmissionStaffDashboardPage() {
           const now = dayjs();
           const currentDate = now.format('YYYY-MM-DD');
           const from = now.format('HH:mm:ss+07'); 
-          const params = { currentDate, from };
+          const startMonthDate = now.startOf('month').format('YYYY-MM-DD');
+          const endMonthDate = now.endOf('month').format('YYYY-MM-DD');
+          const startLastMonthDate = now.subtract(1, 'month').startOf('month').format('YYYY-MM-DD');
+          const endLastMonthDate = now.subtract(1, 'month').endOf('month').format('YYYY-MM-DD');
+          const params = { currentDate, from , startMonthDate, endMonthDate, startLastMonthDate, endLastMonthDate };
 
           const response = await getStaffDashboardInfo(params);
 

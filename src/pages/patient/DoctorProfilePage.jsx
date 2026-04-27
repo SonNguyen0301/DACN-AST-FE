@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Card, Button, Select,
@@ -25,8 +24,6 @@ const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 const { TextArea } = Input;
 const { Dragger } = Upload;
-
-
 
 export default function DoctorProfilePage() {
   const navigate = useNavigate();
@@ -121,10 +118,14 @@ export default function DoctorProfilePage() {
 
         setScheduleMap(map);
 
-        const todayStr = dayjs().format('DD-MM-YYYY');
-        if (!selectedDateStr && map[todayStr] && map[todayStr].length > 0) {
-            setSelectedDateStr(todayStr);
+        const clickedDateStr = dayjs(calendarValue).format('DD-MM-YYYY');
+        if (map[clickedDateStr] && map[clickedDateStr].length > 0) {
+            setSelectedDateStr(clickedDateStr);
+        } else {
+            message.info("Bác sĩ không có lịch khám vào ngày này.");
+            setSelectedDateStr(null);
         }
+        setSelectedShift(null); 
 
       } catch (error) {
         console.error("Lỗi lấy lịch khám:", error);
@@ -157,15 +158,6 @@ export default function DoctorProfilePage() {
 
   const onDateSelect = (value) => {
     setCalendarValue(value);
-    const dateStr = value.format('DD-MM-YYYY');
-    if (scheduleMap[dateStr] && scheduleMap[dateStr].length > 0) {
-        setSelectedDateStr(dateStr);
-        setSelectedShift(null); 
-      } else {
-        message.info("Bác sĩ không có lịch khám vào ngày này.");
-        setSelectedDateStr(null);
-        setSelectedShift(null);
-      }
   };
 
   const disabledDate = (current) => {
@@ -194,8 +186,6 @@ export default function DoctorProfilePage() {
             title: 'Yêu cầu hoàn thiện hồ sơ',
             content: 'Hồ sơ y tế của bạn chưa đầy đủ. Vui lòng cập nhật thông tin cá nhân (Ngày sinh, Giới tính, BHYT...) để có thể sử dụng các tính năng của ứng dụng.',
             okText: 'Cập nhật ngay',
-            // keyboard: false, 
-            // maskClosable: false, 
             cancelText : 'Để sau',
             centered: true,
             onOk: () => {
@@ -240,6 +230,7 @@ export default function DoctorProfilePage() {
         setBookingLoading(false);
     }
   };
+
   const handleRemoveFile = (fileToRemove) => {
       setFileList(prevList => prevList.filter(file => file.uid !== fileToRemove.uid));
   };
@@ -293,7 +284,7 @@ export default function DoctorProfilePage() {
           {slots.map(shift => {
             const isAvailable = shift.status === 'AVAILABLE';
             return (
-                <Col key={shift.shiftId} span={6} md={8} lg={6}> 
+                <Col key={shift.shiftId} xs={12} sm={8} lg={6}> 
                 <Button
                     block
                     size="large"
@@ -318,7 +309,7 @@ export default function DoctorProfilePage() {
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
       <Header style={{ background: "#fff", padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)",position: 'sticky', top: 0, zIndex: 1000 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
-                    <img 
+          <img 
             src="/ASTCare1.png" 
             alt="ATSCare Logo" 
             style={{ height: '40px', objectFit: 'contain' }} 
@@ -334,7 +325,7 @@ export default function DoctorProfilePage() {
             { key: "3", label: "Đặt lịch khám" },
             { key: "4", label: "Lịch khám của bản thân" },
           ]}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555' }}
+          style={{ fontSize: 16, fontWeight: 500, color: '#555', flex: 1, justifyContent: 'center' }}
           onClick={({ key }) => {
             switch (key) {
               case "1": navigate('/patient/dashboard'); break;
@@ -348,29 +339,28 @@ export default function DoctorProfilePage() {
         
         <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.name}</span>
-            <Avatar size={36} icon={<UserOutlined />} />
+            <span className="hide-on-mobile" style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user?.firstName + ' ' + user?.lastName}</span>
+            <Avatar size={36} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
           </div>
         </Dropdown>
       </Header>
 
-      <Content style={{ padding: "24px 60px" }}>
+      <Content style={{ padding: "24px 40px" }}>
         
         <Button type="link" icon={<LeftOutlined />} style={{ padding: 0, marginBottom: 16 }} onClick={() => navigate('/patient/booking')}>
           Quay lại danh sách
         </Button>
 
-
         <Spin spinning={loadingDoctor}>
             {doctor ? (
                 <Card style={{ borderRadius: 12, marginBottom: 24 }}>
-                <Row gutter={24}>
-                    <Col flex="120px">
-                    <Avatar size={120} src={doctor.avatarUrl} icon={<UserOutlined />} />
+                <Row gutter={[24, 24]}>
+                    <Col xs={24} sm="auto" style={{ textAlign: 'center' }}>
+                      <Avatar size={120} src={doctor.avatarUrl} icon={<UserOutlined />} />
                     </Col>
-                    <Col flex="auto">
+                    <Col xs={24} sm={16} md={18}>
                     <Title level={3} style={{ margin: 0 }}>{doctor.name}</Title>
-                    <Space style={{ marginTop: 8 }}>
+                    <Space style={{ marginTop: 8 }} wrap>
                         <Tag color="blue">{doctor.title}</Tag>
                         {doctor.isVerified && <Tag color="green" icon={<SafetyOutlined />}>Đã xác minh</Tag>}
                         <Text>{doctor.experienceYears}</Text>
@@ -399,13 +389,13 @@ export default function DoctorProfilePage() {
             )}
         </Spin>
 
-        <Row gutter={24}>
-          <Col span={17}>
+        <Row gutter={[24, 24]}>
+          <Col xs={24} lg={17}>
             <Card title={<Title level={4} style={{margin:0}}>1. Chọn lịch khám</Title>} style={{ borderRadius: 12, marginBottom: 24 }}>
               
               <Spin spinning={loadingShifts}>
-                <Row gutter={24} style={{ display: 'flex', alignItems: 'stretch' }}>
-                    <Col span={12} style={{ borderRight: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column' }}>
+                <Row gutter={[24, 24]} style={{ display: 'flex', alignItems: 'stretch' }}>
+                    <Col xs={24} lg={12} style={{ display: 'flex', flexDirection: 'column' }}>
                     <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 4 , flex: 1, display: 'flex', flexDirection: 'column'}}>
                         <Calendar 
                         fullscreen={false} 
@@ -471,7 +461,7 @@ export default function DoctorProfilePage() {
                     </div>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} lg={12}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                         <Text strong style={{ fontSize: 16 }}>
                             Lịch khám ngày: <span style={{ color: '#1677ff' }}>{selectedDateStr || "Chưa chọn"}</span>
@@ -569,7 +559,7 @@ export default function DoctorProfilePage() {
             </Card>
           </Col>
 
-          <Col span={7}>
+          <Col xs={24} lg={7}>
             <Card 
               title={<Title level={4} style={{margin: 0, color: '#1677ff'}}>Phiếu đặt khám</Title>}
               style={{ borderRadius: 12, position: 'sticky', top: 80, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }} 
@@ -630,9 +620,12 @@ export default function DoctorProfilePage() {
       <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000 }}>
         <ChatBotIcon />
       </div>
+
+      <style>{`
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
+        }
+      `}</style>
     </Layout>
   );
 }
-
-
-
