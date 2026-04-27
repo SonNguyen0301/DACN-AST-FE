@@ -31,6 +31,7 @@ export default function ModelAIPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingModel, setEditingModel] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
   
   const [isPublicFilter, setIsPublicFilter] = useState('all');
   const [chatbotModels, setChatbotModels] = useState([]);
@@ -60,6 +61,36 @@ export default function ModelAIPage() {
   useEffect(() => {
     fetchModels();
   }, [isPublicFilter]);
+
+  const handleTestConnection = async () => {
+      try {
+          // get the token from form
+          let token = '';
+          if (activeTab === 'chatbot') {
+              token = form.getFieldValue('accessToken');
+          } else {
+              token = form.getFieldValue(['modelConfig', 'accessToken']);
+          }
+
+          if (!token) {
+              message.warning('Vui lòng nhập Access Token trước khi test!');
+              return;
+          }
+
+          setTestingConnection(true);
+          const response = await adminService.testDifyConnection(token);
+          
+          if (response.data?.success) {
+              message.success('Kết nối Dify API thành công!');
+          } else {
+              message.error(response.data?.message || 'Kết nối thất bại. Token không hợp lệ.');
+          }
+      } catch (error) {
+          message.error('Lỗi kết nối đến server backend.');
+      } finally {
+          setTestingConnection(false);
+      }
+  };
 
   const handleMenuClick = ({ key }) => {
     switch (key) {
@@ -136,7 +167,8 @@ export default function ModelAIPage() {
         { title: 'Dify Token', dataIndex: 'accessToken', render: () => '••••••••' },
         { title: 'Knowledge Base', dataIndex: 'knowledgeName', render: (t) => t || '-' }
     ] : [
-        { title: 'Model Key', dataIndex: 'keyModel' },
+        { title: 'Loại AI', dataIndex: ['modelConfig', 'providerType'], render: (t) => <Tag color="blue">{t || 'INTERNAL'}</Tag> },
+        { title: 'Tên/Key', dataIndex: ['modelConfig', 'nameModel'] },
         { title: 'URL/Host', dataIndex: 'modelUrl', render: (t) => t ? <a href={t} target="_blank" rel="noreferrer">Link</a> : '-' }
     ]),
     {
@@ -261,8 +293,13 @@ export default function ModelAIPage() {
 
             {activeTab === 'chatbot' ? (
                 <>
-                    <Form.Item label="Access Token (Dify API)" name="accessToken" rules={[{ required: true }]}>
-                        <Input.Password placeholder="app-xxx..." prefix={<KeyOutlined />} />
+                    <Form.Item label="Access Token (Dify API)" required>
+                        <Space.Compact style={{ width: '100%' }}>
+                            <Form.Item name="accessToken" noStyle rules={[{ required: true, message: 'Vui lòng nhập Access Token' }]}>
+                                <Input.Password placeholder="app-xxx..." prefix={<KeyOutlined />} style={{ width: '100%' }} />
+                            </Form.Item>
+                            <Button type="primary" onClick={handleTestConnection} loading={testingConnection}>Test Connection</Button>
+                        </Space.Compact>
                     </Form.Item>
                     <Form.Item label="Knowledge Base Name" name="knowledgeName">
                         <Input prefix={<FileTextOutlined />} placeholder="Tên DB của tài liệu Dify cung cấp" />
@@ -273,8 +310,33 @@ export default function ModelAIPage() {
                 </>
             ) : (
                 <>
-                    <Form.Item label="Model ID/Key định danh" name="keyModel" rules={[{ required: true }]}>
-                        <Input placeholder="Nhập Key của Model để gọi API" />
+                    <Form.Item label="Provider" name={['modelConfig', 'providerType']} rules={[{ required: true }]} initialValue="INTERNAL">
+                        <Select
+                            options={[
+                                { value: 'INTERNAL', label: 'INTERNAL (Custom Model)' },
+                                { value: 'DIFY', label: 'DIFY (RAG Workflow)' },
+                            ]}
+                        />
+                    </Form.Item>
+                    <Form.Item label="Tên Model/Key" name={['modelConfig', 'nameModel']} rules={[{ required: true }]}>
+                        <Input placeholder="Nhập Key của Model (VD: skin_v1)" />
+                    </Form.Item>
+                    <Form.Item 
+                        noStyle 
+                        shouldUpdate={(prevValues, currentValues) => prevValues?.modelConfig?.providerType !== currentValues?.modelConfig?.providerType}
+                    >
+                        {({ getFieldValue }) => 
+                            getFieldValue(['modelConfig', 'providerType']) === 'DIFY' ? (
+                                <Form.Item label="Dify Access Token" required>
+                                    <Space.Compact style={{ width: '100%' }}>
+                                        <Form.Item name={['modelConfig', 'accessToken']} noStyle rules={[{ required: true, message: 'Vui lòng nhập Dify Access Token' }]}>
+                                            <Input.Password placeholder="app-xxx..." prefix={<KeyOutlined />} style={{ width: '100%' }} />
+                                        </Form.Item>
+                                        <Button type="primary" onClick={handleTestConnection} loading={testingConnection}>Test Connection</Button>
+                                    </Space.Compact>
+                                </Form.Item>
+                            ) : null
+                        }
                     </Form.Item>
                     <Form.Item label="URL Model Server" name="modelUrl" rules={[{ required: true }]}>
                         <Input prefix={<LinkOutlined />} placeholder="Endpoint Model Server (Local/Remote)" />

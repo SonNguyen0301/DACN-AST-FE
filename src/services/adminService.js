@@ -45,6 +45,9 @@ const adminService = {
   updateChatbotModel: (id, data) => axios.put(`/admin/chatbots/${id}`, data),
   deleteChatbotModel: (id) => axios.delete(`/admin/chatbots/${id}`),
 
+  // AI Models - Test Connection
+  testDifyConnection: (accessToken) => axios.post('/admin/dify/test-connection', { accessToken }),
+
   // Dashboard - Statistics
   getSystemOverview: (params) => axios.get('/admin/dashboard/overview', { params }),
   getDoctorPerformanceStatistics: (params) => axios.get('/admin/dashboard/doctor-performance', { params }),
