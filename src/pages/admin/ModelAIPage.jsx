@@ -174,6 +174,7 @@ export default function ModelAIPage() {
     {
         title: 'Hành động',
         key: 'action',
+        fixed: 'right', 
         render: (_, record) => (
             <Space>
                 <Button type="text" icon={<EditOutlined style={{ color: '#1677ff' }} />} onClick={() => handleEdit(record)} />
@@ -191,13 +192,13 @@ export default function ModelAIPage() {
         label: (<span><RobotOutlined /> AI Chatbot </span>),
         children: (
             <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 16 }}>
                     <Text strong style={{ fontSize: 16 }}>Danh sách phiên bản Chatbot</Text>
                     <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
                         Thêm mô hình Dify mới
                     </Button>
                 </div>
-                <Table loading={loading} columns={getColumns('chatbot')} dataSource={chatbotModels} rowKey="id" bordered />
+                <Table loading={loading} columns={getColumns('chatbot')} dataSource={chatbotModels} rowKey="id" bordered scroll={{ x: 800 }} />
             </div>
         )
     },
@@ -206,13 +207,13 @@ export default function ModelAIPage() {
         label: (<span><ScanOutlined /> AI Diagnosis </span>),
         children: (
             <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 16 }}>
                     <Text strong style={{ fontSize: 16 }}>Danh sách phiên bản Chẩn đoán</Text>
                     <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
                         Thêm Model Chẩn đoán mới
                     </Button>
                 </div>
-                <Table loading={loading} columns={getColumns('diagnosis')} dataSource={diagnosisModels} rowKey="id" bordered />
+                <Table loading={loading} columns={getColumns('diagnosis')} dataSource={diagnosisModels} rowKey="id" bordered scroll={{ x: 800 }} />
             </div>
         )
     }
@@ -227,7 +228,7 @@ export default function ModelAIPage() {
         <Menu mode="horizontal" defaultSelectedKeys={['AI']} items={menuItems} onClick={handleMenuClick} style={{ fontSize: 15, fontWeight: 500, color: '#555', borderBottom: 'none', flex: 1, justifyContent: 'center', marginLeft: 20 }} />
         <Dropdown menu={{ items: menuUserItems }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+                <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
                     <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.name}</span>
                     <span style={{ fontSize: 12, color: '#888' }}>Quản trị hệ thống</span>
                 </div>
@@ -237,12 +238,12 @@ export default function ModelAIPage() {
       </Header>
 
       <Content style={{ padding: '30px 40px' }}>
-        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
             <div>
                 <Title level={3} style={{ margin: 0 }}>Quản lý Model AI</Title>
                 <Text type="secondary">Cấu hình phiên bản và API cấu hình cho Chatbot & Chẩn đoán hình ảnh.</Text>
             </div>
-            <Space>
+            <Space wrap>
                 <Text strong>Lọc trạng thái:</Text>
                 <Select 
                     value={isPublicFilter} 
@@ -274,20 +275,20 @@ export default function ModelAIPage() {
         footer={null}
       >
         <Form form={form} layout="vertical" onFinish={handleSaveModel}>
-            <Row gutter={16}>
-                <Col span={12}>
-                    <Form.Item label="Phiên bản (Version)" name="version" rules={[{ required: true, message: 'Ví dụ v1.0, 15-05-2025' }]}>
+            <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12}>
+                    <Form.Item label="Phiên bản (Version)" name="version" rules={[{ required: true, message: 'Ví dụ v1.0, 15-05-2025' }]} style={{ margin: 0 }}>
                         <Input placeholder="VD: v1.0, v2.5,..." disabled={!!editingModel} />
                     </Form.Item>
                 </Col>
-                <Col span={12}>
-                    <Form.Item label="Trạng thái Public" name="isPublic" valuePropName="checked">
+                <Col xs={24} sm={12}>
+                    <Form.Item label="Trạng thái Public" name="isPublic" valuePropName="checked" style={{ margin: 0 }}>
                         <Switch checkedChildren="Phát hành" unCheckedChildren="Nội bộ / Ẩn" defaultChecked />
                     </Form.Item>
                 </Col>
             </Row>
 
-            <Form.Item label="Tên Model (Hiển thị)" name="name">
+            <Form.Item label="Tên Model (Hiển thị)" name="name" style={{ marginTop: 16 }}>
                 <Input placeholder="Tùy chọn hiển thị tên (VD: Model da liễu)" />
             </Form.Item>
 
@@ -350,6 +351,12 @@ export default function ModelAIPage() {
             </div>
         </Form>
       </Modal>
+
+      <style>{`
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
+        }
+      `}</style>
     </Layout>
   );
 }

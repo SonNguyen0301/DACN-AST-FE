@@ -415,6 +415,7 @@ export default function UserManagementPage() {
     {
       title: 'Họ tên',
       dataIndex: 'name',
+      width: 220,
       render: (text, record) => (
         <Space>
           <Avatar icon={<UserOutlined />} style={{ backgroundColor: record.role === 'doctor' ? '#1677ff' : record.role === 'staff' ? '#faad14' : '#87d068' }} />
@@ -428,11 +429,13 @@ export default function UserManagementPage() {
     {
       title: 'Mã (BS/NV/CCCD)',
       key: 'code',
+      width: 150,
       render: (_, record) => record.doctorCode || record.staffCode || record.citizenCode || '-'
     },
     {
       title: 'Vai trò',
       dataIndex: 'role',
+      width: 130,
       render: (role) => {
         let color = 'default';
         let icon = <UserOutlined />;
@@ -446,15 +449,21 @@ export default function UserManagementPage() {
         return <Tag icon={icon} color={color}>{label.toUpperCase()}</Tag>;
       }
     },
-    { title: 'SĐT', dataIndex: 'phone' },
+    { 
+      title: 'SĐT', 
+      dataIndex: 'phone',
+      width: 140 
+    },
     { 
       title: 'Khoa/Ban', 
-      dataIndex: 'department', 
+      dataIndex: 'department',
+      width: 160,
       render: (text) => DEPARTMENT_MAPPING[text] || text || '-' 
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
+      width: 120,
       render: (status) => (
         <Badge status={status === 'active' ? 'success' : 'error'} text={status === 'active' ? 'Hoạt động' : 'Đã khóa'} />
       ),
@@ -462,11 +471,13 @@ export default function UserManagementPage() {
     {
       title: '',
       key: 'action',
+      width: 100,
+      fixed: 'right', 
+      align: 'center',
       render: (_, record) => {
         if (record.role === 'patient') {
           return null; 
         }
-
         return (
         <Space>
           <Button type="text" icon={<EditOutlined style={{ color: '#1677ff' }} />} onClick={() => handleEdit(record)} />
@@ -505,7 +516,7 @@ export default function UserManagementPage() {
 
             <Dropdown menu={{ items: menuUserItems }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+                    <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
                         <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.name}</span>
                         <span style={{ fontSize: 12, color: '#888' }}>Quản trị hệ thống</span>
                     </div>
@@ -516,7 +527,7 @@ export default function UserManagementPage() {
 
         <Content style={{ padding: "30px 40px" }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
                 <div>
                     <Title level={3} style={{ margin: 0 }}>Quản lý Tài khoản</Title>
                     <Text type="secondary">Quản lý danh sách Bác sĩ, Nhân viên và Bệnh nhân trong hệ thống</Text>
@@ -546,7 +557,7 @@ export default function UserManagementPage() {
               {/* LÊN RIGHT SIDE (70%) - TABLE */}
               <Col xs={24} lg={17}>
                 <Card variant="borderless" style={{ borderRadius: 12, marginBottom: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, paddingBottom: 16 }}>
                         <Tabs 
                             activeKey={activeTab} 
                             onChange={setActiveTab} 
@@ -556,15 +567,15 @@ export default function UserManagementPage() {
                                 { key: 'staff', label: 'Nhân viên', icon: <SolutionOutlined /> },
                                 { key: 'patient', label: 'Bệnh nhân', icon: <TeamOutlined /> },
                             ]}
-                            style={{ marginBottom: -16 }}
+                            style={{ marginBottom: 0, width: '100%', maxWidth: 'max-content' }}
                         />
                         
-                        <Space>
+                        <Space wrap style={{ width: '100%', flex: 1, justifyContent: 'flex-end' }}>
                             {(activeTab === 'doctor' || activeTab === 'staff' || activeTab === 'all') && (
                                 <Select
                                     value={departmentFilter}
                                     onChange={setDepartmentFilter}
-                                    style={{ width: 180 }}
+                                    style={{ width: 180, minWidth: 150, maxWidth: '100%' }}
                                     placeholder="Lọc chuyên khoa"
                                     options={[
                                         { value: 'all', label: 'Tất cả Khoa/Ban' },
@@ -575,21 +586,20 @@ export default function UserManagementPage() {
                             <Input 
                                 placeholder="Tìm kiếm tên, SĐT, Mã NV..." 
                                 prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />} 
-                                style={{ width: 250 }}
+                                style={{ width: 250, minWidth: 200, maxWidth: '100%' }}
                                 onChange={(e) => setSearchText(e.target.value)}
                                 allowClear
                             />
                         </Space>
                     </div>
-                </Card>
 
-                <Card variant="borderless" style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
                     <Table 
                         loading={loading}
                         columns={columns} 
                         dataSource={filteredUsers} 
                         rowKey="id"
                         pagination={{ pageSize: 8 }}
+                        scroll={{ x: 1050 }}
                     />
                 </Card>
               </Col>
@@ -673,6 +683,11 @@ export default function UserManagementPage() {
             </Form>
         </Modal>
 
+        <style>{`
+          @media (max-width: 576px) {
+            .hide-on-mobile { display: none !important; }
+          }
+        `}</style>
     </Layout>
   );
 }

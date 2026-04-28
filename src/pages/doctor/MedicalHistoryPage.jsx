@@ -1,4 +1,4 @@
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Row, Col, Card, Table, 
   Tag, Space, Button, Input, DatePicker, Select, Dropdown, 
@@ -255,7 +255,7 @@ export default function DoctorMedicalHistoryPage() {
         />
         <Dropdown menu={{ items: menuUserItems }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+             <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
                 <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{"BS. "+ user?.firstName + " " + user?.lastName}</span>
                 <span style={{ fontSize: 12, color: '#888' }}>Khoa Da liễu</span>
             </div>
@@ -312,6 +312,11 @@ export default function DoctorMedicalHistoryPage() {
                 loading={loading}
                 pagination={pagination}
                 onChange={handleTableChange}
+                scroll={{ x: 900 }} 
+                onRow={(record) => ({
+                    style: { cursor: 'pointer' },
+                    onClick: () => handleViewDetail(record)  
+                })}
              />
         </Card>
       </Content>
@@ -336,7 +341,7 @@ export default function DoctorMedicalHistoryPage() {
         <Spin spinning={detailLoading}>
             {selectedRecord && (
                 <div style={{ marginTop: 20 }}>
-                    <div style={{ display: 'flex', gap: 20, marginBottom: 24, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 20, marginBottom: 24, alignItems: 'center', flexWrap: 'wrap' }}>
                           <Avatar 
                               size={80} 
                               icon={<UserOutlined />} 
@@ -406,9 +411,8 @@ export default function DoctorMedicalHistoryPage() {
                                             avatar={<CheckCircleOutlined style={{ color: '#52c41a', marginTop: 4 }} />}
                                             title={<Text strong>{item.medicineName || item.name}</Text>}
                                             description={
-                                                <Space split={<Divider type="vertical" />}>
+                                                <Space split={<Divider type="vertical" />} wrap>
                                                     <span>Liều dùng: <Text strong>{item.dosage}</Text></span>
-                                                    <span>Thời gian: <Text strong>{item.durationDays || item.duration}</Text></span>
                                                 </Space>
                                             }
                                         />
@@ -426,6 +430,11 @@ export default function DoctorMedicalHistoryPage() {
         </Spin>
       </Modal>
 
+      <style>{`
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
+        }
+      `}</style>
     </Layout>
   );
 }

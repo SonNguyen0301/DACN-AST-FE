@@ -194,7 +194,7 @@ const featureCards = [
         
         <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.firstName + ' ' + user.lastName}</span>
+            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user?.firstName + ' ' + user?.lastName}</span>
             <Avatar size={36} icon={<UserOutlined />} />
           </div>
         </Dropdown>

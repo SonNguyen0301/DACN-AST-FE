@@ -1,4 +1,4 @@
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Layout, 
   Menu, 
@@ -23,7 +23,9 @@ import {
   Tag,
   Divider,
   Popover, 
-  Checkbox
+  Checkbox,
+  Row,
+  Col
 } from "antd";
 import { 
   UserOutlined, 
@@ -45,6 +47,7 @@ dayjs.extend(isoWeek);
 import Footer from "../../components/common/Footer"; 
 import { getStaffScheduleAPI, createStaffScheduleAPI, importStaffScheduleCSVAPI, exportStaffScheduleCSVAPI, updateStaffScheduleAPI, deleteStaffScheduleAPI } from '../../services/staffService';
 import { getDoctorsAPI } from '../../services/doctorService';
+import useAuth from "../../hooks/useAuth";
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -53,6 +56,8 @@ const { Dragger } = Upload;
 
 export default function ManageStaffSchedulePage() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  
   const [form] = Form.useForm();
   const [uploadForm] = Form.useForm(); 
 
@@ -165,10 +170,6 @@ export default function ManageStaffSchedulePage() {
       }
   };
 
-
-  const user = { name: "Lê Thị Bích", role: "admission" };
-
-
   const getListData = (value) => {
     const dateString = value.format('YYYY-MM-DD');
     return scheduleData[dateString] || [];
@@ -183,7 +184,7 @@ export default function ManageStaffSchedulePage() {
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         {listData.map((item) => {
           const content = (
-            <div style={{ width: 280 }}>
+            <div style={{ width: 280, maxWidth: '100%' }}>
               <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
                 <Avatar 
                   size={48} 
@@ -321,8 +322,6 @@ export default function ManageStaffSchedulePage() {
           const startWeekDate = dayjs().startOf('isoWeek').format('YYYY-MM-DD');
           const endWeekDate = dayjs().endOf('isoWeek').format('YYYY-MM-DD');
           
-          
-          
           let roomStr = values.room.toString();
           if (!roomStr.toUpperCase().startsWith('P')) {
               roomStr = `P${roomStr}`;
@@ -444,7 +443,7 @@ export default function ManageStaffSchedulePage() {
     });
   };
 
-  const handleSignOut = () => navigate('/');
+  const handleSignOut = () => { logout(); navigate('/'); }
   const menuUserItems = [
     { key: '1', label: (<a onClick={() => navigate('/staff/profile')}>Hồ sơ nhân viên</a>), icon: <UserOutlined /> },
     { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
@@ -473,8 +472,8 @@ export default function ManageStaffSchedulePage() {
         />
         <Dropdown menu={{ items: menuUserItems }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.name}</span>
+             <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user?.firstName + " " + user?.lastName}</span>
                 <span style={{ fontSize: 12, color: '#888' }}>Phòng Tiếp nhận</span>
             </div>
             <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#faad14' }} />
@@ -484,12 +483,12 @@ export default function ManageStaffSchedulePage() {
 
       <Content style={{ padding: "30px 40px" }}>
         
-        <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
+        <Row style={{ marginBottom: 24 }} align="middle" justify="space-between" gutter={[16, 16]}>
+            <Col xs={24} md={12}>
                 <Title level={3} style={{ margin: 0 }}>Quản lý lịch làm việc</Title>
                 <Text type="secondary">Xem, chỉnh sửa và phân bổ lịch trực cho bác sĩ</Text>
-            </div>
-            <Space>
+            </Col>
+            <Col xs={24} md={12} style={{ display: 'flex', justifyContent: 'flex-end', flexWrap: 'wrap', gap: 8 }}>
                 <Button 
                     icon={<FilePdfOutlined />} 
                     onClick={handleExportCSV}
@@ -510,11 +509,10 @@ export default function ManageStaffSchedulePage() {
                     icon={<PlusOutlined />} 
                     onClick={handleAddNew}
                 >
-                    Thêm lịch thủ công
+                    Thêm lịch
                 </Button>
-                
-            </Space>
-        </div>
+            </Col>
+        </Row>
 
         {/* CALENDAR */}
         <Card variant="borderless" style={{ borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
@@ -524,7 +522,7 @@ export default function ManageStaffSchedulePage() {
                 onPanelChange={(date) => setCurrentMonthView(date)}
                 headerRender={({ value, onChange }) => {
                     return (
-                        <div style={{ padding: '10px 0 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ padding: '10px 0 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
                             <Title level={4} style={{ margin: 0 }}>Tháng {value.format('MM/YYYY')}</Title>
                             <Space>
                                 <Select
@@ -605,7 +603,7 @@ export default function ManageStaffSchedulePage() {
                                     <Tooltip key="delete" title="Xóa"><Button type="text" danger disabled={isPastDate} icon={<DeleteOutlined />} onClick={() => handleDeleteShift(item.id)} /></Tooltip>
                                 ]}
                             >
-                                <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 16 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 16, flexWrap: 'nowrap', overflow: 'hidden' }}>
                                     <Checkbox 
                                         checked={selectedIds.includes(item.id)}
                                         onChange={(e) => {
@@ -616,13 +614,13 @@ export default function ManageStaffSchedulePage() {
                                     <List.Item.Meta
                                         avatar={<Avatar style={{ backgroundColor: '#1677ff' }}>{item.doctor[0]}</Avatar>} 
                                         title={
-                                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                                                 <Text strong>{item.doctor}</Text>
                                                 <Tag color="blue">{item.dept}</Tag>
                                             </div>
                                         }
                                         description={
-                                            <Space split={<Divider type="vertical" />}>
+                                            <Space split={<Divider type="vertical" />} wrap>
                                                 <Text style={{ fontSize: 13 }}><ClockCircleOutlined /> {item.time}</Text>
                                                 <Text style={{ fontSize: 13 }}><HomeOutlined /> Phòng: {item.room}</Text>
                                             </Space>
@@ -675,21 +673,17 @@ export default function ManageStaffSchedulePage() {
                 </Select>
             </Form.Item>
             
-                    <Form.Item label="Ngày trực" name="date" rules={[{ required: true, message: 'Chọn ngày' }]}>
-                        <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY"  disabledDate={(current) => current && current < dayjs().startOf('day')} />
-                    </Form.Item>
+            <Form.Item label="Ngày trực" name="date" rules={[{ required: true, message: 'Chọn ngày' }]}>
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY"  disabledDate={(current) => current && current < dayjs().startOf('day')} />
+            </Form.Item>
 
-                    <Form.Item label="Khung giờ (Bắt đầu - Kết thúc)" name="time" rules={[{ required: true, message: 'Chọn giờ' }]}>
-                        <TimePicker.RangePicker format="HH:mm" minuteStep={30} style={{ width: '100%' }} />
-                    </Form.Item>
+            <Form.Item label="Khung giờ (Bắt đầu - Kết thúc)" name="time" rules={[{ required: true, message: 'Chọn giờ' }]}>
+                <TimePicker.RangePicker format="HH:mm" minuteStep={30} style={{ width: '100%' }} />
+            </Form.Item>
 
-
-
-                    <Form.Item label="Phòng khám" name="room" rules={[{ required: true }]}>
-                        <InputNumber style={{ width: '100%' }} placeholder="VD: 201" prefix="P." />
-                    </Form.Item>
- 
-   
+            <Form.Item label="Phòng khám" name="room" rules={[{ required: true }]}>
+                <InputNumber style={{ width: '100%' }} placeholder="VD: 201" prefix="P." />
+            </Form.Item>
         </Form>
       </Modal>
 
@@ -729,6 +723,11 @@ export default function ManageStaffSchedulePage() {
         </Form>
       </Modal>
 
+      <style>{`
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
+        }
+      `}</style>
     </Layout>
   );
 }
