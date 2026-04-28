@@ -397,7 +397,7 @@ export default function DoctorAppointmentPage() {
                     <Text strong style={{ display: 'block', marginBottom: 4 }}>Khoảng giờ hẹn:</Text>
                     <TimePicker.RangePicker 
                         format="HH:mm"
-                        minuteStep={15}
+                        minuteStep={30}
                         onChange={handleTimeRangeChange}
                         placeholder={['Từ giờ', 'Đến giờ']}
                         style={{ width: '100%' }}
@@ -531,6 +531,17 @@ export default function DoctorAppointmentPage() {
       <style>{`
         @media (max-width: 576px) {
           .hide-on-mobile { display: none !important; }
+
+          .ant-picker-dropdown .ant-picker-panels {
+            flex-direction: column !important;
+          }
+          .ant-picker-dropdown {
+            max-width: 100vw !important;
+          }
+          .ant-picker-panel-container {
+            max-width: 100vw;
+            overflow-x: auto;
+          }
         }
       `}</style>
     </Layout>

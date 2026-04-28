@@ -415,7 +415,7 @@ export default function UserManagementPage() {
     {
       title: 'Họ tên',
       dataIndex: 'name',
-      width: 220,
+      width: 250,
       render: (text, record) => (
         <Space>
           <Avatar icon={<UserOutlined />} style={{ backgroundColor: record.role === 'doctor' ? '#1677ff' : record.role === 'staff' ? '#faad14' : '#87d068' }} />
@@ -429,7 +429,7 @@ export default function UserManagementPage() {
     {
       title: 'Mã (BS/NV/CCCD)',
       key: 'code',
-      width: 150,
+      width: 120,
       render: (_, record) => record.doctorCode || record.staffCode || record.citizenCode || '-'
     },
     {
@@ -469,7 +469,7 @@ export default function UserManagementPage() {
       ),
     },
     {
-      title: '',
+      title: 'Thao tác',
       key: 'action',
       width: 100,
       fixed: 'right', 
@@ -599,7 +599,7 @@ export default function UserManagementPage() {
                         dataSource={filteredUsers} 
                         rowKey="id"
                         pagination={{ pageSize: 8 }}
-                        scroll={{ x: 1050 }}
+                        scroll={{ x: 1020 }} 
                     />
                 </Card>
               </Col>
@@ -686,6 +686,22 @@ export default function UserManagementPage() {
         <style>{`
           @media (max-width: 576px) {
             .hide-on-mobile { display: none !important; }
+
+            .ant-table-cell-fix-right {
+                background-color: #fff !important; 
+            }
+            
+            .ant-table-tbody > tr:hover > td.ant-table-cell-fix-right {
+                background-color: #fafafa !important;
+            }
+
+            .ant-table-thead > tr > th.ant-table-cell-fix-right {
+                background-color: #fafafa !important;
+            }
+            
+            .ant-table-cell-fix-right-first::after {
+                box-shadow: inset -6px 0 6px -4px rgba(0, 0, 0, 0.15) !important;
+            }
           }
         `}</style>
     </Layout>

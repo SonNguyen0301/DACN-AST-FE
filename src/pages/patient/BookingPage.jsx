@@ -186,7 +186,7 @@ export default function BookingPage() {
                 <Panel header={<Text strong>Chuyên khoa</Text>} key="1">
                   <Checkbox.Group value={selectedDepartments} onChange={handleDepartmentChange} style={{ width: '100%' }}>
                     <Space direction="vertical" style={{ width: '100%' }}>
-                      <Checkbox value="dermatology">Da liễu</Checkbox>
+                      <Checkbox value="Dermatology">Da liễu</Checkbox>
                       <Checkbox value="cardiology">Tim mạch</Checkbox>
                       <Checkbox value="pediatrics">Nhi khoa</Checkbox>
                       <Checkbox value="gastroenterology">Tiêu hóa</Checkbox>
@@ -248,7 +248,7 @@ export default function BookingPage() {
                             
                             <Text strong style={{ display: 'block', marginTop: 10, fontSize: 15 }}>
                                 <MedicineBoxOutlined style={{ color: '#1677ff', marginRight: 8 }}/> 
-                                Khoa: {doctor.department == "dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
+                                Khoa: {doctor.department == "Dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
                             </Text>
 
                             <Paragraph type="secondary" style={{ marginTop: 10, marginBottom: 0 }}>
@@ -285,7 +285,7 @@ export default function BookingPage() {
                             
                             <Text strong style={{ fontSize: 14, marginBottom: 8 }}>
                                 <MedicineBoxOutlined style={{ color: '#1677ff', marginRight: 4 }}/> 
-                                {doctor.department == "dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
+                                {doctor.department == "Dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
                             </Text>
 
                             <Paragraph 

@@ -630,6 +630,17 @@ useEffect(() => {
       <style>{`
         @media (max-width: 576px) {
           .hide-on-mobile { display: none !important; }
+
+          .ant-picker-dropdown .ant-picker-panels {
+            flex-direction: column !important;
+          }
+          .ant-picker-dropdown {
+            max-width: 100vw !important;
+          }
+          .ant-picker-panel-container {
+            max-width: 100vw;
+            overflow-x: auto;
+          }
         }
       `}</style>
     </Layout>

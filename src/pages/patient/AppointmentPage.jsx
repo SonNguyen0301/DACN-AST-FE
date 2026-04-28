@@ -462,6 +462,30 @@ export default function AppointmentPage() {
       <style>{`
         @media (max-width: 576px) {
           .hide-on-mobile { display: none !important; }
+
+          .ant-tabs-nav-list {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            width: 100%;
+          }
+            
+          
+          .ant-tabs-tab {
+            width: 50% !important;
+            margin: 0 !important;
+            justify-content: center !important;
+            padding: 12px 0 !important;
+            border-bottom: 1px solid #f0f0f0;
+          }
+
+          .ant-tabs-ink-bar {
+            display: none !important;
+          }
+
+          .ant-tabs-tab-active {
+            border-bottom: 2px solid #1677ff !important;
+            background-color: #e6f4ff; 
+          }
         }
       `}</style>
     </Layout>

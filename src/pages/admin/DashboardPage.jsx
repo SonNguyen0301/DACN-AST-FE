@@ -385,29 +385,33 @@ export default function AdminDashboardPage() {
                 
                 <Col xs={24} lg={16}>
                     <Card 
-                        title={`Top bác sĩ có lượt khám cao nhất - Tháng ${selectedMonth}/${selectedYear}`}
-                        extra={(
-                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                            <Select
-                              value={topLimit}
-                              style={{ width: 100 }}
-                              options={topLimitOptions}
-                              onChange={setTopLimit}
-                            />
-                            <Select
-                              value={selectedMonth}
-                              style={{ width: 120 }}
-                              options={monthOptions}
-                              onChange={setSelectedMonth}
-                            />
-                            <Select
-                              value={selectedYear}
-                              style={{ width: 100 }}
-                              options={yearOptions}
-                              onChange={setSelectedYear}
-                            />
-                          </div>
-                        )}
+                        title={
+                            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12, width: '100%' }}>
+                                <span style={{ whiteSpace: 'normal', wordBreak: 'break-word', flex: 1, minWidth: '200px' }}>
+                                    Top bác sĩ có lượt khám cao nhất - Tháng {selectedMonth}/{selectedYear}
+                                </span>
+                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                    <Select
+                                        value={topLimit}
+                                        style={{ width: 100 }}
+                                        options={topLimitOptions}
+                                        onChange={setTopLimit}
+                                    />
+                                    <Select
+                                        value={selectedMonth}
+                                        style={{ width: 120 }}
+                                        options={monthOptions}
+                                        onChange={setSelectedMonth}
+                                    />
+                                    <Select
+                                        value={selectedYear}
+                                        style={{ width: 100 }}
+                                        options={yearOptions}
+                                        onChange={setSelectedYear}
+                                    />
+                                </div>
+                            </div>
+                        }
                         variant="borderless" 
                         style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: '100%', display: 'flex', flexDirection: 'column' }}
                         styles={{ body: { flex: 1, padding: 0 } }} 
@@ -513,6 +517,10 @@ export default function AdminDashboardPage() {
         <style>{`
           @media (max-width: 576px) {
             .hide-on-mobile { display: none !important; }
+
+            .ant-card-head-title {
+              white-space: normal !important;
+            }
           }
         `}</style>
     </Layout>
