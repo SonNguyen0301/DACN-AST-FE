@@ -256,6 +256,14 @@ export default function ExaminationPage() {
                           message.success("AI đã hoàn tất phân tích!");
                           
                           const aiResData = res.data.data;
+
+                          // Format images from base64 if needed
+                          const formattedImages = (aiResData.images || []).map(img => {
+                              if (img && !img.startsWith('http') && !img.startsWith('data:')) {
+                                  return `data:image/jpeg;base64,${img}`;
+                              }
+                              return img;
+                          });
                           
                           setAiResult({
                               diagnoses: (aiResData.diseases || []).map(d => ({
@@ -266,6 +274,7 @@ export default function ExaminationPage() {
                               explanation: aiResData.suggestedDiagnosis || "AI không thể cung cấp lời giải thích chi tiết vào lúc này.",
                               severityLevel: aiResData.severityLevel || "medium",
                               analyzedImage: imageUrl,
+                              aiImages: formattedImages, // [Bbox Image, Cropped Image]
                               advice: aiResData.aiAdvice || "Cần theo dõi thêm và kết hợp chỉ định y khoa."
                           });
 
@@ -530,14 +539,38 @@ export default function ExaminationPage() {
                                     </div>
                                 ) : aiResult ? (
                                     <>
-                                        {aiResult.analyzedImage && (
-                                        <div style={{ textAlign: 'center', marginBottom: 20, position: 'relative' }}>
-                                            <Image 
-                                                src={aiResult.analyzedImage} 
-                                                style={{ borderRadius: 8, maxHeight: 250, objectFit: 'contain' }} 
-                                            />
-                                            <Tag color="cyan" style={{ position: 'absolute', top: 10, right: 10 }}>AI Analyzed</Tag>
-                                        </div>
+                                        {aiResult.aiImages && aiResult.aiImages.length > 0 ? (
+                                            <div style={{ marginBottom: 20 }}>
+                                                <Row gutter={[12, 12]}>
+                                                    <Col span={12}>
+                                                        <div style={{ textAlign: 'center' }}>
+                                                            <Text type="secondary" style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>Vùng tổn thương</Text>
+                                                            <Image 
+                                                                src={aiResult.aiImages[0]} 
+                                                                style={{ borderRadius: 8, maxHeight: 180, objectFit: 'contain', border: '1px solid #e8e8e8' }} 
+                                                            />
+                                                        </div>
+                                                    </Col>
+                                                    <Col span={12}>
+                                                        <div style={{ textAlign: 'center' }}>
+                                                            <Text type="secondary" style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>Ảnh cận cảnh</Text>
+                                                            <Image 
+                                                                src={aiResult.aiImages[1]} 
+                                                                style={{ borderRadius: 8, maxHeight: 180, objectFit: 'contain', border: '1px solid #e8e8e8' }} 
+                                                            />
+                                                        </div>
+                                                    </Col>
+                                                </Row>
+                                                <Divider style={{ margin: '12px 0' }} />
+                                            </div>
+                                        ) : aiResult.analyzedImage && (
+                                            <div style={{ textAlign: 'center', marginBottom: 20, position: 'relative' }}>
+                                                <Image 
+                                                    src={aiResult.analyzedImage} 
+                                                    style={{ borderRadius: 8, maxHeight: 250, objectFit: 'contain' }} 
+                                                />
+                                                <Tag color="cyan" style={{ position: 'absolute', top: 10, right: 10 }}>AI Analyzed</Tag>
+                                            </div>
                                         )}
 
                                         <Alert 
