@@ -44,6 +44,7 @@ import {
   ClockCircleOutlined
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
+import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
 import Footer from "../../components/common/Footer"; 
 import { getAppointmentsByDateAPI, createAiDiagnosisAPI, getAiDiagnosisResultAPI, finishExaminationAPI, startExaminationAPI, getConsultationDetailAPI } from '../../services/doctorService';
 import useAuth from '../../hooks/useAuth';
@@ -212,7 +213,6 @@ export default function ExaminationPage() {
 
   const handleAIAssist = () => {
     form.validateFields().then(async values => {
-          console.log('Input Values (AI Assist):', values);
           setUseAI(true);
           setViewState('result');
           setIsAILoading(true);
@@ -257,7 +257,6 @@ export default function ExaminationPage() {
                           
                           const aiResData = res.data.data;
 
-                          // Format images from base64 if needed
                           const formattedImages = (aiResData.images || []).map(img => {
                               if (img && !img.startsWith('http') && !img.startsWith('data:')) {
                                   return `data:image/jpeg;base64,${img}`;
@@ -266,23 +265,29 @@ export default function ExaminationPage() {
                           });
                           
                           setAiResult({
-                              diagnoses: (aiResData.diseases || []).map(d => ({
-                                  name: d.diseaseName,
-                                  probability: Math.round(d.accuracy * 100),
-                                  severity: "Tiềm năng"
-                              })),
-                              explanation: aiResData.suggestedDiagnosis || "AI không thể cung cấp lời giải thích chi tiết vào lúc này.",
+                              diagnoses: (aiResData.diseases || []).map(d => {
+                                  // Chống lỗi nhân lố 100%: 
+                                  // Nếu accuracy > 1 (ví dụ 49.92), giữ nguyên. 
+                                  // Nếu accuracy <= 1 (ví dụ 0.4992), nhân 100.
+                                  const prob = d.accuracy > 1 ? d.accuracy : d.accuracy * 100;
+                                  return {
+                                      name: d.diseaseName,
+                                      probability: Math.round(prob),
+                                      severity: "Tiềm năng"
+                                  };
+                              }),
+                              explanation: aiResData.suggestedDiagnosis || "Chẩn đoán hình ảnh AI",
                               severityLevel: aiResData.severityLevel || "medium",
                               analyzedImage: imageUrl,
-                              aiImages: formattedImages, // [Bbox Image, Cropped Image]
+                              aiImages: formattedImages, 
                               advice: aiResData.aiAdvice || "Cần theo dõi thêm và kết hợp chỉ định y khoa."
                           });
 
                           resultForm.setFieldsValue({
-                              finalDiagnosis: aiResData.diseases?.[0]?.diseaseName || "",
+                              finalDiagnosis: aiResData.suggestedDiagnosis || aiResData.diseases?.[0]?.diseaseName || "",
                               department: "dermatology",
                               doctorAdvice: aiResData.aiAdvice || "",
-                              currentCondition: aiResData.suggestedDiagnosis || values.description || values.symptom
+                              currentCondition: values.description || values.symptom
                           });
                       }
                   } catch (e) {
@@ -308,12 +313,9 @@ export default function ExaminationPage() {
 
   const handleManualDiagnose = () => {
       form.validateFields().then(values => {
-          console.log('Input Values (Manual):', values);
           setUseAI(false);
           setViewState('result');
-          
           resultForm.resetFields(); 
-
           resultForm.setFieldsValue({
               department: "dermatology",
               currentCondition: values.description || values.symptom || ""
@@ -323,7 +325,6 @@ export default function ExaminationPage() {
       });
   };
   const onFinishResult = async (values) => {
-      console.log('Final Result:', values);
       try {
           if (!consultationId) {
              message.error("Lỗi: Không tìm thấy phiên khám bệnh.");
@@ -487,7 +488,6 @@ export default function ExaminationPage() {
                                                 </div>
                                             </div>
                                         )}
-                                        {/* <Button type="dashed" icon={<HistoryOutlined />} block>Xem lịch sử khám cũ</Button> */}
                                     </div>
                                 </Card>
                             </Col>
@@ -580,7 +580,12 @@ export default function ExaminationPage() {
                                             style={{ marginBottom: 20, fontWeight: 'bold' }}
                                         />
 
-                                        <Title level={5}>Chẩn đoán có khả năng cao nhất:</Title>
+                                        <Title level={5}>Chẩn đoán hình ảnh AI:</Title>
+                                        <div style={{ marginBottom: 16 }}>
+                                            <Tag color="blue" style={{ fontSize: 14, padding: '4px 12px' }}>{aiResult.explanation}</Tag>
+                                        </div>
+
+                                        <Title level={5}>Xác suất chi tiết:</Title>
                                         <List
                                             dataSource={aiResult.diagnoses}
                                             renderItem={item => (
@@ -593,19 +598,14 @@ export default function ExaminationPage() {
                                                 </List.Item>
                                             )}
                                         />
-
-                                        <div style={{ marginTop: 20 }}>
-                                            <Title level={5}>Giải thích:</Title>
-                                            <Paragraph type="secondary" style={{ background: '#f5f7fa', padding: 12, borderRadius: 8 }}>
-                                                {aiResult.explanation}
-                                            </Paragraph>
-                                        </div>
                                         
                                         <div style={{ marginTop: 20 }}>
-                                            <Title level={5}>Lời khuyên đề xuất:</Title>
-                                            <Paragraph>
-                                                <CheckCircleOutlined style={{ color: '#52c41a' }} /> {aiResult.advice}
-                                            </Paragraph>
+                                            <Title level={5}>Tư vấn AI chuyên sâu:</Title>
+                                            <div className="ai-advice-container" style={{ background: '#f5f7fa', padding: 16, borderRadius: 8, borderLeft: '4px solid #1677ff' }}>
+                                                <ReactMarkdown>
+                                                    {aiResult.advice}
+                                                </ReactMarkdown>
+                                            </div>
                                         </div>
                                     </>
                                 ) : (
@@ -616,7 +616,7 @@ export default function ExaminationPage() {
                             </Card>
                         </Col>
                         )}
-                        <Col xs={24} lg={useAI ? 14 : 16} xl={useAI ? 14 : 14}>
+                        <Col xs={24} lg={useAI ? 14 : 16}>
                             <Card 
                                 title={<><FileProtectOutlined style={{ color: '#52c41a', marginRight: 8 }} /> Kết luận & Kê đơn của Bác sĩ</>}
                                 style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
@@ -637,12 +637,6 @@ export default function ExaminationPage() {
                                                 <Select size="large" placeholder="Chọn chuyên khoa" options={[
                                                     { value: 'dermatology', label: 'Da liễu' },
                                                     { value: 'general_medicine', label: 'Đa khoa' },
-                                                    { value: 'endocrinology', label: 'Nội tiết' },
-                                                    { value: 'ent', label: 'Tai mũi họng' },
-                                                    { value: 'gastroenterology', label: 'Tiêu hoá' },
-                                                    { value: 'cardiology', label: 'Tim mạch' },
-                                                    { value: 'dentomaxillofacial', label: 'Răng hàm mặt' },
-                                                    { value: 'ophthalmology', label: 'Mắt' },
                                                 ]} />
                                             </Form.Item>
                                         </Col>
@@ -663,38 +657,20 @@ export default function ExaminationPage() {
                                                     name={[name, 'name']}
                                                     rules={[{ required: true, message: 'Nhập tên thuốc' }]}
                                                 >
-                                                    <Input placeholder="Tên thuốc" style={{ width: 200 }} />
+                                                    <Input placeholder="Tên thuốc" style={{ width: 180 }} />
                                                 </Form.Item>
-                                                <Form.Item
-                                                    {...restField}
-                                                    name={[name, 'quantity']}
-                                                >
-                                                    <InputNumber min={1} placeholder="SL" style={{ width: 60 }} />
-                                                </Form.Item>
-                                                <Form.Item
-                                                    {...restField}
-                                                    name={[name, 'usage']}
-                                                >
-                                                    <Input placeholder="Cách dùng (Sáng/Chiều...)" style={{ width: 250 }} />
-                                                </Form.Item>
+                                                <Form.Item {...restField} name={[name, 'quantity']}><InputNumber min={1} style={{ width: 60 }} /></Form.Item>
+                                                <Form.Item {...restField} name={[name, 'usage']}><Input placeholder="Cách dùng" style={{ width: 220 }} /></Form.Item>
                                                 <DeleteOutlined onClick={() => remove(name)} style={{ color: 'red' }} />
                                                 </Space>
                                             ))}
-                                            <Form.Item>
-                                                <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                                                    Thêm thuốc
-                                                </Button>
-                                            </Form.Item>
+                                            <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>Thêm thuốc</Button>
                                             </>
                                         )}
                                     </Form.List>
 
                                     <Form.Item label="Lời khuyên / Dặn dò" name="doctorAdvice">
                                         <TextArea rows={3} />
-                                    </Form.Item>
-
-                                    <Form.Item label="Hẹn tái khám" name="reExamDate">
-                                        <Input type="date" style={{ width: 200 }} />
                                     </Form.Item>
 
                                     <Divider />
@@ -714,6 +690,21 @@ export default function ExaminationPage() {
         )}
       </Content>
       <Footer />
+      <style>{`
+        .ai-advice-container h1, .ai-advice-container h2, .ai-advice-container h3 {
+            color: #1677ff;
+            margin-top: 16px;
+            font-size: 16px;
+        }
+        .ai-advice-container p {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        .ai-advice-container ul, .ai-advice-container ol {
+            padding-left: 20px;
+            margin-bottom: 12px;
+        }
+      `}</style>
     </Layout>
   );
 }
