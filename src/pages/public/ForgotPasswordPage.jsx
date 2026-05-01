@@ -3,26 +3,23 @@ import {
   Row, Col, Image, message 
 } from 'antd';
 import { 
-  MailOutlined, ArrowLeftOutlined
+  MailOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { forgotPasswordAPI } from '../../services/authService';
 
 const { Header, Content } = Layout;
-const { Title, Text, Link } = Typography;
+const { Title, Text } = Typography;
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const primaryColor = '#1677ff';
-  
   const btnPrimaryStyle = {
     height: '50px', padding: '0 32px', borderRadius: '25px',
     fontSize: '16px', fontWeight: '600', background: '#1677ff', border: 'none',
-    boxShadow: '0 10px 20px rgba(22, 119, 255, 0.2)', color: '#fff',
-    width: '100%'
+    boxShadow: '0 10px 20px rgba(22, 119, 255, 0.2)', color: '#fff'
   };
 
   const inputStyle = {
@@ -67,6 +64,15 @@ export default function ForgotPasswordPage() {
             style={{ height: '40px', objectFit: 'contain' }} 
           />
         </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <Button className="hide-on-mobile" type="text" style={{ fontSize: '16px', fontWeight: '600', color: '#1677ff' }} onClick={() => navigate('/login')}>
+                Đăng nhập
+            </Button>
+            <Button type="primary" style={btnPrimaryStyle} onClick={() => navigate('/register')}>
+                Đăng ký
+            </Button>
+        </div>
       </Header>
 
       <Content>
@@ -101,10 +107,7 @@ export default function ForgotPasswordPage() {
           }}>
             <div style={{ maxWidth: 420, width: '100%', margin: '0 auto' }}>
               
-              <div style={{ marginBottom: 30 }}>
-                <Link onClick={() => navigate('/login')} style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#6b7280', marginBottom: 20 }}>
-                  <ArrowLeftOutlined /> Quay lại đăng nhập
-                </Link>
+              <div style={{ marginBottom: 30, textAlign: 'center' }}>
                 <Title level={2} style={{ fontWeight: 800, marginBottom: 10, color: '#1f2937' }}>
                   Quên mật khẩu?
                 </Title>
@@ -140,6 +143,7 @@ export default function ForgotPasswordPage() {
                     htmlType="submit" 
                     style={btnPrimaryStyle}
                     loading={loading} 
+                    block
                   >
                     Gửi yêu cầu
                   </Button>
@@ -149,6 +153,12 @@ export default function ForgotPasswordPage() {
           </Col>
         </Row>
       </Content>
+
+      <style>{`
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
+        }
+      `}</style>
     </Layout>
   );
 }

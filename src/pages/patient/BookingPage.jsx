@@ -22,7 +22,7 @@ import { getDoctorsAPI } from '../../services/doctorService';
 import useAuth from '../../hooks/useAuth';
 
 
-const { Header, Content, Sider } = Layout;
+const { Header, Content } = Layout; 
 const { Title, Text , Paragraph} = Typography;
 const { Panel } = Collapse;
 const { Search } = Input;
@@ -144,7 +144,7 @@ export default function BookingPage() {
             { key: "3", label: "Đặt lịch khám" },
             { key: "4", label: "Lịch khám của bản thân" },
           ]}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555' }}
+          style={{ fontSize: 16, fontWeight: 500, color: '#555', flex: 1, justifyContent: 'center' }}
           onClick={({ key }) => {
             switch (key) {
               case "1": navigate('/patient/dashboard'); break;
@@ -157,24 +157,24 @@ export default function BookingPage() {
         />
         <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.firstName + ' ' + user.lastName}</span>
-            <Avatar size={36} icon={<UserOutlined />} />
+            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }} className="hide-on-mobile">{user?.firstName + ' ' + user?.lastName}</span>
+            <Avatar size={36} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
           </div>
         </Dropdown>
       </Header>
 
       <Content style={{ padding: "40px 60px" }}>
-        <Layout style={{ background: '#f5f7fa' }}>
+        <Row gutter={[24, 24]}>
           
-          <Sider width={280} theme="light" style={{ background: '#f5f7fa', paddingRight: 24 }}>
+          <Col xs={24} md={8} lg={6} xl={5}>
             <div style={{ marginTop: 24 }}>
               <Search 
-                    placeholder="Tìm kiếm theo tên bác sĩ..." 
-                    allowClear 
-                    onSearch={handleSearch} 
-                    style={{ width: 250, marginBottom: 16 }} 
-                />
-              </div>
+                  placeholder="Tìm kiếm theo tên bác sĩ..." 
+                  allowClear 
+                  onSearch={handleSearch} 
+                  style={{ width: '100%', marginBottom: 16 }} 
+              />
+            </div>
             <div style={{ background: '#fff', padding: 16, borderRadius: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <Text strong style={{ fontSize: 16 }}>Lọc</Text>
@@ -186,7 +186,7 @@ export default function BookingPage() {
                 <Panel header={<Text strong>Chuyên khoa</Text>} key="1">
                   <Checkbox.Group value={selectedDepartments} onChange={handleDepartmentChange} style={{ width: '100%' }}>
                     <Space direction="vertical" style={{ width: '100%' }}>
-                      <Checkbox value="dermatology">Da liễu</Checkbox>
+                      <Checkbox value="Dermatology">Da liễu</Checkbox>
                       <Checkbox value="cardiology">Tim mạch</Checkbox>
                       <Checkbox value="pediatrics">Nhi khoa</Checkbox>
                       <Checkbox value="gastroenterology">Tiêu hóa</Checkbox>
@@ -195,24 +195,13 @@ export default function BookingPage() {
                     </Space>
                   </Checkbox.Group>
                 </Panel>
-                {/* <Panel header={<Text strong>Giới tính bác sĩ</Text>} key="2">
-                   
-                  <Checkbox.Group>
-                    <Space direction="vertical">
-                      <Checkbox value="MALE">Nam</Checkbox>
-                      <Checkbox value="FEMALE">Nữ</Checkbox>
-                    </Space>
-                  </Checkbox.Group>
-                </Panel> */}
               </Collapse>
             </div>
-            
+          </Col>
 
-          </Sider>
-
-          <Content>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Title level={4} style={{ marginBottom: 16 }}>
+          <Col xs={24} md={16} lg={18} xl={19}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 16 }}>
+              <Title level={4} style={{ marginBottom: 0 }}>
                 Danh sách Bác sĩ ({totalDoctors})
               </Title>
               <Radio.Group value={viewMode} onChange={(e) => setViewMode(e.target.value)} buttonStyle="solid">
@@ -244,12 +233,12 @@ export default function BookingPage() {
                     hoverable
                   >
                     {viewMode === 'list' ? (
-                    <Row gutter={16}>
-                      <Col span={4} style={{ textAlign: 'center' }}>
-                        <Avatar size={160} src={doctor.avatarUrl} icon={<UserOutlined />} />
+                    <Row gutter={[16, 16]} align="middle">
+                      <Col xs={24} sm={8} md={6} lg={4} style={{ textAlign: 'center' }}>
+                        <Avatar size={{ xs: 100, sm: 120, md: 140, lg: 160 }} src={doctor.avatarUrl} icon={<UserOutlined />} />
                       </Col>
                       
-                      <Col span={20}>
+                      <Col xs={24} sm={16} md={18} lg={20}>
                         <Title level={5} style={{ color: '#1677ff', cursor: 'pointer', margin: 0, fontSize: 20 }}>
                                 {doctor.lastName} {doctor.firstName}
                             </Title>
@@ -259,7 +248,7 @@ export default function BookingPage() {
                             
                             <Text strong style={{ display: 'block', marginTop: 10, fontSize: 15 }}>
                                 <MedicineBoxOutlined style={{ color: '#1677ff', marginRight: 8 }}/> 
-                                Khoa: {doctor.department == "dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
+                                Khoa: {doctor.department == "Dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
                             </Text>
 
                             <Paragraph type="secondary" style={{ marginTop: 10, marginBottom: 0 }}>
@@ -282,7 +271,6 @@ export default function BookingPage() {
                             Đặt khám ngay
                           </Button>
                         </div>
-
                       </Col>
                     </Row>
                     ) : (
@@ -297,7 +285,7 @@ export default function BookingPage() {
                             
                             <Text strong style={{ fontSize: 14, marginBottom: 8 }}>
                                 <MedicineBoxOutlined style={{ color: '#1677ff', marginRight: 4 }}/> 
-                                {doctor.department == "dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
+                                {doctor.department == "Dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
                             </Text>
 
                             <Paragraph 
@@ -323,8 +311,8 @@ export default function BookingPage() {
               )}
             />
             </Spin>
-          </Content>
-        </Layout>
+          </Col>
+        </Row>
       </Content>
       
       <Footer /> 
@@ -332,6 +320,12 @@ export default function BookingPage() {
       <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000 }}>
         <ChatBotIcon />
       </div>
+
+      <style>{`
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
+        }
+      `}</style>
     </Layout>
   );
 }

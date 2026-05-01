@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
-  Layout, Menu, Avatar, Typography, Card, Button, Row, Col,Image
-,  Space, Select, Modal, Form, Input, DatePicker, Dropdown ,Descriptions,Tag, Pagination,message,Spin
+  Layout, Menu, Avatar, Typography, Card, Button, Row, Col, Image, 
+  Space, Select, Modal, Form, Input, DatePicker, Dropdown, Descriptions, Tag, Pagination, message, Spin, Divider
 } from "antd";
 import { 
   UserOutlined, 
@@ -12,7 +12,7 @@ import {
   HomeOutlined, 
   IdcardOutlined, 
   ScheduleOutlined,
-  LogoutOutlined ,
+  LogoutOutlined,
   SmileOutlined, 
   TeamOutlined, 
   LeftOutlined,
@@ -23,8 +23,10 @@ import Footer from '../../components/common/Footer';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { getUserInfoAPI, updateUserInfoAPI, getHistoryConsultationsAPI } from '../../services/userService';
+import useAuth from '../../hooks/useAuth';
+
 dayjs.extend(customParseFormat);
-const { Header, Content, Sider } = Layout;
+const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 const { Option } = Select;
 
@@ -34,10 +36,10 @@ const genderDisplayMap = {
   OTHER: "Khác"
 };
 
-
 export default function PersonalPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth(); 
 
   const [form] = Form.useForm();
 
@@ -45,6 +47,10 @@ export default function PersonalPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [dateRange, setDateRange] = useState(null);
+  const [selectedDept, setSelectedDept] = useState(null);
+  const [sortOrder, setSortOrder] = useState('newest'); 
 
   const [consultations, setConsultations] = useState([]);
   const [loadingConsultations, setLoadingConsultations] = useState(false);
@@ -55,16 +61,15 @@ export default function PersonalPage() {
   const [selectedConsultation, setSelectedConsultation] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   
-
   useEffect(() => {
     fetchUserProfile();
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
     if (userData?.id) {
         fetchUserConsulations();
     }
-  }, [userData?.id, currentPage]);
+  }, [userData?.id, currentPage, dateRange, selectedDept, sortOrder]);
 
   useEffect(() => {
       if (userData && location.state?.openEditModal) {
@@ -91,11 +96,23 @@ export default function PersonalPage() {
   const fetchUserConsulations = async () => {
     setLoadingConsultations(true);
     try {
-      const res = await getHistoryConsultationsAPI(userData.id, { 
+      const params = { 
           page: currentPage, 
           take: pageSize,
-          sortDirection: 'DESC' 
-      });
+          sortDirection: sortOrder === 'newest' ? 'DESC' : 'ASC' 
+      };
+
+      if (selectedDept && selectedDept !== 'all') {
+          params.department = selectedDept; 
+      }
+
+      if (dateRange && dateRange[0] && dateRange[1]) {
+          params.startDate = dateRange[0].format('YYYY-MM-DD');
+          params.endDate = dateRange[1].format('YYYY-MM-DD');
+      }
+
+      const res = await getHistoryConsultationsAPI(userData.id, params);
+      
       if (res.data?.success) {
         setConsultations(res.data.data.data || []);
         setTotalConsultations(res.data.data.meta?.itemCount || 0);
@@ -108,8 +125,8 @@ export default function PersonalPage() {
     }
   };
 
-  const handleViewDetail = async (id) => {
-      setSelectedConsultation(id);
+  const handleViewDetail = async (apt) => {
+      setSelectedConsultation(apt);
   };
 
   const showModal = (dataToEdit = userData) => {
@@ -168,11 +185,9 @@ export default function PersonalPage() {
     }
   };
 
-
   const handleCancel = () => {
     setIsModalOpen(false);
   };
-
   
   const renderInfoItem = (icon, label, value) => (
     <div style={{ marginBottom: 12 }}>
@@ -188,26 +203,20 @@ export default function PersonalPage() {
 
   const handleSignOut = () => {
       localStorage.removeItem('accessToken');
+      if (logout) logout();
       message.success("Đã đăng xuất!");
       navigate('/login');
     };
+
   const menuItems = [
     {
       key: '1',
-      label: (
-        <a onClick={() => navigate('/patient/personal')}>
-          Thông tin cá nhân
-        </a>
-      ),
+      label: (<a onClick={() => navigate('/patient/personal')}>Thông tin cá nhân</a>),
       icon: <UserOutlined />,
     },
     {
       key: '2',
-      label: (
-        <a onClick={handleSignOut}>
-          Đăng xuất
-        </a>
-      ),
+      label: (<a onClick={handleSignOut}>Đăng xuất</a>),
       icon: <LogoutOutlined />,
       danger: true,
     }
@@ -223,7 +232,8 @@ export default function PersonalPage() {
 
   if (!userData) return null;
 
-  const fullName = `${userData.firstName || ''} ${userData.lastName || ''} `.trim();
+  const fullName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+  
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
       <Header
@@ -253,7 +263,7 @@ export default function PersonalPage() {
             { key: "3", label: "Đặt lịch khám" },
             { key: "4", label: "Lịch khám của bản thân" },
           ]}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555' }}
+          style={{ fontSize: 16, fontWeight: 500, color: '#555', flex: 1, justifyContent: 'center' }}
           onClick={({ key }) => {
             switch (key) {
               case "1": navigate('/patient/dashboard'); break;
@@ -266,142 +276,159 @@ export default function PersonalPage() {
         />
         <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{fullName}</span>
-            <Avatar size={36} icon={<UserOutlined />} />
+            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }} className="hide-on-mobile">{fullName}</span>
+            <Avatar size={36} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
           </div>
         </Dropdown>
       </Header>
 
       <Content style={{ padding: "40px 60px" }}>
-        <Layout>
-          <Sider width={320} theme="light" style={{ borderRight: '1px solid #f0f0f0', padding: '20px 0' }}>
-            <div style={{ padding: '0 24px 24px 24px', textAlign: 'center', borderBottom: '1px solid #f0f0f0', marginBottom: 24 }}>
-              <Avatar size={100} src={userData.avatarUrl} icon={<UserOutlined />} style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}/>
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 16 }}>
-                <Title level={4} style={{ margin: 0 }}>{fullName}</Title>
-                <Button type="primary" shape="circle" icon={<EditOutlined />} onClick={() => showModal(userData)} size="middle" />
-              </div>
-              <Tag color="blue" style={{ marginTop: 8 }}>{userData.role}</Tag>
-            </div>
-            
-            <div style={{ padding: '0 30px' }}>
-              {renderInfoItem(<ScheduleOutlined />, "Ngày sinh", userData.dateOfBirth ? dayjs(userData.dateOfBirth).format('DD/MM/YYYY') : null)}
-              {renderInfoItem(<SmileOutlined />, "Giới tính", genderDisplayMap[userData.gender])}
-              {renderInfoItem(<PhoneOutlined />, "Số điện thoại", userData.phoneNumber ? `${userData.phoneCode} ${userData.phoneNumber}` : null)}
-              {renderInfoItem(<MailOutlined />, "Email", userData.email)}
-              {renderInfoItem(<UserOutlined />, "CCCD/CMND", userData.citizenCode)}
-              {renderInfoItem(<IdcardOutlined />, "Mã BHYT", userData.medicalInsurance)}
-              {renderInfoItem(<TeamOutlined />, "Dân tộc", userData.folk)}
-              {renderInfoItem(<HomeOutlined />, "Địa chỉ", userData.address)}
-            </div>
-          </Sider>
-
-          <Content style={{ padding: "30px 40px", position: 'relative' }}>
-            
-            {selectedConsultation === null ? (
-              
-              <>
-                <div style={{ 
-                  marginBottom: 24, 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center', 
-                  flexWrap: 'wrap', 
-                  gap: 16 
-                }}>
-                  <Title level={3} style={{ margin: 0, color: '#1677ff', whiteSpace: 'nowrap' }}>
-                     Hồ sơ khám bệnh
-                  </Title>
-                  
-                  <Space wrap size="small">
-                    <DatePicker.RangePicker 
-                        placeholder={['Từ ngày', 'Đến ngày']}
-                        style={{ width: 240 }}
-                    />
-
-                    <Select
-                        placeholder="Chuyên khoa"
-                        style={{ width: 180 }}
-                        options={[
-                            { value: 'all', label: 'Tất cả chuyên khoa' },
-                            { value: 'cardiology', label: 'Tim mạch' },
-                            { value: 'dermatology', label: 'Da liễu' },
-                        ]}
-                        allowClear
-                    />
-
-                    <Select
-                        defaultValue="newest"
-                        style={{ width: 160 }}
-                        options={[
-                            { value: 'newest', label: 'Mới nhất trước' },
-                            { value: 'oldest', label: 'Cũ nhất trước' },
-                        ]}
-                    />
-                  </Space>
+        <Row gutter={[24, 24]}>
+          
+          <Col xs={24} md={8} lg={7} xl={6}>
+            <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #f0f0f0', padding: '30px 0', height: '100%' }}>
+              <div style={{ padding: '0 24px 24px 24px', textAlign: 'center', borderBottom: '1px solid #f0f0f0', marginBottom: 24 }}>
+                <Avatar size={100} src={userData.avatarUrl} icon={<UserOutlined />} style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}/>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 16 }}>
+                  <Title level={4} style={{ margin: 0 }}>{fullName}</Title>
+                  <Button type="primary" shape="circle" icon={<EditOutlined />} onClick={() => showModal(userData)} size="middle" />
                 </div>
+                <Tag color="blue" style={{ marginTop: 8 }}>{userData.role}</Tag>
+              </div>
+              
+              <div style={{ padding: '0 30px' }}>
+                {renderInfoItem(<ScheduleOutlined />, "Ngày sinh", userData.dateOfBirth ? dayjs(userData.dateOfBirth).format('DD/MM/YYYY') : null)}
+                {renderInfoItem(<SmileOutlined />, "Giới tính", genderDisplayMap[userData.gender])}
+                {renderInfoItem(<PhoneOutlined />, "Số điện thoại", userData.phoneNumber ? `${userData.phoneCode} ${userData.phoneNumber}` : null)}
+                {renderInfoItem(<MailOutlined />, "Email", userData.email)}
+                {renderInfoItem(<UserOutlined />, "CCCD/CMND", userData.citizenCode)}
+                {renderInfoItem(<IdcardOutlined />, "Mã BHYT", userData.medicalInsurance)}
+                {renderInfoItem(<TeamOutlined />, "Dân tộc", userData.folk)}
+                {renderInfoItem(<HomeOutlined />, "Địa chỉ", userData.address)}
+              </div>
+            </div>
+          </Col>
 
-                <Spin spinning={loadingConsultations}>
-                <Space direction="vertical" style={{ width: '100%',minHeight: 650 }} size="large">
-                  {consultations.length === 0 && !loadingConsultations ? (
-                        <div style={{ textAlign: 'center', marginTop: 50, color: '#999' }}>Chưa có hồ sơ khám bệnh nào.</div>
-                    ) : (
-                        consultations.map(apt => (
-                            <Card 
-                            key={apt.id} 
-                            hoverable
-                            variant="borderless" 
-                            style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", transition: 'all 0.3s', border: '1px solid #f0f0f0' }}
-                            >
-                            <Row gutter={24} align="middle">
-                                <Col xs={24} md={10}>
-                                    <Space align="start">
-                                    <Avatar size={64} icon={<UserOutlined />} />
-                                    <div>
-                                        <Text strong style={{ fontSize: 16, color: '#1677ff' }}>{apt.doctorName}</Text>
-                                        <div style={{ marginBottom: 6, marginTop: 6 }}><Tag color="blue" >{apt.department}</Tag></div>
+          <Col xs={24} md={16} lg={17} xl={18}>
+            <div style={{ position: 'relative' }}>
+              
+              {selectedConsultation === null ? (
+                <>
+                  <div style={{ 
+                    marginBottom: 24, 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    flexWrap: 'wrap', 
+                    gap: 16 
+                  }}>
+                    <Title level={3} style={{ margin: 0, color: '#1677ff', whiteSpace: 'nowrap' }}>
+                        Hồ sơ khám bệnh
+                    </Title>
+                    
+                    <Space wrap size="small">
+                      <DatePicker.RangePicker 
+                          placeholder={['Từ ngày', 'Đến ngày']}
+                          style={{ width: 240, maxWidth: '100%' }} 
+                          value={dateRange}
+                          onChange={(dates) => {
+                              setDateRange(dates);
+                              setCurrentPage(1); 
+                          }}
+                      />
 
-                                        <Space direction="vertical" size={0}>
-                                        <Space size="small" split={<Text type="secondary">|</Text>}>
-                                            <Text type="secondary" style={{ fontSize: 14 }}><CalendarOutlined /> {dayjs(apt.date).format('DD/MM/YYYY')}</Text>
-                                            <Text type="secondary" style={{ fontSize: 14 }}><ScheduleOutlined /> {apt.from?.substring(0,5)} - {apt.to?.substring(0,5)}</Text>
-                                            <Text type="secondary" style={{ fontSize: 14 }}><HomeOutlined /> {apt.room}</Text>  
+                      <Select
+                          placeholder="Chuyên khoa"
+                          style={{ width: 180, maxWidth: '100%' }}
+                          value={selectedDept}
+                          onChange={(val) => {
+                              setSelectedDept(val);
+                              setCurrentPage(1);
+                          }}
+                          options={[
+                              { value: 'all', label: 'Tất cả chuyên khoa' },
+                              { value: 'cardiology', label: 'Tim mạch' },
+                              { value: 'dermatology', label: 'Da liễu' },
+                          ]}
+                          allowClear
+                      />
+
+                      <Select
+                          style={{ width: 160, maxWidth: '100%' }}
+                          value={sortOrder}
+                          onChange={(val) => {
+                              setSortOrder(val);
+                              setCurrentPage(1);
+                          }}
+                          options={[
+                              { value: 'newest', label: 'Mới nhất trước' },
+                              { value: 'oldest', label: 'Cũ nhất trước' },
+                          ]}
+                      />
+                  </Space>
+                  </div>
+
+                  <Spin spinning={loadingConsultations}>
+                    <Space direction="vertical" style={{ width: '100%', minHeight: 600 }} size="large">
+                      {consultations.length === 0 && !loadingConsultations ? (
+                          <div style={{ textAlign: 'center', marginTop: 50, color: '#999' }}>Chưa có hồ sơ khám bệnh nào.</div>
+                        ) : (
+                            consultations.map(apt => (
+                                <Card 
+                                key={apt.id} 
+                                hoverable
+                                variant="borderless" 
+                                style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", transition: 'all 0.3s', border: '1px solid #f0f0f0' }}
+                                >
+                                <Row gutter={24} align="middle">
+                                    <Col xs={24} md={10}>
+                                        <Space align="start">
+                                        <Avatar size={64} icon={<UserOutlined />} style={{ backgroundColor: '#e6f4ff', color: '#1677ff' }} />
+                                        <div>
+                                            <Text strong style={{ fontSize: 16, color: '#1677ff' }}>{apt.doctorName}</Text>
+                                            <div style={{ marginBottom: 6, marginTop: 6 }}><Tag color="blue" >{apt.department}</Tag></div>
+
+                                            <Space direction="vertical" size={0}>
+                                              <Space size="small" split={<Text type="secondary">|</Text>} wrap>
+                                                  <Text type="secondary" style={{ fontSize: 14 }}><CalendarOutlined /> {dayjs(apt.date).format('DD/MM/YYYY')}</Text>
+                                                  <Text type="secondary" style={{ fontSize: 14 }}><ScheduleOutlined /> {apt.from?.substring(0,5)} - {apt.to?.substring(0,5)}</Text>
+                                                  <Text type="secondary" style={{ fontSize: 14 }}><HomeOutlined /> {apt.room}</Text>  
+                                              </Space>
+                                            </Space>
+                                        </div>
                                         </Space>
-                                        </Space>
-                                    </div>
-                                    </Space>
-                                </Col>
-                                <Col xs={24} md={10}>
-                                    <div style={{ 
-                                    background: '#f5f7fa', padding: '10px 16px', borderRadius: 8, 
-                                    borderLeft: '4px solid #1677ff', height: '100%',
-                                    display: 'flex', flexDirection: 'column', justifyContent: 'center'
-                                    }}>
-                                    <Text strong style={{ fontSize: 12, color: '#888', textTransform: 'uppercase', marginBottom: 4 }}>
-                                        Chẩn đoán sơ bộ:
-                                    </Text>
-                                    <Text strong style={{ color: '#333', fontSize: 15 }}>
-                                        {apt.diseases && apt.diseases.length > 0 ? apt.diseases.join(', ') : 'Chưa cập nhật'}
-                                    </Text>
-                                    </div>
-                                </Col>
-                                <Col xs={24} md={4} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                    <Button 
-                                    type="primary" 
-                                    shape="round"
-                                    onClick={() => handleViewDetail(apt)}
-                                    style={{ minWidth: 110 }}
-                                    >
-                                    Xem chi tiết
-                                    </Button>
-                                </Col>
-                            </Row>
-                            </Card>
-                        ))
-                    )}
-                </Space>
+                                    </Col>
+                                    <Col xs={24} md={10}>
+                                        <div style={{ 
+                                        background: '#f5f7fa', padding: '10px 16px', borderRadius: 8, 
+                                        borderLeft: '4px solid #1677ff', height: '100%', marginTop: '12px',
+                                        display: 'flex', flexDirection: 'column', justifyContent: 'center'
+                                        }}>
+                                        <Text strong style={{ fontSize: 12, color: '#888', textTransform: 'uppercase', marginBottom: 4 }}>
+                                            Chẩn đoán sơ bộ:
+                                        </Text>
+                                        <Text strong style={{ color: '#333', fontSize: 15 }}>
+                                            {apt.diseases && apt.diseases.length > 0 ? apt.diseases.join(', ') : 'Chưa cập nhật'}
+                                        </Text>
+                                        </div>
+                                    </Col>
+                                    <Col xs={24} md={4} style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+                                        <Button 
+                                        type="primary" 
+                                        shape="round"
+                                        onClick={() => handleViewDetail(apt)}
+                                        style={{ minWidth: 110 }}
+                                        >
+                                        Xem chi tiết
+                                        </Button>
+                                    </Col>
+                                </Row>
+                                </Card>
+                            ))
+                        )}
+                    </Space>
 
-                {totalConsultations > 0 && (
+                    {totalConsultations > 0 && (
                         <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
                             <Pagination
                                 current={currentPage}
@@ -412,109 +439,129 @@ export default function PersonalPage() {
                             />
                         </div>
                     )}
-                </Spin>
-              </>
+                  </Spin>
+                </>
 
-            ) : (
+              ) : (
 
-              <>
-                <Button 
-                  type="link" 
-                  icon={<LeftOutlined />} 
-                  style={{ padding: 0, marginBottom: 16 }}
-                  onClick={() => setSelectedConsultation(null)} 
-                >
-                  Quay lại danh sách
-                </Button>
-                <Spin spinning={loadingDetail}>
-                {selectedConsultation && (
-                        <Card variant="borderless" style={{ border: '1px solid #f0f0f0' }}>
-                        <Title level={4} style={{marginTop: 0, marginBottom: 24}}>
-                            Chi tiết hồ sơ khám bệnh
-                        </Title>
-                        <Descriptions bordered column={1} labelStyle={{ width: '30%', background: '#fafafa', fontWeight: 500 }}>
-                            <Descriptions.Item label="Bác sĩ">
-                            <Space>
-                                <Avatar icon={<UserOutlined />} />
-                                <Text strong style={{ fontSize: 16, color: '#1677ff' }}>{selectedConsultation.doctorName}</Text>
-                            </Space>
-                            </Descriptions.Item>
-                            <Descriptions.Item label="Chuyên khoa">{selectedConsultation.department}</Descriptions.Item>
-                            <Descriptions.Item label="Ngày khám">{dayjs(selectedConsultation.date).format('DD/MM/YYYY')}</Descriptions.Item>
-                            <Descriptions.Item label="Giờ khám">{selectedConsultation.from?.substring(0,5)} - {selectedConsultation.to?.substring(0,5)}</Descriptions.Item>
-                            <Descriptions.Item label="Phòng khám">{selectedConsultation.room}</Descriptions.Item>
-                            
-                            <Descriptions.Item label="Kết luận bác sĩ">
-                            <Text strong>Chẩn đoán: {selectedConsultation.diseases?.join(', ') || 'Chưa cập nhật'}</Text>
-                            <br />
-                            <Text type="primary" style={{ whiteSpace: 'pre-wrap' }}>
-                                Mô tả triệu chứng: {selectedConsultation.symptoms || 'Không có mô tả'}
-                            </Text>
-                            </Descriptions.Item>
+                <>
+                  <Button 
+                    type="link" 
+                    icon={<LeftOutlined />} 
+                    style={{ padding: 0, marginBottom: 16 }}
+                    onClick={() => setSelectedConsultation(null)} 
+                  >
+                    Quay lại danh sách
+                  </Button>
+                  <Spin spinning={loadingDetail}>
+                  {selectedConsultation && (
+                          <Card variant="borderless" style={{ border: '1px solid #f0f0f0', borderRadius: 12 }}>
+                          <Title level={4} style={{marginTop: 0, marginBottom: 24}}>
+                              Chi tiết hồ sơ khám bệnh
+                          </Title>
+                          <Descriptions bordered column={1} labelStyle={{ width: '30%', background: '#fafafa', fontWeight: 500 }}>
+                              <Descriptions.Item label="Bác sĩ">
+                              <Space>
+                                  <Avatar icon={<UserOutlined />} />
+                                  <Text strong style={{ fontSize: 16, color: '#1677ff' }}>{selectedConsultation.doctorName}</Text>
+                              </Space>
+                              </Descriptions.Item>
+                              <Descriptions.Item label="Chuyên khoa">{selectedConsultation.department}</Descriptions.Item>
+                              <Descriptions.Item label="Ngày khám">{dayjs(selectedConsultation.date).format('DD/MM/YYYY')}</Descriptions.Item>
+                              <Descriptions.Item label="Giờ khám">{selectedConsultation.from?.substring(0,5)} - {selectedConsultation.to?.substring(0,5)}</Descriptions.Item>
+                              <Descriptions.Item label="Phòng khám">{selectedConsultation.room}</Descriptions.Item>
+                              
+                              <Descriptions.Item label="Kết luận bác sĩ">
+                              <Text strong>Chẩn đoán: {selectedConsultation.diseases?.join(', ') || 'Chưa cập nhật'}</Text>
+                              <br />
+                              <Text type="primary" style={{ whiteSpace: 'pre-wrap' }}>
+                                  Mô tả triệu chứng: {selectedConsultation.symptoms || 'Không có mô tả'}
+                              </Text>
+                              </Descriptions.Item>
 
-                            <Descriptions.Item label="Đơn thuốc">
-                                <Text style={{ whiteSpace: 'pre-wrap' }}>
-                                    {selectedConsultation.prescription || 'Không có đơn thuốc'}
-                                </Text>
-                            </Descriptions.Item>
-
-                            <Descriptions.Item label="Lời khuyên">
-                            <Text type="primary" style={{ whiteSpace: 'pre-wrap' }}>{selectedConsultation.advices || 'Không có lời khuyên'}</Text>
-                            </Descriptions.Item>
-
-                            <Descriptions.Item label="Tệp đính kèm">
-                                {selectedConsultation.images && selectedConsultation.images.length > 0 ? (
-                                    <Image.PreviewGroup>
-                                        <Space size="middle" wrap>
-                                            {selectedConsultation.images.map((img, idx) => (
-                                                <Image
-                                                    key={idx}
-                                                    width={150} 
-                                                    height={150}
-                                                    src={img.base64} 
-                                                    fallback="https://via.placeholder.com/150?text=L%E1%BB%97i"
-                                                    style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #d9d9d9' }}
-                                                />
-                                            ))}
-                                        </Space>
-                                    </Image.PreviewGroup>
+                              <Descriptions.Item label="Đơn thuốc">
+                                {selectedConsultation.prescription && selectedConsultation.prescription.length > 0 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {selectedConsultation.prescription.map((item, index) => (
+                                            <div 
+                                                key={index} 
+                                                style={{ 
+                                                    background: '#fafafa', 
+                                                    padding: '8px 12px', 
+                                                    borderRadius: '6px', 
+                                                    border: '1px solid #f0f0f0' 
+                                                }}
+                                            >
+                                                <Text strong style={{ color: '#1677ff', display: 'block' }}>
+                                                    {index + 1}. {item.medicineName || item.name || 'Tên thuốc'}
+                                                </Text>
+                                                <Text type="secondary" style={{ fontSize: '13px' }}>
+                                                    Liều lượng: <Text strong style={{ color: '#555' }}>{item.dosage || item.quantity || '-'}</Text> 
+                                                    <Divider type="vertical" /> 
+                                                    Cách dùng: <Text strong style={{ color: '#555' }}>{item.usage || item.durationDays || item.duration || '-'}</Text>
+                                                </Text>
+                                            </div>
+                                        ))}
+                                    </div>
                                 ) : (
-                                    <Text type="secondary">Không có hình ảnh đính kèm</Text>
+                                    <Text type="secondary" style={{ fontStyle: 'italic' }}>Không có đơn thuốc</Text>
                                 )}
                             </Descriptions.Item>
-                        </Descriptions> 
-                        </Card>
-                    )}
-                </Spin>
-              </>
-            )}
-          </Content>
-        </Layout>
+
+                              <Descriptions.Item label="Lời khuyên">
+                              <Text type="primary" style={{ whiteSpace: 'pre-wrap' }}>{selectedConsultation.advices || 'Không có lời khuyên'}</Text>
+                              </Descriptions.Item>
+
+                              <Descriptions.Item label="Tệp đính kèm">
+                                  {selectedConsultation.images && selectedConsultation.images.length > 0 ? (
+                                      <Image.PreviewGroup>
+                                          <Space size="middle" wrap>
+                                              {selectedConsultation.images.map((img, idx) => (
+                                                  <Image
+                                                      key={idx}
+                                                      width={120} 
+                                                      height={120}
+                                                      src={img.base64} 
+                                                      fallback="https://via.placeholder.com/150?text=L%E1%BB%97i"
+                                                      style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #d9d9d9' }}
+                                                  />
+                                              ))}
+                                          </Space>
+                                      </Image.PreviewGroup>
+                                  ) : (
+                                      <Text type="secondary">Không có hình ảnh đính kèm</Text>
+                                  )}
+                              </Descriptions.Item>
+                          </Descriptions> 
+                          </Card>
+                      )}
+                  </Spin>
+                </>
+              )}
+            </div>
+          </Col>
+        </Row>
       </Content>
 
       <Modal 
-        title={<Title level={4}>Cập nhật hồ sơ cá nhân</Title>} 
+        title={<Title level={4} style={{ margin: 0 }}>Cập nhật hồ sơ cá nhân</Title>} 
         open={isModalOpen} 
         onOk={handleOk} 
         onCancel={handleCancel}
         confirmLoading={updating}
         okText="Lưu thay đổi"
         cancelText="Hủy"
-        // cancelButtonProps={{ style: { display: isForceUpdate ? 'none' : 'inline-block' } }} 
-        // closable={!isForceUpdate} 
-        // maskClosable={!isForceUpdate} 
-        // keyboard={!isForceUpdate} 
         width={800} 
         centered
       >
         <Form form={form} layout="vertical" style={{ marginTop: 20 }}>
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item name="lastName" label="Họ" rules={[{ required: true, message: 'Vui lòng nhập họ!' }]}>
                 <Input placeholder="Nguyễn Văn" />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item name="firstName" label="Tên" rules={[{ required: true, message: 'Vui lòng nhập tên!' }]}>
                 <Input placeholder="A" />
               </Form.Item>
@@ -522,16 +569,16 @@ export default function PersonalPage() {
           </Row>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item name="email" label="Email" tooltip="Email dùng để đăng nhập, không thể thay đổi.">
                 <Input readOnly style={{ background: '#f5f5f5', color: '#595959', cursor: 'not-allowed' }} />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
                 <Form.Item label="Số điện thoại" required>
                     <Input.Group compact style={{ display: 'flex' }}>
                         <Form.Item name="phoneCode" noStyle>
-                            <Select style={{ width: '30%' }}>
+                            <Select style={{ width: '35%' }}>
                                 <Option value="+84">+84</Option>
                                 <Option value="+1">+1</Option>
                                 <Option value="+44">+44</Option>
@@ -548,8 +595,8 @@ export default function PersonalPage() {
                                 <Option value="+886">+886</Option>
                             </Select>
                         </Form.Item>
-                        <Form.Item name="phoneNumber" noStyle rules={[{ required: true, message: 'Nhập số điện thoại!' }]}>
-                            <Input style={{ width: '70%' }} placeholder="Nhập SĐT" />
+                        <Form.Item name="phoneNumber" noStyle rules={[{ required: true, message: 'Nhập SĐT!' }]}>
+                            <Input style={{ width: '65%' }} placeholder="Nhập SĐT" />
                         </Form.Item>
                     </Input.Group>
                 </Form.Item>
@@ -557,12 +604,12 @@ export default function PersonalPage() {
           </Row>
 
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item name="dateOfBirth" label="Ngày sinh" rules={[{ message: 'Vui lòng chọn ngày sinh!' , required: true }]}>
                 <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày sinh" />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} sm={12}>
               <Form.Item name="gender" label="Giới tính" rules={[{  message: 'Vui lòng chọn giới tính!' , required: true }]}>
                 <Select placeholder="Chọn giới tính">
                   <Option value="MALE">Nam</Option>
@@ -574,17 +621,17 @@ export default function PersonalPage() {
           </Row>
 
           <Row gutter={16}>
-            <Col span={8}>
+            <Col xs={24} md={8}>
               <Form.Item name="citizenCode" label="Số CCCD/CMND" rules={[{  message: 'Vui lòng nhập số CCCD/CMND!' }]}>
                 <Input placeholder="Nhập mã định danh" />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col xs={24} md={8}>
               <Form.Item name="medicalInsurance" label="Mã BHYT" rules={[{  message: 'Vui lòng nhập mã BHYT!' }]}>
                 <Input placeholder="Mã bảo hiểm y tế" />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col xs={24} md={8}>
               <Form.Item name="folk" label="Dân tộc" rules={[{  message: 'Vui lòng nhập dân tộc!' }]}>
                 <Input placeholder="Ví dụ: Kinh" />
               </Form.Item>
@@ -603,6 +650,22 @@ export default function PersonalPage() {
       <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000 }}>
         <ChatBotIcon />
       </div>
+      <style>{`
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
+
+          .ant-picker-dropdown .ant-picker-panels {
+            flex-direction: column !important;
+          }
+          .ant-picker-dropdown {
+            max-width: 100vw !important;
+          }
+          .ant-picker-panel-container {
+            max-width: 100vw;
+            overflow-x: auto;
+          }
+        }
+      `}</style>
     </Layout>
   );
 }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Layout, 
@@ -26,7 +25,8 @@ import {
   List,
   Alert,
   Spin,
-  Table
+  Table,
+  Checkbox
 } from "antd";
 import { 
   UserOutlined, 
@@ -35,7 +35,6 @@ import {
   SaveOutlined,
   MedicineBoxOutlined,
   ArrowLeftOutlined,
-  HistoryOutlined,
   RobotOutlined,
   CheckCircleOutlined,
   FileProtectOutlined,
@@ -75,7 +74,6 @@ export default function ExaminationPage() {
   const [todayPatients, setTodayPatients] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
 
-
   useEffect(() => {
       const fetchTodayPatients = async () => {
           if (activePatient || !user?.id) return;
@@ -98,7 +96,7 @@ export default function ExaminationPage() {
 
                       return {
                           key: apt.id || index,
-                          patientId: apt.patientId, // lưu id để call API
+                          patientId: apt.patientId, 
                           patientName: apt.patientName,
                           age: apt.dateOfBirth ? dayjs().diff(dayjs(apt.dateOfBirth), 'year') : 'N/A',
                           gender: apt.gender === 'MALE' ? 'MALE' : 'FEMALE',
@@ -186,7 +184,7 @@ export default function ExaminationPage() {
       };
 
       fetchConsultationDetail();
-  }, [consultationId]);
+  }, [consultationId, form]);
 
   useEffect(() => {
       if (activePatient && form) {
@@ -409,8 +407,8 @@ export default function ExaminationPage() {
         />
         <Dropdown menu={{ items: menuUserItems }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{"BS. "+ user.firstName + " " + user.lastName}</span>
+             <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{"BS. "+ user?.firstName + " " + user?.lastName}</span>
                 <span style={{ fontSize: 12, color: '#888' }}>Khoa Da liễu</span>
             </div>
             <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
@@ -430,12 +428,13 @@ export default function ExaminationPage() {
                     columns={columns} 
                     loading={loadingList}
                     pagination={false}
+                    scroll={{ x: 800 }}
                     locale={{ emptyText: 'Hôm nay không có ca khám nào đang chờ.' }}
                 />
             </Card>
         ) : (
             <>
-                <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
                     <div>
                         <Breadcrumb items={[{ title: 'Trang chủ' }, { title: 'Lịch đặt khám' }, { title: 'Khám bệnh' }]} style={{ marginBottom: 8 }} />
                         <Title level={3} style={{ margin: 0 }}>
@@ -458,7 +457,6 @@ export default function ExaminationPage() {
                             Quay lại danh sách
                         </Button>
                     )}
-
                 </div>
 
                 {viewState === 'input' && (
@@ -493,18 +491,18 @@ export default function ExaminationPage() {
                             </Col>
 
                             <Col xs={24} lg={18}>
-                                <Card title={<span style={{ color: '#1677ff' }}>1. Thông tin lâm sàng (Cấu trúc)</span>} style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", marginBottom: 24 }}>
-                                    <Row gutter={24}>
-                                        <Col span={12}><Form.Item label="Triệu chứng chính" name="symptom" rules={[{ required: true }]}><Input /></Form.Item></Col>
-                                        <Col span={12}><Form.Item label="Vị trí trên cơ thể" name="location" rules={[{ required: true }]}><Select><Option value="face">Vùng mặt</Option><Option value="neck">Vùng cổ</Option><Option value="arm">Cánh tay / Bàn tay</Option><Option value="body">Thân mình</Option><Option value="leg">Chân</Option></Select></Form.Item></Col>
-                                        <Col span={8}><Form.Item label="Thời gian kéo dài" name="duration"><Input /></Form.Item></Col>
-                                        <Col span={8}><Form.Item label="Đặc điểm tổn thương" name="skinType"><Radio.Group><Radio value="surface">Ngoài da</Radio><Radio value="deep">Dưới da/Sâu</Radio></Radio.Group></Form.Item></Col>
-                                        <Col span={8}><Form.Item label="Mức độ lan rộng" name="severity"><Select><Option value="local">Khu trú</Option><Option value="spread">Lan rộng</Option><Option value="whole">Toàn thân</Option></Select></Form.Item></Col>
-                                        <Col span={12}><Form.Item label="Dị ứng" name="allergy"><Input /></Form.Item></Col>
-                                        <Col span={12}><Form.Item label="Tiền sử bệnh lý" name="history"><Input /></Form.Item></Col>
-                                        <Col span={8}><Form.Item label="Giới tính" name="gender"><Select><Option value="MALE">Nam</Option><Option value="FEMALE">Nữ</Option></Select></Form.Item></Col>
-                                        <Col span={8}><Form.Item label="Tuổi" name="age"><InputNumber style={{ width: '100%' }} /></Form.Item></Col>
-                                        <Col span={8}><Form.Item label="Yếu tố di truyền" name="genetic"><Radio.Group><Radio value="yes">Có</Radio><Radio value="no">Không</Radio></Radio.Group></Form.Item></Col>
+                                <Card title={<span style={{ color: '#1677ff' }}>1. Thông tin lâm sàng </span>} style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", marginBottom: 24 }}>
+                                    <Row gutter={[24, 24]}>
+                                        <Col xs={24} sm={12}><Form.Item label="Triệu chứng chính" name="symptom" rules={[{ required: true }]}><Input /></Form.Item></Col>
+                                        <Col xs={24} sm={12}><Form.Item label="Vị trí trên cơ thể" name="location" rules={[{ required: true }]}><Input /></Form.Item></Col>
+                                        <Col xs={24} sm={8}><Form.Item label="Thời gian kéo dài" name="duration"><Input /></Form.Item></Col>
+                                        <Col xs={24} sm={8}><Form.Item label="Đặc điểm tổn thương" name="skinType"><Checkbox.Group><Checkbox value="surface">Ngoài da</Checkbox><Checkbox value="deep">Dưới da/Sâu</Checkbox></Checkbox.Group></Form.Item></Col>
+                                        <Col xs={24} sm={8}><Form.Item label="Mức độ lan rộng" name="severity"><Select><Option value="local">Khu trú</Option><Option value="spread">Lan rộng</Option><Option value="whole">Toàn thân</Option></Select></Form.Item></Col>
+                                        <Col xs={24} sm={12}><Form.Item label="Dị ứng" name="allergy"><Input /></Form.Item></Col>
+                                        <Col xs={24} sm={12}><Form.Item label="Tiền sử bệnh lý" name="history"><Input /></Form.Item></Col>
+                                        <Col xs={24} sm={8}><Form.Item label="Giới tính" name="gender"><Select><Option value="MALE">Nam</Option><Option value="FEMALE">Nữ</Option></Select></Form.Item></Col>
+                                        <Col xs={24} sm={8}><Form.Item label="Tuổi" name="age"><InputNumber style={{ width: '100%' }} /></Form.Item></Col>
+                                        <Col xs={24} sm={8}><Form.Item label="Yếu tố di truyền" name="genetic"><Radio.Group><Radio value="yes">Có</Radio><Radio value="no">Không</Radio></Radio.Group></Form.Item></Col>
                                     </Row>
                                 </Card>
 
@@ -627,12 +625,12 @@ export default function ExaminationPage() {
                                     onFinish={onFinishResult}
                                 >
                                     <Row gutter={16}>
-                                        <Col span={16}>
+                                        <Col xs={24} sm={16}>
                                             <Form.Item label="Chẩn đoán xác định" name="finalDiagnosis" rules={[{ required: true }]}>
                                                 <Input size="large" style={{ fontWeight: 600, color: '#1677ff' }} />
                                             </Form.Item>
                                         </Col>
-                                        <Col span={8}>
+                                        <Col xs={24} sm={8}>
                                             <Form.Item label="Chuyên khoa" name="department" rules={[{ required: true }]}>
                                                 <Select size="large" placeholder="Chọn chuyên khoa" options={[
                                                     { value: 'dermatology', label: 'Da liễu' },
@@ -651,18 +649,28 @@ export default function ExaminationPage() {
                                         {(fields, { add, remove }) => (
                                             <>
                                             {fields.map(({ key, name, ...restField }) => (
-                                                <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
-                                                <Form.Item
-                                                    {...restField}
-                                                    name={[name, 'name']}
-                                                    rules={[{ required: true, message: 'Nhập tên thuốc' }]}
-                                                >
-                                                    <Input placeholder="Tên thuốc" style={{ width: 180 }} />
-                                                </Form.Item>
-                                                <Form.Item {...restField} name={[name, 'quantity']}><InputNumber min={1} style={{ width: 60 }} /></Form.Item>
-                                                <Form.Item {...restField} name={[name, 'usage']}><Input placeholder="Cách dùng" style={{ width: 220 }} /></Form.Item>
-                                                <DeleteOutlined onClick={() => remove(name)} style={{ color: 'red' }} />
-                                                </Space>
+                                                <div key={key} style={{ background: '#f9f9f9', padding: '12px', borderRadius: '8px', marginBottom: '12px' }}>
+                                                    <Row gutter={[8, 8]} align="middle">
+                                                        <Col xs={24} md={10}>
+                                                            <Form.Item {...restField} name={[name, 'name']} rules={[{ required: true, message: 'Nhập tên' }]} style={{ margin: 0 }}>
+                                                                <Input placeholder="Tên thuốc" style={{ width: '100%' }} />
+                                                            </Form.Item>
+                                                        </Col>
+                                                        <Col xs={12} md={4}>
+                                                            <Form.Item {...restField} name={[name, 'quantity']} style={{ margin: 0 }}>
+                                                                <InputNumber min={1} placeholder="SL" style={{ width: '100%' }} />
+                                                            </Form.Item>
+                                                        </Col>
+                                                        <Col xs={12} md={9}>
+                                                            <Form.Item {...restField} name={[name, 'usage']} style={{ margin: 0 }}>
+                                                                <Input placeholder="Cách dùng (Sáng/Chiều...)" style={{ width: '100%' }} />
+                                                            </Form.Item>
+                                                        </Col>
+                                                        <Col xs={24} md={1} style={{ textAlign: 'right' }}>
+                                                            <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(name)} />
+                                                        </Col>
+                                                    </Row>
+                                                </div>
                                             ))}
                                             <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>Thêm thuốc</Button>
                                             </>
@@ -675,7 +683,7 @@ export default function ExaminationPage() {
 
                                     <Divider />
 
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
                                         <Button size="large" disabled={isAILoading}>In toa thuốc</Button>
                                         <Button type="primary" size="large" icon={<SaveOutlined />} htmlType="submit" disabled={isAILoading}>
                                             Lưu hồ sơ & Kết thúc
@@ -691,6 +699,8 @@ export default function ExaminationPage() {
       </Content>
       <Footer />
       <style>{`
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
         .ai-advice-container h1, .ai-advice-container h2, .ai-advice-container h3 {
             color: #1677ff;
             margin-top: 16px;

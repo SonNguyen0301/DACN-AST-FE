@@ -32,8 +32,7 @@ export default function ResetPasswordPage() {
   const btnPrimaryStyle = {
     height: '50px', padding: '0 32px', borderRadius: '25px',
     fontSize: '16px', fontWeight: '600', background: '#1677ff', border: 'none',
-    boxShadow: '0 10px 20px rgba(22, 119, 255, 0.2)', color: '#fff',
-    width: '100%'
+    boxShadow: '0 10px 20px rgba(22, 119, 255, 0.2)', color: '#fff'
   };
 
   const inputStyle = {
@@ -83,6 +82,15 @@ export default function ResetPasswordPage() {
             style={{ height: '40px', objectFit: 'contain' }} 
           />
         </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <Button className="hide-on-mobile" type="text" style={{ fontSize: '16px', fontWeight: '600', color: '#1677ff' }} onClick={() => navigate('/login')}>
+                Đăng nhập
+            </Button>
+            <Button type="primary" style={btnPrimaryStyle} onClick={() => navigate('/register')}>
+                Đăng ký
+            </Button>
+        </div>
       </Header>
 
       <Content>
@@ -117,7 +125,7 @@ export default function ResetPasswordPage() {
           }}>
             <div style={{ maxWidth: 420, width: '100%', margin: '0 auto' }}>
               
-              <div style={{ marginBottom: 30 }}>
+              <div style={{ marginBottom: 30, textAlign: 'center' }}>
                 <Title level={2} style={{ fontWeight: 800, marginBottom: 10, color: '#1f2937' }}>
                   Đặt lại mật khẩu
                 </Title>
@@ -176,6 +184,7 @@ export default function ResetPasswordPage() {
                     htmlType="submit" 
                     style={btnPrimaryStyle}
                     loading={loading} 
+                    block
                   >
                     Đặt lại mật khẩu
                   </Button>
@@ -185,6 +194,12 @@ export default function ResetPasswordPage() {
           </Col>
         </Row>
       </Content>
+
+      <style>{`
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
+        }
+      `}</style>
     </Layout>
   );
 }

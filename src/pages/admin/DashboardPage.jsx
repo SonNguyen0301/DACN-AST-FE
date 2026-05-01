@@ -261,6 +261,7 @@ export default function AdminDashboardPage() {
     {
       title: 'Bác sĩ',
       dataIndex: 'name',
+      width: 200,
       render: (text, record) => (
         <a onClick={() => {
           setSelectedDoctorForDrawer(record);
@@ -273,20 +274,24 @@ export default function AdminDashboardPage() {
     {
       title: 'Chuyên khoa',
       dataIndex: 'dept',
+      width: 150,
       render: (text) => <Tag color="blue">{text}</Tag>
     },
     {
       title: 'Lượt khám',
       dataIndex: 'patients',
+      width: 120,
       sorter: (a, b) => a.patients - b.patients,
     },
     {
-      title: 'Bệnh nhân duy nhất',
+      title: 'Số người khám',
       dataIndex: 'uniquePatients',
+      width: 160,
     },
     {
       title: 'Tỷ lệ dùng AI',
       dataIndex: 'aiUsageRate',
+      width: 130,
       render: (rate) => <Text strong>{rate}%</Text>
     },
   ];
@@ -333,7 +338,7 @@ export default function AdminDashboardPage() {
 
             <Dropdown menu={{ items: menuUserItems }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+                    <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
                         <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.name}</span>
                         <span style={{ fontSize: 12, color: '#888' }}>Quản trị hệ thống</span>
                     </div>
@@ -376,36 +381,40 @@ export default function AdminDashboardPage() {
                 </Row>
             </div>
 
-            <Row gutter={[24, 24]}>
+            <Row gutter={[24, 24]} align="stretch">
                 
                 <Col xs={24} lg={16}>
-
                     <Card 
-                    title={`Top bác sĩ có lượt khám cao nhất - Tháng ${selectedMonth}/${selectedYear}`}
-                    extra={(
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <Select
-                          value={topLimit}
-                          style={{ width: 100 }}
-                          options={topLimitOptions}
-                          onChange={setTopLimit}
-                        />
-                        <Select
-                          value={selectedMonth}
-                          style={{ width: 120 }}
-                          options={monthOptions}
-                          onChange={setSelectedMonth}
-                        />
-                        <Select
-                          value={selectedYear}
-                          style={{ width: 100 }}
-                          options={yearOptions}
-                          onChange={setSelectedYear}
-                        />
-                      </div>
-                    )}
+                        title={
+                            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12, width: '100%' }}>
+                                <span style={{ whiteSpace: 'normal', wordBreak: 'break-word', flex: 1, minWidth: '200px' }}>
+                                    Top bác sĩ có lượt khám cao nhất - Tháng {selectedMonth}/{selectedYear}
+                                </span>
+                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                    <Select
+                                        value={topLimit}
+                                        style={{ width: 100 }}
+                                        options={topLimitOptions}
+                                        onChange={setTopLimit}
+                                    />
+                                    <Select
+                                        value={selectedMonth}
+                                        style={{ width: 120 }}
+                                        options={monthOptions}
+                                        onChange={setSelectedMonth}
+                                    />
+                                    <Select
+                                        value={selectedYear}
+                                        style={{ width: 100 }}
+                                        options={yearOptions}
+                                        onChange={setSelectedYear}
+                                    />
+                                </div>
+                            </div>
+                        }
                         variant="borderless" 
-                        style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
+                        style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: '100%', display: 'flex', flexDirection: 'column' }}
+                        styles={{ body: { flex: 1, padding: 0 } }} 
                     >
                     <Table
                       loading={loadingDoctorStats}
@@ -413,17 +422,18 @@ export default function AdminDashboardPage() {
                       dataSource={topDoctors}
                       pagination={false}
                       size="middle"
-                      scroll={{ y: 350 }}
+                      scroll={{ y: 380, x: 800 }}
                       locale={{ emptyText: 'Không có dữ liệu khám trong tháng đã chọn' }}
+                      style={{ padding: '0 24px 24px 24px' }}
                     />
                     </Card>
                 </Col>
 
                 <Col xs={24} lg={8}>
                     <Card 
-                    title="Phân bổ kết quả khám theo chuyên khoa" 
+                        title="Phân bổ kết quả khám theo chuyên khoa" 
                         variant="borderless" 
-                        style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", marginBottom: 24 }}
+                        style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: '100%' }}
                     >
                     {loadingDoctorStats ? (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 280 }}>
@@ -457,7 +467,7 @@ export default function AdminDashboardPage() {
                             </PieChart>
                           </ResponsiveContainer>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 }}>
                           {departmentDistribution.map((item) => (
                             <div key={item.name} style={{ display: 'flex', justifyContent: 'space-between' }}>
                               <Text>{item.name}</Text>
@@ -468,35 +478,32 @@ export default function AdminDashboardPage() {
                       </>
                     )}
                     </Card>
-
-                
                 </Col>
             </Row>
 
-            <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
+            <Row gutter={[24, 24]} align="stretch" style={{ marginTop: 24 }}>
                 <Col xs={24} lg={16}>
                     <Card 
                         title={`Top 10 Bệnh lý phổ biến nhất - Tháng ${selectedMonth}/${selectedYear}`}
                         variant="borderless" 
-                        style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
+                        style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: '100%' }}
                     >
                         <MonthlyDiseasesChart data={topDiseases} loading={loadingDiseases} />
                     </Card>
                 </Col>
                 <Col xs={24} lg={8}>
-                    {/* Space for AI Consensus Rate - Next Feature */}
                     <Card 
                         title="Tỷ lệ Đồng thuận AI" 
                         variant="borderless" 
                         style={{ borderRadius: 12, height: '100%', boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
                     >
-                        <div style={{ display: 'flex', height: 350, justifyContent: 'center', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', height: '100%', minHeight: 300, justifyContent: 'center', alignItems: 'center' }}>
                             <Text type="secondary">Đang thiết kế tính năng...</Text>
                         </div>
                     </Card>
                 </Col>
             </Row>
-            </Content>        
+        </Content>        
         <Footer />
 
         <DoctorPatientsDrawer 
@@ -506,6 +513,16 @@ export default function AdminDashboardPage() {
           month={selectedMonth}
           year={selectedYear}
         />
+
+        <style>{`
+          @media (max-width: 576px) {
+            .hide-on-mobile { display: none !important; }
+
+            .ant-card-head-title {
+              white-space: normal !important;
+            }
+          }
+        `}</style>
     </Layout>
   );
 }

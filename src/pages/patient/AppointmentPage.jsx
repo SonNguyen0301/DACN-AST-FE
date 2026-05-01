@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Card, Button,
   Space, Dropdown, Tabs, Tag, Popconfirm,
-  Modal, Form, Input, Upload,Row, Col, message, Spin, Image, Pagination
+  Modal, Form, Input, Upload, Row, Col, message, Spin, Image, Pagination
 } from "antd";
 import { 
   UserOutlined, LogoutOutlined, CalendarOutlined,
@@ -24,7 +23,6 @@ const { TabPane } = Tabs;
 const { TextArea } = Input; 
 const { Dragger } = Upload; 
 
-
 const formatFileName = (fileName) => {
   if (!fileName) return '';
   const parts = fileName.split('.');
@@ -37,6 +35,7 @@ const formatFileName = (fileName) => {
   
   return fileName; 
 }
+
 export default function AppointmentPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth(); 
@@ -49,7 +48,6 @@ export default function AppointmentPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [fileList, setFileList] = useState([]);
-
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState(null); 
@@ -65,8 +63,6 @@ export default function AppointmentPage() {
         const firstRes = await getPatientAppointmentsAPI(user.id, {
             sort: 'createdAt', sortDirection: 'ASC', page: 1, take: 50
         });
-
-
 
         if (firstRes.data?.data) {
             let allData = firstRes.data.data.data || [];
@@ -113,7 +109,7 @@ export default function AppointmentPage() {
       fetchAppointments();
   }, [user]);
 
-  const handleSignOut = () => { logout(); navigate('/'); };
+  const handleSignOut = () => { logout(); navigate('/login'); };
   
   const menuItems = [
     { key: '1', label: (<a onClick={() => navigate('/patient/personal')}>Thông tin cá nhân</a>), icon: <UserOutlined />},
@@ -239,7 +235,7 @@ export default function AppointmentPage() {
   const renderActionButtons = (apt, isUpcomingTab = false) => {
       if (isUpcomingTab && (apt.status === 'SCHEDULED' || apt.status === 'PENDING')) {
         return (
-          <Space direction="vertical" align="end">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end', width: '100%' }}>
             <Button type="primary" icon={<EditOutlined />} onClick={() => showEditModal(apt)} style={{ minWidth: 120 }}>Chỉnh sửa</Button>
             <Popconfirm 
               title="Hủy lịch hẹn?" 
@@ -250,7 +246,7 @@ export default function AppointmentPage() {
             >
               <Button danger icon={<DeleteOutlined />} style={{ minWidth: 120 }}>Hủy lịch</Button>
             </Popconfirm>
-          </Space>
+          </div>
         );
       }
       if (!isUpcomingTab) return renderStatusTag(apt.status);
@@ -277,7 +273,7 @@ export default function AppointmentPage() {
 
            return (
             <Card key={apt.id} variant="borderless" style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" ,height: '100%', display: 'flex', flexDirection: 'column'}}>
-              <Row gutter={24} align="stretch" style={{ flex: 1 }}> 
+              <Row gutter={[24, 24]} align="stretch" style={{ flex: 1 }}> 
                 
                 <Col xs={24} md={9} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <Space align="start" size="middle">
@@ -356,7 +352,7 @@ export default function AppointmentPage() {
                         )}
                     </div>
                   ) : (
-                     isUpcomingTab && <div style={{ border: '1px dashed #d9d9d9', borderRadius: 8, padding: 16, textAlign: 'center', color: '#bfbfbf' }}>Chưa có ghi chú thêm</div>
+                     isUpcomingTab && <div style={{ border: '1px dashed #d9d9d9', borderRadius: 8, padding: 16, textAlign: 'center', color: '#bfbfbf', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Chưa có ghi chú thêm</div>
                   )}
                 </Col>
                 
@@ -376,7 +372,7 @@ export default function AppointmentPage() {
                     pageSize={pageSize} 
                     total={data.length} 
                     onChange={(page) => setTabPages(prev => ({ ...prev, [tabKey]: page }))} 
-                    showSizeChanger={false} // Tắt chọn pageSize để UI gọn gàng
+                    showSizeChanger={false}
                 />
             </div>
         )}
@@ -389,21 +385,22 @@ export default function AppointmentPage() {
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
       <Header style={{ background: "#fff", padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", position: 'sticky', top: 0, zIndex: 1000 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
-                    <img 
+          <img 
             src="/ASTCare1.png" 
             alt="ATSCare Logo" 
             style={{ height: '40px', objectFit: 'contain' }} 
           />
-
         </div>
-        <Menu mode="horizontal" defaultSelectedKeys={['4']}           
-        items={[
+        <Menu 
+          mode="horizontal" 
+          defaultSelectedKeys={['4']}          
+          items={[
             { key: "1", label: "Trang chủ" },
             { key: "2", label: "Thông tin cá nhân" },
             { key: "3", label: "Đặt lịch khám" },
             { key: "4", label: "Lịch khám của bản thân" },
           ]}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555' }}
+          style={{ fontSize: 16, fontWeight: 500, color: '#555', flex: 1, justifyContent: 'center' }}
           onClick={({ key }) => {
             switch (key) {
               case "1": navigate('/patient/dashboard'); break;
@@ -412,11 +409,17 @@ export default function AppointmentPage() {
               case "4": navigate('/patient/appointments'); break;
               default: break;
             }
-          }} />
-        <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow><div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}><span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.firstName + ' ' + user.lastName}</span><Avatar size={36} icon={<UserOutlined />} /></div></Dropdown>
+          }} 
+        />
+        <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
+            <span className="hide-on-mobile" style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user?.firstName + ' ' + user?.lastName}</span>
+            <Avatar size={36} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }}/>
+          </div>
+        </Dropdown>
       </Header>
 
-      <Content style={{ padding: "40px 60px" }}>
+      <Content style={{ padding: "24px 40px" }}>
         <Spin spinning={loading} size="large">
         <Card style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
           <Tabs defaultActiveKey="1" size="large">
@@ -455,6 +458,36 @@ export default function AppointmentPage() {
       </Modal>
 
       <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 1000 }}><ChatBotIcon /></div>
+
+      <style>{`
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
+
+          .ant-tabs-nav-list {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            width: 100%;
+          }
+            
+          
+          .ant-tabs-tab {
+            width: 50% !important;
+            margin: 0 !important;
+            justify-content: center !important;
+            padding: 12px 0 !important;
+            border-bottom: 1px solid #f0f0f0;
+          }
+
+          .ant-tabs-ink-bar {
+            display: none !important;
+          }
+
+          .ant-tabs-tab-active {
+            border-bottom: 2px solid #1677ff !important;
+            background-color: #e6f4ff; 
+          }
+        }
+      `}</style>
     </Layout>
   );
 }

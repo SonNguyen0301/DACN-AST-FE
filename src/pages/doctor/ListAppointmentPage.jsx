@@ -1,4 +1,4 @@
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Layout, 
   Menu, 
@@ -39,6 +39,9 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+
+dayjs.extend(isoWeek);
 import Footer from "../../components/common/Footer"; 
 import { getDoctorAppointmentsAPI, startExaminationAPI } from '../../services/doctorService';
 import useAuth from "../../hooks/useAuth";
@@ -56,7 +59,7 @@ export default function DoctorAppointmentPage() {
 
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState('SCHEDULED');
-  const [dateRange, setDateRange] = useState([dayjs().startOf('month'), dayjs()]);
+  const [dateRange, setDateRange] = useState([dayjs().startOf('isoWeek'), dayjs().endOf('isoWeek')]);
   const [timeRange, setTimeRange] = useState(null);
 
   const [appointments, setAppointments] = useState([]);
@@ -139,7 +142,6 @@ export default function DoctorAppointmentPage() {
       fetchAppointments();
   }, []);
 
-
   const handleSearch = (val) => setSearchText(val.toLowerCase());
   const handleStatusChange = (val) => setFilterStatus(val);
   const handleDateRangeChange = (dates) => setDateRange(dates);
@@ -157,7 +159,6 @@ export default function DoctorAppointmentPage() {
     setIsModalOpen(false);
     setSelectedPatient(null);
   };
-
 
   const handleStartConsultation = () => {
       const currentStartTime = selectedPatient.time.split(' - ')[0];
@@ -217,7 +218,7 @@ export default function DoctorAppointmentPage() {
       title: 'Thời gian',
       dataIndex: 'time',
       key: 'time',
-      width: 120,
+      width: 130,
       render: (text) => <Tag color="blue" style={{ fontSize: 14 }}>{text}</Tag>,
       sorter: (a, b) => a.time.localeCompare(b.time),
     },
@@ -230,12 +231,6 @@ export default function DoctorAppointmentPage() {
           <Avatar size={40} style={{ backgroundColor: record.gender === 'MALE' ? '#1677ff' : '#eb2f96' }} icon={<UserOutlined />} />
           <div>
             <Text strong style={{ display: 'block' }}>{record.patientName}</Text>
-            {/* <Space size={8} style={{ fontSize: 12, color: '#666', minWidth: 200 }}>
-              {record.gender === 'MALE' ? <ManOutlined style={{ color: '#1677ff' }}/> : <WomanOutlined style={{ color: '#eb2f96' }}/>} 
-              <span>{record.age} tuổi</span>
-              <span>|</span>
-              <PhoneOutlined /> {record.phone}
-            </Space> */}
           </div>
         </div>
       ),
@@ -244,6 +239,7 @@ export default function DoctorAppointmentPage() {
       title: ' Triệu chứng',
       dataIndex: 'reason',
       key: 'reason',
+      width: 200,
       render: (text) => <Text>{text}</Text>,
     },
     {
@@ -369,12 +365,11 @@ export default function DoctorAppointmentPage() {
             if(key === '2') navigate('/doctor/appointments');
             if(key === '3') navigate('/doctor/consulting');
             if(key === '4') navigate('/doctor/medical-history');
-                
           }}
         />
         <Dropdown menu={{ items: menuUserItems }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+             <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
                 <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{"BS. "+ user.firstName + " " + user.lastName}</span>
                 <span style={{ fontSize: 12, color: '#888' }}>Khoa Da liễu</span>
             </div>
@@ -405,7 +400,7 @@ export default function DoctorAppointmentPage() {
                     <Text strong style={{ display: 'block', marginBottom: 4 }}>Khoảng giờ hẹn:</Text>
                     <TimePicker.RangePicker 
                         format="HH:mm"
-                        minuteStep={15}
+                        minuteStep={30}
                         onChange={handleTimeRangeChange}
                         placeholder={['Từ giờ', 'Đến giờ']}
                         style={{ width: '100%' }}
@@ -432,8 +427,8 @@ export default function DoctorAppointmentPage() {
                     </Select>
                 </Col>
 
-                <Col xs={24} md={2} style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
-                    <Button type="primary" icon={<FilterOutlined />} style={{ marginTop: 22 }} onClick={handleFilterClick} loading={loading}>Lọc</Button>
+                <Col xs={24} md={2} style={{ display: 'flex', alignItems: 'flex-end' }}>
+                    <Button type="primary" icon={<FilterOutlined />} style={{ width: '100%' }} onClick={handleFilterClick} loading={loading}>Lọc</Button>
                 </Col>
             </Row>
         </Card>
@@ -445,6 +440,7 @@ export default function DoctorAppointmentPage() {
                 loading={loading}
                 pagination={pagination}
                 onChange={handleTableChange}
+                scroll={{ x: 900 }} 
                 onRow={(record) => ({
                     style: { cursor: 'pointer' },
                     onClick: () => handleViewDetail(record)  
@@ -479,7 +475,7 @@ export default function DoctorAppointmentPage() {
       >
         {selectedPatient && (
             <div style={{ marginTop: 20 }}>
-                <div style={{ display: 'flex', gap: 20, marginBottom: 24 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, marginBottom: 24, alignItems: 'center' }}>
                     <Avatar size={80} icon={<UserOutlined />} style={{ backgroundColor: selectedPatient.gender === 'MALE' ? '#1677ff' : '#eb2f96' }} />
                     <div>
                         <Title level={4} style={{ margin: 0 }}>{selectedPatient.patientName}</Title>
@@ -515,8 +511,8 @@ export default function DoctorAppointmentPage() {
                                     return (
                                         <Image
                                             key={index}
-                                            width={120}
-                                            height={120}
+                                            width={100} 
+                                            height={100}
                                             src={validSrc} 
                                             style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #f0f0f0' }}
                                             fallback="https://placehold.co/120x120?text=L%E1%BB%97i" 
@@ -535,6 +531,22 @@ export default function DoctorAppointmentPage() {
         )}
       </Modal>
 
+      <style>{`
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
+
+          .ant-picker-dropdown .ant-picker-panels {
+            flex-direction: column !important;
+          }
+          .ant-picker-dropdown {
+            max-width: 100vw !important;
+          }
+          .ant-picker-panel-container {
+            max-width: 100vw;
+            overflow-x: auto;
+          }
+        }
+      `}</style>
     </Layout>
   );
 }

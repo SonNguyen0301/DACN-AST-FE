@@ -1,4 +1,4 @@
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Layout, 
   Menu, 
@@ -125,7 +125,11 @@ export default function AdmissionStaffDashboardPage() {
           const now = dayjs();
           const currentDate = now.format('YYYY-MM-DD');
           const from = now.format('HH:mm:ss+07'); 
-          const params = { currentDate, from };
+          const startMonthDate = now.startOf('month').format('YYYY-MM-DD');
+          const endMonthDate = now.endOf('month').format('YYYY-MM-DD');
+          const startLastMonthDate = now.subtract(1, 'month').startOf('month').format('YYYY-MM-DD');
+          const endLastMonthDate = now.subtract(1, 'month').endOf('month').format('YYYY-MM-DD');
+          const params = { currentDate, from , startMonthDate, endMonthDate, startLastMonthDate, endLastMonthDate };
 
           const response = await getStaffDashboardInfo(params);
 
@@ -174,23 +178,6 @@ export default function AdmissionStaffDashboardPage() {
     },
     { title: "Bác sĩ đang trực", value: doctorsOnDuty.length, icon: <TeamOutlined />, color: "#722ed1", bg: "#f9f0ff" },
   ];
-
-  // const initialBookingRequests = [
-  //   { key: '1', patient: 'Trần Văn X', phone: '0909 123 111', doctor: 'BS. CK2 Trần Thị Hoa', time: '09:00 - 09:30', type: 'Tái khám', status: 'pending' },
-  //   { key: '2', patient: 'Lê Thị Y', phone: '0912 456 222', doctor: 'BS. Nguyễn Văn Nam', time: '09:30 - 10:00', type: 'Mới', status: 'pending' },
-  //   { key: '3', patient: 'Nguyễn Z', phone: '0987 888 333', doctor: 'BS. CK2 Trần Thị Hoa', time: '10:00 - 10:30', type: 'Mới', status: 'pending' },
-  //   { key: '4', patient: 'Phạm Văn K', phone: '0933 777 444', doctor: 'BS. Lê Thị Tú', time: '10:30 - 11:00', type: 'Tái khám', status: 'pending' },
-  //   { key: '5', patient: 'Hoàng Thị M', phone: '0977 111 555', doctor: 'BS. Nguyễn Văn Nam', time: '11:00 - 11:30', type: 'Mới', status: 'pending' },
-  // ];
-
-  // const [bookingRequests] = useState(initialBookingRequests);
-
-  // const doctorsOnDuty = [
-  //   { name: "BS. CK2 Trần Thị Hoa", dept: "Da liễu", status: "busy", queue: 3 },
-  //   { name: "BS. Nguyễn Văn Nam", dept: "Nội khoa", status: "online", queue: 0 },
-  //   { name: "BS. Lê Thị Tú", dept: "Nhi khoa", status: "online", queue: 1 },
-  //   { name: "BS. Phạm Minh", dept: "Tai Mũi Họng", status: "offline", queue: 0 },
-  // ];
 
   const handleSignOut = () => {
     logout();
@@ -272,8 +259,6 @@ export default function AdmissionStaffDashboardPage() {
     },
   ];
 
-
-
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
       <Header style={{ background: "#fff", padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", position: 'sticky', top: 0, zIndex: 1000 }}>
@@ -299,8 +284,8 @@ export default function AdmissionStaffDashboardPage() {
         
         <Dropdown menu={{ items: menuUserItems }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.name}</span>
+             <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user?.firstName + " " + user?.lastName}</span>
                 <span style={{ fontSize: 12, color: '#888' }}>Phòng Tiếp nhận</span>
             </div>
             <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#faad14' }} />
@@ -341,7 +326,7 @@ export default function AdmissionStaffDashboardPage() {
                 <Card 
                     title="Lịch hẹn " 
                     variant="borderless"
-                    extra={<Button type="link">Xem tất cả</Button>}
+                    extra={<Button type="link" onClick={() => navigate('/staff/appointments')}>Xem tất cả</Button>}
                     style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", height: '100%' }}
                 >
                     <Table 
@@ -349,6 +334,7 @@ export default function AdmissionStaffDashboardPage() {
                         dataSource={bookingRequests} 
                         pagination={false} 
                         size="middle"
+                        scroll={{ x: 800 }}
                         locale={{ emptyText: "Không có lịch hẹn nào mới" }}
                     />
                 </Card>
@@ -385,7 +371,7 @@ export default function AdmissionStaffDashboardPage() {
                             </List.Item>
                         )}
                     />
-                    <Button block style={{ marginTop: 16 }} icon={<SearchOutlined />}>Tra cứu lịch bác sĩ</Button>
+                    <Button block style={{ marginTop: 16 }} icon={<SearchOutlined />} onClick={() => navigate('/staff/manage-schedule')}>Tra cứu lịch bác sĩ</Button>
                 </Card>
             </Col>
         </Row>
@@ -439,6 +425,11 @@ export default function AdmissionStaffDashboardPage() {
         )}
       </Modal>
 
+      <style>{`
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
+        }
+      `}</style>
     </Layout>
   );
 }

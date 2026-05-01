@@ -1,5 +1,4 @@
-
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Layout, 
   Menu, 
@@ -41,10 +40,12 @@ import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween'; 
 import Footer from "../../components/common/Footer"; 
-
+import isoWeek from 'dayjs/plugin/isoWeek';
+dayjs.extend(isoWeek);
 dayjs.extend(isBetween);
 import { getStaffAppointmentsAPI, updateAppointmentNoteAPI } from '../../services/staffService';
 import { cancelAppointmentAPI } from '../../services/appointmentService';
+import useAuth from "../../hooks/useAuth";
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -53,11 +54,13 @@ const { RangePicker } = DatePicker;
 
 export default function AdmissionStaffAppointmentPage() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState('SCHEDULED');
   const [filterDoctor, setFilterDoctor] = useState('all');
   
-  const [dateRange, setDateRange] = useState([dayjs().startOf('month'), dayjs()]);
+  const [dateRange, setDateRange] = useState([dayjs().startOf('isoWeek'), dayjs().endOf('isoWeek')]);
   const [timeRange, setTimeRange] = useState(null);
 
   const [appointments, setAppointments] = useState([]);
@@ -71,7 +74,6 @@ export default function AdmissionStaffAppointmentPage() {
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [noteForm] = Form.useForm();
 
-  const user = { name: "Lê Thị Bích", role: "admission" };
 
   const fetchAppointments = async (page = 1) => {
     setLoading(true);
@@ -214,7 +216,7 @@ export default function AdmissionStaffAppointmentPage() {
     {
       title: 'Ngày khám', 
       dataIndex: 'date',
-      width: 120,
+      width: 110,
       render: (date) => (
           <Text strong>{dayjs(date).format('DD/MM/YYYY')}</Text>
       ),
@@ -223,7 +225,7 @@ export default function AdmissionStaffAppointmentPage() {
     {
       title: 'Giờ hẹn',
       dataIndex: 'time',
-      width: 140,
+      width: 120,
       render: (text) => (
         <Tag icon={<ClockCircleOutlined />} color="default" style={{ fontSize: 13 }}>
             {text}
@@ -233,7 +235,7 @@ export default function AdmissionStaffAppointmentPage() {
     {
       title: 'Bệnh nhân',
       key: 'patient',
-      width: 250,
+      width: 220,
       render: (_, record) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Avatar size={40} style={{ backgroundColor: record.gender === 'MALE' ? '#1677ff' : '#eb2f96' }} icon={<UserOutlined />} />
@@ -261,7 +263,7 @@ export default function AdmissionStaffAppointmentPage() {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
-      width: 150,
+      width: 140,
       render: (status) => {
         let color = 'default';
         let label = 'Không rõ';
@@ -274,35 +276,35 @@ export default function AdmissionStaffAppointmentPage() {
         return <Tag color={color} style={{ minWidth: 80, textAlign: 'center' }}>{label.toUpperCase()}</Tag>;
       }
     },
-        {
+    {
       title: 'Ghi chú',
       dataIndex: 'note',
-      width: 200,
-      render: (text, record) => (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <Text ellipsis style={{ maxWidth: 140 }} type={text ? 'default' : 'secondary'}>
-                {text || 'Chưa có ghi chú'}
-            </Text>
+      width: 180,
+      render: (text) => (
+          <Text ellipsis style={{ width: '100%' }} type={text ? 'default' : 'secondary'}>
+              {text || 'Chưa có ghi chú'}
+          </Text>
+      )
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      fixed: 'right', 
+      width: 100,
+      align: 'center',
+      render: (_, record) => (
+        <Space size="middle">
             <Tooltip title="Thêm/Sửa ghi chú">
                 <Button 
                     type="text" 
                     size="small" 
-                    icon={<EditOutlined style={{ color: '#1677ff' }} />} 
+                    icon={<EditOutlined style={{ color: '#1677ff', fontSize: 18 }} />} 
                     onClick={(e) => { 
                         e.stopPropagation(); 
                         openNoteModal(record); 
                     }} 
                 />
             </Tooltip>
-        </div>
-      )
-    },
-    {
-      title: 'Hủy lịch',
-      key: 'action',
-      width: 100,
-      render: (_, record) => (
-        <Space>
           {record.status === 'SCHEDULED' && (
              <Tooltip title="Hủy lịch">
                <Popconfirm
@@ -320,8 +322,8 @@ export default function AdmissionStaffAppointmentPage() {
                  <Button 
                    type="text" 
                    danger
-                   size="large" 
-                   icon={<CloseCircleOutlined />} 
+                   size="small" 
+                   icon={<CloseCircleOutlined style={{ fontSize: 18 }} />} 
                    onClick={(e) => e.stopPropagation()}
                  />
                </Popconfirm>
@@ -332,7 +334,10 @@ export default function AdmissionStaffAppointmentPage() {
     },
   ];
 
-  const handleSignOut = () => navigate('/');
+  const handleSignOut = () => {
+    logout();
+    navigate('/');
+  };
   
   const menuUserItems = [
     { key: '1', label: (<a onClick={() => navigate('/staff/profile')}>Hồ sơ nhân viên</a>), icon: <UserOutlined /> },
@@ -355,15 +360,15 @@ export default function AdmissionStaffAppointmentPage() {
           ]}
           style={{ fontSize: 16, fontWeight: 500, color: '#555', borderBottom: 'none', flex: 1, justifyContent: 'center' }}
           onClick={({ key }) => {
-            if(key === '1') navigate('/staff/dashboard');
-            if(key === '2') navigate('/staff/appointments');
-            if(key === '3') navigate('/staff/manage-schedule');
+             if(key === '1') navigate('/staff/dashboard');
+             if(key === '2') navigate('/staff/appointments');
+             if(key === '3') navigate('/staff/manage-schedule');
           }}
         />
         <Dropdown menu={{ items: menuUserItems }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.name}</span>
+             <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user?.firstName + " " + user?.lastName}</span>
                 <span style={{ fontSize: 12, color: '#888' }}>Phòng Tiếp nhận</span>
             </div>
             <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#faad14' }} />
@@ -436,7 +441,7 @@ export default function AdmissionStaffAppointmentPage() {
                     </Select>
                 </Col>
                 <Col xs={24} md={2} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button type="primary" loading={loading} onClick={handleFilterClick} icon={<FilterOutlined />}>Lọc </Button>
+                    <Button type="primary" loading={loading} onClick={handleFilterClick} icon={<FilterOutlined />} style={{ width: '100%' }}>Lọc</Button>
                 </Col>
             </Row>
         </Card>
@@ -448,6 +453,7 @@ export default function AdmissionStaffAppointmentPage() {
                 loading={loading}
                 pagination={pagination}
                 onChange={handleTableChange}
+                scroll={{ x: 1050 }} 
                 onRow={(record) => ({
                     style: { cursor: 'pointer' },
                     onClick: () => handleViewDetail(record)
@@ -475,7 +481,7 @@ export default function AdmissionStaffAppointmentPage() {
       >
         {selectedPatient && (
             <div style={{ marginTop: 20 }}>
-                <div style={{ display: 'flex', gap: 20, marginBottom: 24, alignItems: 'center' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, marginBottom: 24, alignItems: 'center' }}>
                     <Avatar 
                         size={80} 
                         icon={<UserOutlined />} 
@@ -495,7 +501,7 @@ export default function AdmissionStaffAppointmentPage() {
                                 <PhoneOutlined style={{ marginRight: 6 }}/> 
                                 SĐT: {selectedPatient.phone || 'Chưa cập nhật'}
                             </Text>
-                            <Text type="secondary" style={{ fontSize: 14, display: 'flex', alignItems: 'center' }}>
+                            <Text type="secondary" style={{ fontSize: 14, display: 'flex', alignItems: 'center', flexWrap: 'wrap' }}>
                                 <CalendarOutlined style={{ marginRight: 6 }}/> 
                                 Giờ hẹn: 
                                 <Tag color="blue" bordered={false} style={{ marginLeft: 6, borderRadius: 4, fontSize: 13, padding: '2px 8px' }}>
@@ -568,6 +574,22 @@ export default function AdmissionStaffAppointmentPage() {
         </Form>
       </Modal>
 
+      <style>{`
+        @media (max-width: 576px) {
+          .hide-on-mobile { display: none !important; }
+          
+          .ant-picker-dropdown .ant-picker-panels {
+            flex-direction: column !important;
+          }
+          .ant-picker-dropdown {
+            max-width: 100vw !important;
+          }
+          .ant-picker-panel-container {
+            max-width: 100vw;
+            overflow-x: auto;
+          }
+        }
+      `}</style>
     </Layout>
   );
 }
