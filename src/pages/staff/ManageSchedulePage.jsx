@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   Layout, 
   Menu, 
@@ -25,7 +25,9 @@ import {
   Popover, 
   Checkbox,
   Row,
-  Col
+  Col,
+  Tabs,
+  Table
 } from "antd";
 import { 
   UserOutlined, 
@@ -38,7 +40,9 @@ import {
   FileExcelOutlined,
   ClockCircleOutlined,
   HomeOutlined,       
-  FilePdfOutlined
+  FilePdfOutlined,
+  FilterOutlined,
+  AppstoreOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
@@ -65,6 +69,10 @@ export default function ManageStaffSchedulePage() {
   const [currentMonthView, setCurrentMonthView] = useState(dayjs());
   const [doctorOptions, setDoctorOptions] = useState([]);
   
+  // States cho tính năng Lọc (Filter)
+  const [filterDoctorId, setFilterDoctorId] = useState('all');
+  const [filterRoom, setFilterRoom] = useState('all');
+
   const [isModalOpen, setIsModalOpen] = useState(false); 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(dayjs());
@@ -75,7 +83,6 @@ export default function ManageStaffSchedulePage() {
   const [editingScheduleId, setEditingScheduleId] = useState(null);
 
   const [exporting, setExporting] = useState(false); 
-
   const [selectedIds, setSelectedIds] = useState([]);
 
   const fetchSchedule = async (dateObj) => {
@@ -134,7 +141,16 @@ export default function ManageStaffSchedulePage() {
       fetchDoctorsList();
   }, []);
 
-    const handleExportCSV = async () => {
+  // Tự động thu thập danh sách các phòng khám dựa trên dữ liệu lịch
+  const allRooms = useMemo(() => {
+      const rooms = new Set();
+      Object.values(scheduleData).flat().forEach(shift => {
+          if (shift.room) rooms.add(shift.room);
+      });
+      return Array.from(rooms).sort();
+  }, [scheduleData]);
+
+  const handleExportCSV = async () => {
       setExporting(true);
       try {
           const startDate = currentMonthView.startOf('month').format('YYYY-MM-DD');
@@ -170,13 +186,22 @@ export default function ManageStaffSchedulePage() {
       }
   };
 
-  const getListData = (value) => {
+  // Hàm lấy dữ liệu đã được áp dụng bộ lọc (Filter)
+  const getFilteredListData = (value) => {
     const dateString = value.format('YYYY-MM-DD');
-    return scheduleData[dateString] || [];
+    let list = scheduleData[dateString] || [];
+    
+    if (filterDoctorId !== 'all') {
+        list = list.filter(item => item.doctorId === filterDoctorId);
+    }
+    if (filterRoom !== 'all') {
+        list = list.filter(item => item.room === filterRoom);
+    }
+    return list;
   };
 
   const dateCellRender = (value) => {
-    const listData = getListData(value);
+    const listData = getFilteredListData(value);
     
     if (!listData || listData.length === 0) return null;
 
@@ -191,7 +216,7 @@ export default function ManageStaffSchedulePage() {
                   style={{ backgroundColor: '#e6f4ff', color: '#1677ff' }}
                   icon={<UserOutlined />}
                 >
-                  {item.doctor[0]}
+                  {item.doctor?.[0] || 'BS'}
                 </Avatar>
                 <div>
                   <Text strong style={{ fontSize: 15, display: 'block', lineHeight: 1.2, marginBottom: 4 }}>
@@ -255,9 +280,9 @@ export default function ManageStaffSchedulePage() {
 
   const onSelectDate = (date, { source }) => {
     if (source === 'date') {
-        const dateString = date.format('YYYY-MM-DD');
         setSelectedDate(date);
-        setSelectedDateShifts(scheduleData[dateString] || []);
+        // Lấy danh sách đã lọc thay vì toàn bộ
+        setSelectedDateShifts(getFilteredListData(date));
         setSelectedIds([]);
         setViewDetailsOpen(true);
     }
@@ -443,6 +468,48 @@ export default function ManageStaffSchedulePage() {
     });
   };
 
+  // --- LOGIC XÂY DỰNG BẢNG TRẠNG THÁI KHUNG GIỜ ---
+  const displayRooms = filterRoom === 'all' ? allRooms : [filterRoom];
+  const timeSlots = [
+      "07:30 - 08:00", "08:00 - 08:30", "08:30 - 09:00", "09:00 - 09:30", 
+      "09:30 - 10:00", "10:00 - 10:30", "10:30 - 11:00", "11:00 - 11:30",
+      "13:00 - 13:30", "13:30 - 14:00", "14:00 - 14:30", "14:30 - 15:00", 
+      "15:00 - 15:30", "15:30 - 16:00", "16:00 - 16:30", "16:30 - 17:00"
+  ];
+
+  const gridColumns = [
+      { title: 'Khung giờ', dataIndex: 'time', key: 'time', fixed: 'left', width: 130, render: (t) => <Text strong>{t}</Text> },
+      ...displayRooms.map(room => ({
+          title: `Phòng ${room.replace('P', '')}`,
+          dataIndex: room,
+          key: room,
+          minWidth: 150,
+          render: (shift) => {
+              if (!shift) return <Text type="secondary" style={{ fontStyle: 'italic' }}>Trống</Text>;
+              return (
+                  <div style={{ padding: '6px 8px', background: '#e6f4ff', borderRadius: 4, borderLeft: '3px solid #1677ff' }}>
+                      <Text strong style={{ fontSize: 13, color: '#1677ff', display: 'block' }}>{shift.doctor}</Text>
+                  </div>
+              );
+          }
+      }))
+  ];
+
+  const gridData = timeSlots.map(slot => {
+      const row = { time: slot, key: slot };
+      const [slotStart, slotEnd] = slot.split(' - ');
+      
+      displayRooms.forEach(room => {
+          const overlappingShift = selectedDateShifts.find(s => {
+              if (s.room !== room) return false;
+              const [sStart, sEnd] = s.time.split(' - ');
+              return slotStart < sEnd && slotEnd > sStart;
+          });
+          row[room] = overlappingShift || null;
+      });
+      return row;
+  });
+
   const handleSignOut = () => { logout(); navigate('/'); }
   const menuUserItems = [
     { key: '1', label: (<a onClick={() => navigate('/staff/profile')}>Hồ sơ nhân viên</a>), icon: <UserOutlined /> },
@@ -514,6 +581,43 @@ export default function ManageStaffSchedulePage() {
             </Col>
         </Row>
 
+        {/* THÊM TÍNH NĂNG FILTER LÊN ĐÂY */}
+        <Card variant="borderless" style={{ borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", marginBottom: 24 }}>
+            <Row gutter={[16, 16]}>
+                <Col xs={24} md={12}>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}><FilterOutlined /> Lọc lịch theo Bác sĩ:</Text>
+                    <Select
+                        showSearch
+                        value={filterDoctorId}
+                        onChange={setFilterDoctorId}
+                        style={{ width: '100%' }}
+                        optionFilterProp="children"
+                    >
+                        <Option value="all">Tất cả Bác sĩ</Option>
+                        {doctorOptions.map(doc => (
+                            <Option key={doc.id} value={doc.id}>
+                                BS. {doc.lastName} {doc.firstName}
+                            </Option>
+                        ))}
+                    </Select>
+                </Col>
+                <Col xs={24} md={12}>
+                    <Text strong style={{ display: 'block', marginBottom: 8 }}><HomeOutlined /> Lọc theo Phòng khám:</Text>
+                    <Select
+                        showSearch
+                        value={filterRoom}
+                        onChange={setFilterRoom}
+                        style={{ width: '100%' }}
+                    >
+                        <Option value="all">Tất cả Phòng</Option>
+                        {allRooms.map(room => (
+                            <Option key={room} value={room}>Phòng {room}</Option>
+                        ))}
+                    </Select>
+                </Col>
+            </Row>
+        </Card>
+
         {/* CALENDAR */}
         <Card variant="borderless" style={{ borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
             <Calendar 
@@ -563,81 +667,122 @@ export default function ManageStaffSchedulePage() {
         title={`Lịch trực ngày ${selectedDate.format('DD/MM/YYYY')}`}
         open={viewDetailsOpen}
         onCancel={() => setViewDetailsOpen(false)}
-        footer={[
-            selectedIds.length > 0 && (
-                <Button key="bulk-delete" danger type="primary" icon={<DeleteOutlined />} onClick={handleBulkDelete}>
-                    Xóa đã chọn ({selectedIds.length})
-                </Button>
-            ),
-            <Button key="add" icon={<PlusOutlined />} onClick={() => { setViewDetailsOpen(false); handleAddNew(); }}>
-                Thêm ca trực
-            </Button>,
-            <Button key="close" onClick={() => setViewDetailsOpen(false)}>Đóng</Button>
-        ]}
-        width={700}
+        footer={null}
+        width={900} 
+        styles={{ body: { padding: '16px 0' } }}
       >
-        {selectedDateShifts.length > 0 ? (
-            <>
-                <div style={{ marginBottom: 12, padding: '0 12px' }}>
-                    <Checkbox 
-                        indeterminate={selectedIds.length > 0 && selectedIds.length < selectedDateShifts.length}
-                        checked={selectedIds.length === selectedDateShifts.length}
-                        onChange={(e) => {
-                            const checked = e.target.checked;
-                            setSelectedIds(checked ? selectedDateShifts.map(s => s.id) : []);
-                        }}
-                    >
-                        Chọn tất cả ({selectedDateShifts.length} ca)
-                    </Checkbox>
-                </div>
-                <Divider style={{ margin: '8px 0' }} />
-                <List
-                    itemLayout="horizontal"
-                    dataSource={selectedDateShifts}
-                    renderItem={(item) => {
-                        const isPastDate = selectedDate.isBefore(dayjs().startOf('day'));
-                        return (
-                            <List.Item
-                                actions={[
-                                    <Tooltip key="edit" title="Chỉnh sửa"><Button type="text" disabled={isPastDate} icon={<EditOutlined />} onClick={() => handleEditShift(item)} /></Tooltip>,
-                                    <Tooltip key="delete" title="Xóa"><Button type="text" danger disabled={isPastDate} icon={<DeleteOutlined />} onClick={() => handleDeleteShift(item.id)} /></Tooltip>
-                                ]}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 16, flexWrap: 'nowrap', overflow: 'hidden' }}>
-                                    <Checkbox 
-                                        checked={selectedIds.includes(item.id)}
-                                        onChange={(e) => {
-                                            const checked = e.target.checked;
-                                            setSelectedIds(prev => checked ? [...prev, item.id] : prev.filter(id => id !== item.id));
+        <Tabs 
+            defaultActiveKey="1" 
+            centered
+            items={[
+                {
+                    key: '1',
+                    label: (<span><AppstoreOutlined /> Danh sách ca trực</span>),
+                    children: (
+                        <div style={{ padding: '0 24px' }}>
+                            {selectedDateShifts.length > 0 ? (
+                                <>
+                                    <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <Checkbox 
+                                            indeterminate={selectedIds.length > 0 && selectedIds.length < selectedDateShifts.length}
+                                            checked={selectedIds.length > 0 && selectedIds.length === selectedDateShifts.length}
+                                            onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                setSelectedIds(checked ? selectedDateShifts.map(s => s.id) : []);
+                                            }}
+                                        >
+                                            Chọn tất cả ({selectedDateShifts.length} ca)
+                                        </Checkbox>
+
+                                        <Space>
+                                            {selectedIds.length > 0 && (
+                                                <Button danger type="primary" size="small" icon={<DeleteOutlined />} onClick={handleBulkDelete}>
+                                                    Xóa ({selectedIds.length})
+                                                </Button>
+                                            )}
+                                            <Button size="small" type="primary" icon={<PlusOutlined />} onClick={() => { setViewDetailsOpen(false); handleAddNew(); }}>
+                                                Thêm ca
+                                            </Button>
+                                        </Space>
+                                    </div>
+                                    <Divider style={{ margin: '8px 0' }} />
+                                    <List
+                                        itemLayout="horizontal"
+                                        dataSource={selectedDateShifts}
+                                        renderItem={(item) => {
+                                            const isPastDate = selectedDate.isBefore(dayjs().startOf('day'));
+                                            return (
+                                                <List.Item
+                                                    actions={[
+                                                        <Tooltip key="edit" title="Chỉnh sửa"><Button type="text" disabled={isPastDate} icon={<EditOutlined />} onClick={() => handleEditShift(item)} /></Tooltip>,
+                                                        <Tooltip key="delete" title="Xóa"><Button type="text" danger disabled={isPastDate} icon={<DeleteOutlined />} onClick={() => handleDeleteShift(item.id)} /></Tooltip>
+                                                    ]}
+                                                >
+                                                    <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 16, flexWrap: 'nowrap', overflow: 'hidden' }}>
+                                                        <Checkbox 
+                                                            checked={selectedIds.includes(item.id)}
+                                                            onChange={(e) => {
+                                                                const checked = e.target.checked;
+                                                                setSelectedIds(prev => checked ? [...prev, item.id] : prev.filter(id => id !== item.id));
+                                                            }}
+                                                        />
+                                                        <List.Item.Meta
+                                                            avatar={<Avatar style={{ backgroundColor: '#1677ff' }}>{item.doctor?.[0] || 'BS'}</Avatar>} 
+                                                            title={
+                                                                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                                                                    <Text strong>{item.doctor}</Text>
+                                                                    <Tag color="blue">{item.dept}</Tag>
+                                                                </div>
+                                                            }
+                                                            description={
+                                                                <Space split={<Divider type="vertical" />} wrap>
+                                                                    <Text style={{ fontSize: 13 }}><ClockCircleOutlined /> {item.time}</Text>
+                                                                    <Text style={{ fontSize: 13 }}><HomeOutlined /> Phòng: {item.room}</Text>
+                                                                </Space>
+                                                            }
+                                                        />
+                                                    </div>
+                                                </List.Item>
+                                            );
                                         }}
                                     />
-                                    <List.Item.Meta
-                                        avatar={<Avatar style={{ backgroundColor: '#1677ff' }}>{item.doctor[0]}</Avatar>} 
-                                        title={
-                                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                                                <Text strong>{item.doctor}</Text>
-                                                <Tag color="blue">{item.dept}</Tag>
-                                            </div>
-                                        }
-                                        description={
-                                            <Space split={<Divider type="vertical" />} wrap>
-                                                <Text style={{ fontSize: 13 }}><ClockCircleOutlined /> {item.time}</Text>
-                                                <Text style={{ fontSize: 13 }}><HomeOutlined /> Phòng: {item.room}</Text>
-                                            </Space>
-                                        }
-                                    />
+                                </>
+                            ) : (
+                                <div style={{ textAlign: 'center', padding: '40px', background: '#f5f5f5', borderRadius: 8 }}>
+                                    <CalendarOutlined style={{ fontSize: 32, color: '#d9d9d9', marginBottom: 12 }} />
+                                    <p style={{ color: '#999', margin: 0, marginBottom: 16 }}>Không có lịch trực nào trong ngày này.</p>
+                                    <Button type="primary" icon={<PlusOutlined />} onClick={() => { setViewDetailsOpen(false); handleAddNew(); }}>
+                                        Thêm ca trực mới
+                                    </Button>
                                 </div>
-                            </List.Item>
-                        );
-                    }}
-                />
-            </>
-        ) : (
-            <div style={{ textAlign: 'center', padding: '30px', background: '#f5f5f5', borderRadius: 8 }}>
-                <CalendarOutlined style={{ fontSize: 32, color: '#d9d9d9', marginBottom: 12 }} />
-                <p style={{ color: '#999', margin: 0 }}>Không có lịch trực nào trong ngày này.</p>
-            </div>
-        )}
+                            )}
+                        </div>
+                    )
+                },
+                {
+                    key: '2',
+                    label: (<span><ClockCircleOutlined /> Trạng thái khung giờ (Ma trận)</span>),
+                    children: (
+                        <div style={{ padding: '0 24px' }}>
+                            <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text type="secondary">
+                                    Hiển thị chi tiết tình trạng phòng <strong>Trống / Có người trực</strong> theo từng block 30 phút. 
+                                    {filterRoom !== 'all' && <span style={{ color: '#1677ff' }}> (Đang lọc: Phòng {filterRoom})</span>}
+                                </Text>
+                            </div>
+                            <Table 
+                                columns={gridColumns}
+                                dataSource={gridData}
+                                pagination={false}
+                                size="small"
+                                bordered
+                                scroll={{ x: 'max-content', y: 400 }}
+                            />
+                        </div>
+                    )
+                }
+            ]}
+        />
       </Modal>
 
       <Modal

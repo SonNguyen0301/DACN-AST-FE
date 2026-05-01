@@ -40,7 +40,8 @@ import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween'; 
 import Footer from "../../components/common/Footer"; 
-
+import isoWeek from 'dayjs/plugin/isoWeek';
+dayjs.extend(isoWeek);
 dayjs.extend(isBetween);
 import { getStaffAppointmentsAPI, updateAppointmentNoteAPI } from '../../services/staffService';
 import { cancelAppointmentAPI } from '../../services/appointmentService';
@@ -59,7 +60,7 @@ export default function AdmissionStaffAppointmentPage() {
   const [filterStatus, setFilterStatus] = useState('SCHEDULED');
   const [filterDoctor, setFilterDoctor] = useState('all');
   
-  const [dateRange, setDateRange] = useState([dayjs().startOf('month'), dayjs()]);
+  const [dateRange, setDateRange] = useState([dayjs().startOf('isoWeek'), dayjs().endOf('isoWeek')]);
   const [timeRange, setTimeRange] = useState(null);
 
   const [appointments, setAppointments] = useState([]);

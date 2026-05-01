@@ -39,6 +39,9 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+
+dayjs.extend(isoWeek);
 import Footer from "../../components/common/Footer"; 
 import { getDoctorAppointmentsAPI, startExaminationAPI } from '../../services/doctorService';
 import useAuth from "../../hooks/useAuth";
@@ -56,7 +59,7 @@ export default function DoctorAppointmentPage() {
 
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState('SCHEDULED');
-  const [dateRange, setDateRange] = useState([dayjs().startOf('month'), dayjs()]);
+  const [dateRange, setDateRange] = useState([dayjs().startOf('isoWeek'), dayjs().endOf('isoWeek')]);
   const [timeRange, setTimeRange] = useState(null);
 
   const [appointments, setAppointments] = useState([]);

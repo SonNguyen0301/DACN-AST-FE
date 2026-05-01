@@ -19,7 +19,8 @@ import {
   Empty,
   Modal,
   Spin,
-  message
+  message,
+  Tooltip as AntdTooltip
 } from "antd";
 import { 
   UserOutlined, 
@@ -694,28 +695,29 @@ const getListData = (value) => {
             </Col>
 
             <Col xs={24} lg={8}>
-                    <Card 
-                        title={`Tỷ lệ bệnh lý tháng ${currentMonth}`} 
-                        variant="borderless" 
-                        style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: '100%' }}
-                        styles={{ body: { padding: 0 } }} 
-                    >
-                         <div style={{ width: '100%', height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <ResponsiveContainer width="100%" height="100%">
-                              <PieChart>
+                <Card 
+                    title={`Tỷ lệ bệnh lý tháng ${currentMonth}`} 
+                    variant="borderless" 
+                    style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: '100%' }}
+                    styles={{ body: { padding: 0 } }} 
+                >
+                    <div style={{ width: '100%', height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
                                 <Pie
-                                  data={diseaseData}
-                                  cx="50%"
-                                  cy="50%"
-                                  innerRadius={55}
-                                  outerRadius={75}
-                                  paddingAngle={5}
-                                  dataKey="value"
+                                    data={diseaseData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={55}
+                                    outerRadius={75}
+                                    paddingAngle={5}
+                                    dataKey="value"
                                 >
-                                  {diseaseData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                  ))}
+                                    {diseaseData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
                                 </Pie>
+                                
                                 <Tooltip 
                                     formatter={(value, name, item) => [
                                         `${value}% (Số lượng: ${item.payload.count} ca)`, 
@@ -723,13 +725,31 @@ const getListData = (value) => {
                                     ]} 
                                 />
 
-                                <Legend verticalAlign="bottom" height={36} iconType="circle"/>
-                              </PieChart>
-                            </ResponsiveContainer>
-                         </div>
-                    </Card>
-                </Col>
-                </Row>
+                                <Legend 
+                                    verticalAlign="bottom" 
+                                    height={60} 
+                                    iconType="circle"
+                                    formatter={(value) => {
+                                        const MAX_LENGTH = 15; 
+                                        const displayText = value.length > MAX_LENGTH 
+                                            ? `${value.substring(0, MAX_LENGTH)}...` 
+                                            : value;
+
+                                        return (
+                                            <AntdTooltip title={value} placement="bottom">
+                                                <span style={{ color: '#595959', cursor: 'pointer' }}>
+                                                    {displayText}
+                                                </span>
+                                            </AntdTooltip>
+                                        );
+                                    }}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </Card>
+            </Col>
+            </Row>  
         </div>
 
         <Row gutter={[24, 24]} style={{ display: 'flex', alignItems: 'stretch' }}>

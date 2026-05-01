@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Layout, Menu, Avatar, Typography, Card, Button, Row, Col, Image, 
-  Space, Select, Modal, Form, Input, DatePicker, Dropdown, Descriptions, Tag, Pagination, message, Spin
+  Space, Select, Modal, Form, Input, DatePicker, Dropdown, Descriptions, Tag, Pagination, message, Spin, Divider
 } from "antd";
 import { 
   UserOutlined, 
@@ -480,10 +480,33 @@ useEffect(() => {
                               </Descriptions.Item>
 
                               <Descriptions.Item label="Đơn thuốc">
-                                  <Text style={{ whiteSpace: 'pre-wrap' }}>
-                                      {selectedConsultation.prescription || 'Không có đơn thuốc'}
-                                  </Text>
-                              </Descriptions.Item>
+                                {selectedConsultation.prescription && selectedConsultation.prescription.length > 0 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {selectedConsultation.prescription.map((item, index) => (
+                                            <div 
+                                                key={index} 
+                                                style={{ 
+                                                    background: '#fafafa', 
+                                                    padding: '8px 12px', 
+                                                    borderRadius: '6px', 
+                                                    border: '1px solid #f0f0f0' 
+                                                }}
+                                            >
+                                                <Text strong style={{ color: '#1677ff', display: 'block' }}>
+                                                    {index + 1}. {item.medicineName || item.name || 'Tên thuốc'}
+                                                </Text>
+                                                <Text type="secondary" style={{ fontSize: '13px' }}>
+                                                    Liều lượng: <Text strong style={{ color: '#555' }}>{item.dosage || item.quantity || '-'}</Text> 
+                                                    <Divider type="vertical" /> 
+                                                    Cách dùng: <Text strong style={{ color: '#555' }}>{item.usage || item.durationDays || item.duration || '-'}</Text>
+                                                </Text>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <Text type="secondary" style={{ fontStyle: 'italic' }}>Không có đơn thuốc</Text>
+                                )}
+                            </Descriptions.Item>
 
                               <Descriptions.Item label="Lời khuyên">
                               <Text type="primary" style={{ whiteSpace: 'pre-wrap' }}>{selectedConsultation.advices || 'Không có lời khuyên'}</Text>

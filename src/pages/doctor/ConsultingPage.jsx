@@ -25,7 +25,8 @@ import {
   List,
   Alert,
   Spin,
-  Table
+  Table,
+  Checkbox
 } from "antd";
 import { 
   UserOutlined, 
@@ -480,12 +481,12 @@ export default function ExaminationPage() {
                             </Col>
 
                             <Col xs={24} lg={18}>
-                                <Card title={<span style={{ color: '#1677ff' }}>1. Thông tin lâm sàng (Cấu trúc)</span>} style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", marginBottom: 24 }}>
+                                <Card title={<span style={{ color: '#1677ff' }}>1. Thông tin lâm sàng </span>} style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", marginBottom: 24 }}>
                                     <Row gutter={[24, 24]}>
                                         <Col xs={24} sm={12}><Form.Item label="Triệu chứng chính" name="symptom" rules={[{ required: true }]}><Input /></Form.Item></Col>
-                                        <Col xs={24} sm={12}><Form.Item label="Vị trí trên cơ thể" name="location" rules={[{ required: true }]}><Select><Option value="face">Vùng mặt</Option><Option value="neck">Vùng cổ</Option><Option value="arm">Cánh tay / Bàn tay</Option><Option value="body">Thân mình</Option><Option value="leg">Chân</Option></Select></Form.Item></Col>
+                                        <Col xs={24} sm={12}><Form.Item label="Vị trí trên cơ thể" name="location" rules={[{ required: true }]}><Input /></Form.Item></Col>
                                         <Col xs={24} sm={8}><Form.Item label="Thời gian kéo dài" name="duration"><Input /></Form.Item></Col>
-                                        <Col xs={24} sm={8}><Form.Item label="Đặc điểm tổn thương" name="skinType"><Radio.Group><Radio value="surface">Ngoài da</Radio><Radio value="deep">Dưới da/Sâu</Radio></Radio.Group></Form.Item></Col>
+                                        <Col xs={24} sm={8}><Form.Item label="Đặc điểm tổn thương" name="skinType"><Checkbox.Group><Checkbox value="surface">Ngoài da</Checkbox><Checkbox value="deep">Dưới da/Sâu</Checkbox></Checkbox.Group></Form.Item></Col>
                                         <Col xs={24} sm={8}><Form.Item label="Mức độ lan rộng" name="severity"><Select><Option value="local">Khu trú</Option><Option value="spread">Lan rộng</Option><Option value="whole">Toàn thân</Option></Select></Form.Item></Col>
                                         <Col xs={24} sm={12}><Form.Item label="Dị ứng" name="allergy"><Input /></Form.Item></Col>
                                         <Col xs={24} sm={12}><Form.Item label="Tiền sử bệnh lý" name="history"><Input /></Form.Item></Col>

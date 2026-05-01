@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Layout, Button, Typography, Row, Col, Space, Card, Image, Carousel } from 'antd';
+import { Layout, Button, Typography, Row, Col, Space, Card, Carousel } from 'antd';
 import { 
   ArrowRightOutlined, CheckCircleFilled, 
   CloudUploadOutlined, ScanOutlined, FileProtectOutlined, ScheduleOutlined,
@@ -67,7 +67,8 @@ export default function LandingPage() {
   const featureSlides = [
     {
       key: 'ai',
-      img: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=2070&auto=format&fit=crop", 
+      // Giảm w=2070 xuống w=800 vì ảnh này chỉ hiển thị ở 1 nửa màn hình
+      img: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=800&auto=format&fit=crop", 
       alt: "Chẩn đoán AI",
       badgeIcon: <ScanOutlined style={{ color: '#1677ff', fontSize: 20 }} />,
       badgeTitle: "Phân tích AI",
@@ -75,7 +76,7 @@ export default function LandingPage() {
     },
     {
       key: 'booking',
-      img: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=2070&auto=format&fit=crop", 
+      img: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=800&auto=format&fit=crop", 
       alt: "Đặt lịch khám",
       badgeIcon: <CalendarOutlined style={{ color: '#52c41a', fontSize: 20 }} />,
       badgeTitle: "Đặt lịch 24/7",
@@ -83,7 +84,7 @@ export default function LandingPage() {
     },
     {
       key: 'support',
-      img: "https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=2070&auto=format&fit=crop", 
+      img: "https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=800&auto=format&fit=crop", 
       alt: "Hỗ trợ chuyên môn",
       badgeIcon: <ReadOutlined style={{ color: '#722ed1', fontSize: 20 }} />,
       badgeTitle: "Hồ sơ số",
@@ -105,7 +106,9 @@ export default function LandingPage() {
           <img 
             src="/ASTCare1.png" 
             alt="ATSCare Logo" 
-            style={{ height: '40px', objectFit: 'contain' }} 
+            width="140" 
+            height="40" 
+            style={{ height: '40px', width: 'auto', objectFit: 'contain' }} 
           />
         </div>
         
@@ -160,13 +163,17 @@ export default function LandingPage() {
                 filter: 'blur(40px)', borderRadius: '50%', zIndex: 0 
               }}></div>
 
-              <Image 
-                preview={false}
-                src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop"
+              {/* Tối ưu ảnh Hero: Dùng thẻ img thuần, định nghĩa width/height, ưu tiên load cao nhất */}
+              <img 
+                src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=1200&auto=format&fit=crop"
                 alt="Công nghệ chẩn đoán da liễu AI"
+                width="600"
+                height="400"
+                fetchPriority="high" // Báo trình duyệt tải ảnh này đầu tiên (Cứu điểm LCP)
                 style={{ 
-                  borderRadius: '40px 40px 40px 40px', boxShadow: '0 30px 60px rgba(22, 119, 255, 0.25)', 
-                  maxWidth: '100%', height: 'auto', position: 'relative', zIndex: 1, border: '6px solid #fff' 
+                  borderRadius: '40px', boxShadow: '0 30px 60px rgba(22, 119, 255, 0.25)', 
+                  maxWidth: '100%', height: 'auto', position: 'relative', zIndex: 1, border: '6px solid #fff',
+                  objectFit: 'cover', aspectRatio: '3/2'
                 }} 
               />
 
@@ -222,13 +229,19 @@ export default function LandingPage() {
                 <Button 
                   shape="circle" icon={<LeftOutlined style={{ color: '#1677ff', fontSize: 16 }} />}
                   style={{ ...arrowBtnStyle, left: -20 }} onClick={() => carouselRef.current.prev()} 
+                  aria-label="Previous slide"
                 />
 
                 <Carousel ref={carouselRef} autoplay autoplaySpeed={3000} effect="fade" dots={false}>
                   {featureSlides.map((slide) => (
                     <div key={slide.key} style={{ position: 'relative', padding: '10px' }}>
-                      <Image 
-                        preview={false} src={slide.img} alt={slide.alt}
+                      {/* Tối ưu ảnh Carousel: Cố định kích thước, thêm lazy load */}
+                      <img 
+                        src={slide.img} 
+                        alt={slide.alt}
+                        width="500"
+                        height="350"
+                        loading="lazy" 
                         style={{ 
                           width: '100%', height: '350px', objectFit: 'cover',
                           borderRadius: 24, border: '8px solid #fff',
@@ -254,6 +267,7 @@ export default function LandingPage() {
                 <Button 
                   shape="circle" icon={<RightOutlined style={{ color: '#1677ff', fontSize: 16 }} />}
                   style={{ ...arrowBtnStyle, right: -20 }} onClick={() => carouselRef.current.next()} 
+                  aria-label="Next slide"
                 />
               </div>
             </Col>
