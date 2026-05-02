@@ -352,42 +352,45 @@ export default function DoctorProfilePage() {
         </Button>
 
         <Spin spinning={loadingDoctor}>
-            {doctor ? (
-                <Card style={{ borderRadius: 12, marginBottom: 24 }}>
-                <Row gutter={[24, 24]}>
-                    <Col xs={24} sm="auto" style={{ textAlign: 'center' }}>
-                      <Avatar size={120} src={doctor.avatarUrl} icon={<UserOutlined />} />
-                    </Col>
-                    <Col xs={24} sm={16} md={18}>
-                    <Title level={3} style={{ margin: 0 }}>{doctor.name}</Title>
-                    <Space style={{ marginTop: 8 }} wrap>
-                        <Tag color="blue">{doctor.title}</Tag>
-                        {doctor.isVerified && <Tag color="green" icon={<SafetyOutlined />}>Đã xác minh</Tag>}
-                        <Text>{doctor.experienceYears}</Text>
-                    </Space>
-                    <div style={{ marginTop: 12 }}>
-                        <Text strong>Chuyên khoa:</Text> <Text>{doctor.specialty}</Text> <br/>
-                        <Text strong>Nơi công tác:</Text> <Text>{doctor.workplace}</Text>
-                    </div>
-                    </Col>
-                </Row>
-                <div style={{ borderTop: '1px solid #f0f0f0', margin: '24px 0 12px 0' }} />
-                <Tabs defaultActiveKey="1">
-                    <TabPane tab={<Space><BookOutlined /> Giới thiệu</Space>} key="1">
-                    <Paragraph style={{ maxWidth: 800 }}>{doctor.introduction}</Paragraph>
-                    </TabPane>
-                    <TabPane tab={<Space><ReadOutlined /> Đào tạo</Space>} key="2">
-                    <ul>{doctor.education.map((e, i) => <li key={i}>{e}</li>)}</ul>
-                    </TabPane>
-                    <TabPane tab={<Space><TeamOutlined /> Kinh nghiệm</Space>} key="3">
-                    <ul>{doctor.experience.map((e, i) => <li key={i}>{e}</li>)}</ul>
-                    </TabPane>
-                </Tabs>
-                </Card>
-            ) : (
-                <Empty description="Không tìm thấy dữ liệu bác sĩ" />
-            )}
-        </Spin>
+          {doctor ? (
+              <Card style={{ borderRadius: 12, marginBottom: 24 }}>
+                  <Row gutter={[24, 24]}>
+                      <Col className="doctor-avatar-col" style ={{ marginRight: 24 }}>
+                          <Avatar size={120} src={doctor.avatarUrl} icon={<UserOutlined />} />
+                      </Col>
+
+                      <Col className="doctor-info-col">
+                          <Title level={3} style={{ margin: 0 }}>{doctor.name}</Title>
+                          <Space style={{ marginTop: 8 }} wrap>
+                              <Tag color="blue">{doctor.title}</Tag>
+                              {doctor.isVerified && <Tag color="green" icon={<SafetyOutlined />}>Đã xác minh</Tag>}
+                              <Text>{doctor.experienceYears}</Text>
+                          </Space>
+                          <div style={{ marginTop: 12 }}>
+                              <Text strong>Chuyên khoa:</Text> <Text>{doctor.specialty}</Text> <br/>
+                              <Text strong>Nơi công tác:</Text> <Text>{doctor.workplace}</Text>
+                          </div>
+                      </Col>
+                  </Row>
+
+                  <div style={{ borderTop: '1px solid #f0f0f0', margin: '24px 0 12px 0' }} />
+
+                  <Tabs defaultActiveKey="1">
+                      <TabPane tab={<Space><BookOutlined /> Giới thiệu</Space>} key="1">
+                          <Paragraph style={{ maxWidth: 800 }}>{doctor.introduction}</Paragraph>
+                      </TabPane>
+                      <TabPane tab={<Space><ReadOutlined /> Đào tạo</Space>} key="2">
+                          <ul>{doctor.education.map((e, i) => <li key={i}>{e}</li>)}</ul>
+                      </TabPane>
+                      <TabPane tab={<Space><TeamOutlined /> Kinh nghiệm</Space>} key="3">
+                          <ul>{doctor.experience.map((e, i) => <li key={i}>{e}</li>)}</ul>
+                      </TabPane>
+                  </Tabs>
+              </Card>
+          ) : (
+              <Empty description="Không tìm thấy dữ liệu bác sĩ" />
+          )}
+          </Spin>
 
         <Row gutter={[24, 24]}>
           <Col xs={24} lg={17}>
@@ -622,8 +625,27 @@ export default function DoctorProfilePage() {
       </div>
 
       <style>{`
+        .doctor-avatar-col {
+              flex: 0 0 120px;
+              max-width: 120px;
+          }
+          .doctor-info-col {
+              flex: 1 1 0%;
+              max-width: 100%;
+          }
         @media (max-width: 576px) {
           .hide-on-mobile { display: none !important; }
+
+          .doctor-avatar-col {
+                flex: 0 0 100%;
+                max-width: 100%;
+                display: flex;
+                justify-content: center;
+            }
+            .doctor-info-col {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
         }
       `}</style>
     </Layout>

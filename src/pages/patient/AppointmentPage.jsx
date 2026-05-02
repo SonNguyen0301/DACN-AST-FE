@@ -7,7 +7,7 @@ import {
 import { 
   UserOutlined, LogoutOutlined, CalendarOutlined,
   HomeOutlined, ScheduleOutlined, EditOutlined, 
-  DeleteOutlined, InboxOutlined, PaperClipOutlined ,FormOutlined
+  DeleteOutlined, InboxOutlined, PaperClipOutlined, FormOutlined
 } from "@ant-design/icons";
 import ChatBotIcon from "../../components/common/ChatBotIcon";
 import { useNavigate } from 'react-router-dom';
@@ -19,7 +19,6 @@ import useAuth from '../../hooks/useAuth';
 
 const { Header, Content } = Layout;
 const { Text, Paragraph } = Typography;
-const { TabPane } = Tabs;
 const { TextArea } = Input; 
 const { Dragger } = Upload; 
 
@@ -68,9 +67,23 @@ export default function AppointmentPage() {
             let allData = firstRes.data.data.data || [];
             const meta = firstRes.data.data.meta;
 
+            const updateStates = (data) => {
+                const upcoming = data.filter(apt => apt.status === 'SCHEDULED' || apt.status === 'PENDING');
+                const past = data.filter(apt => apt.status === 'CANCELLED');
+                const examined = data.filter(apt => apt.status === 'EXAMINED');
+                const examining = data.filter(apt => apt.status === 'EXAMINING');
+
+                setUpcomingAppointments([...upcoming].reverse()); 
+                setPastAppointments(past);
+                setExaminedAppointments(examined);
+                setExaminingAppointments(examining);
+            };
+
+            updateStates(allData);
+            setLoading(false); 
+
             if (meta && meta.pageCount > 1) {
                 const fetchPromises = [];
-                
                 for (let i = 2; i <= meta.pageCount; i++) {
                     fetchPromises.push(
                         getPatientAppointmentsAPI(user.id, {
@@ -85,22 +98,15 @@ export default function AppointmentPage() {
                     const pageData = res.data?.data?.data || [];
                     allData = [...allData, ...pageData];
                 });
+
+                updateStates(allData);
             }
-
-            const upcoming = allData.filter(apt => apt.status === 'SCHEDULED' || apt.status === 'PENDING');
-            const past = allData.filter(apt => apt.status === 'CANCELLED');
-            const examined = allData.filter(apt => apt.status === 'EXAMINED');
-            const examining = allData.filter(apt => apt.status === 'EXAMINING');
-
-            setUpcomingAppointments(upcoming.reverse()); 
-            setPastAppointments(past);
-            setExaminedAppointments(examined);
-            setExaminingAppointments(examining);
+        } else {
+            setLoading(false);
         }
     } catch (error) {
         console.error("Lỗi lấy lịch hẹn:", error);
         message.error("Không thể tải danh sách lịch hẹn.");
-    } finally {
         setLoading(false);
     }
   };
@@ -336,6 +342,7 @@ export default function AppointmentPage() {
                                                   src={f.base64} 
                                                   alt={f.description || 'Hình ảnh đính kèm'}
                                                   fallback="https://via.placeholder.com/60?text=L%E1%BB%97i"
+                                                  loading="lazy"
                                                   style={{ 
                                                       borderRadius: 6, 
                                                       objectFit: 'cover', 
@@ -352,7 +359,7 @@ export default function AppointmentPage() {
                         )}
                     </div>
                   ) : (
-                     isUpcomingTab && <div style={{ border: '1px dashed #d9d9d9', borderRadius: 8, padding: 16, textAlign: 'center', color: '#bfbfbf', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Chưa có ghi chú thêm</div>
+                      isUpcomingTab && <div style={{ border: '1px dashed #d9d9d9', borderRadius: 8, padding: 16, textAlign: 'center', color: '#bfbfbf', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Chưa có ghi chú thêm</div>
                   )}
                 </Col>
                 
@@ -420,22 +427,35 @@ export default function AppointmentPage() {
       </Header>
 
       <Content style={{ padding: "24px 40px" }}>
-        <Spin spinning={loading} size="large">
+        <Spin spinning={loading} size="large" tip="Đang chuẩn bị dữ liệu...">
         <Card style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
-          <Tabs defaultActiveKey="1" size="large">
-            <TabPane tab={`Lịch hẹn sắp tới (${upcomingAppointments.length})`} key="1">
-              {renderAppointmentList(upcomingAppointments, '1',true)}
-            </TabPane>
-            <TabPane tab={`Đã hủy (${pastAppointments.length})`} key="2">
-              {renderAppointmentList(pastAppointments, '2', false)}
-            </TabPane>
-            <TabPane tab={`Đã khám (${examinedAppointments.length})`} key="3">
-              {renderAppointmentList(examinedAppointments, '3', false)}
-            </TabPane>
-            <TabPane tab={`Đang khám (${examiningAppointments.length})`} key="4">
-              {renderAppointmentList(examiningAppointments, '4', false)}
-            </TabPane>
-          </Tabs>
+          <Tabs 
+            defaultActiveKey="1" 
+            size="large"
+            destroyInactiveTabPane={true} 
+            items={[
+              {
+                key: '1',
+                label: `Lịch hẹn sắp tới (${upcomingAppointments.length})`,
+                children: renderAppointmentList(upcomingAppointments, '1', true)
+              },
+              {
+                key: '2',
+                label: `Đã hủy (${pastAppointments.length})`,
+                children: renderAppointmentList(pastAppointments, '2', false)
+              },
+              {
+                key: '3',
+                label: `Đã khám (${examinedAppointments.length})`,
+                children: renderAppointmentList(examinedAppointments, '3', false)
+              },
+              {
+                key: '4',
+                label: `Đang khám (${examiningAppointments.length})`,
+                children: renderAppointmentList(examiningAppointments, '4', false)
+              }
+            ]}
+          />
         </Card>
         </Spin>
       </Content>

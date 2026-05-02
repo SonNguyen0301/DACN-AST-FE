@@ -151,7 +151,7 @@ export default function DoctorDashboardPage() {
 
       statsData = [
           { 
-              title: "Bệnh nhân hôm nay", 
+              title: "Ca khám hôm nay", 
               value: dashboardStats.totalAppointmentsCount, 
               suffix: "ca",
               icon: <ClockCircleOutlined />, 

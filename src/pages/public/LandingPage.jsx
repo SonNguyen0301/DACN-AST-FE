@@ -67,7 +67,6 @@ export default function LandingPage() {
   const featureSlides = [
     {
       key: 'ai',
-      // Giảm w=2070 xuống w=800 vì ảnh này chỉ hiển thị ở 1 nửa màn hình
       img: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=800&auto=format&fit=crop", 
       alt: "Chẩn đoán AI",
       badgeIcon: <ScanOutlined style={{ color: '#1677ff', fontSize: 20 }} />,
@@ -163,13 +162,12 @@ export default function LandingPage() {
                 filter: 'blur(40px)', borderRadius: '50%', zIndex: 0 
               }}></div>
 
-              {/* Tối ưu ảnh Hero: Dùng thẻ img thuần, định nghĩa width/height, ưu tiên load cao nhất */}
               <img 
                 src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=1200&auto=format&fit=crop"
                 alt="Công nghệ chẩn đoán da liễu AI"
                 width="600"
                 height="400"
-                fetchPriority="high" // Báo trình duyệt tải ảnh này đầu tiên (Cứu điểm LCP)
+                fetchPriority="high" 
                 style={{ 
                   borderRadius: '40px', boxShadow: '0 30px 60px rgba(22, 119, 255, 0.25)', 
                   maxWidth: '100%', height: 'auto', position: 'relative', zIndex: 1, border: '6px solid #fff',
@@ -187,7 +185,7 @@ export default function LandingPage() {
                   </div>
                   <div style={{ textAlign: 'left' }}>
                       <Text strong style={{ fontSize: 16, display: 'block' }}>Độ chính xác</Text>
-                      <Text style={{ fontSize: 24, fontWeight: 800, color: '#1677ff' }}>85%</Text>
+                      <Text style={{ fontSize: 24, fontWeight: 800, color: '#1677ff' }}>88%</Text>
                   </div>
               </div>
             </Col>

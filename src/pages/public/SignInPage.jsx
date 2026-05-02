@@ -8,7 +8,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
-
+import { useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 
 const { Header, Content } = Layout;
@@ -16,7 +16,21 @@ const { Title, Text, Link } = Typography;
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login, loading } = useAuth();
+  const { login, loading , isAuthenticated, user} = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'PATIENT') {
+        navigate('/patient/dashboard', { replace: true });
+      } else if (user.role === 'DOCTOR') {
+        navigate('/doctor/dashboard', { replace: true });
+      } else if (user.role === 'ADMIN') {
+        navigate('/admin/dashboard', { replace: true });
+      } else {
+        navigate('/staff/dashboard', { replace: true }); 
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const primaryColor = '#1677ff';
   

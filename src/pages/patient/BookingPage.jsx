@@ -187,11 +187,9 @@ export default function BookingPage() {
                   <Checkbox.Group value={selectedDepartments} onChange={handleDepartmentChange} style={{ width: '100%' }}>
                     <Space direction="vertical" style={{ width: '100%' }}>
                       <Checkbox value="Dermatology">Da liễu</Checkbox>
-                      <Checkbox value="cardiology">Tim mạch</Checkbox>
                       <Checkbox value="pediatrics">Nhi khoa</Checkbox>
-                      <Checkbox value="gastroenterology">Tiêu hóa</Checkbox>
-                      <Checkbox value="ent">Tai Mũi Họng</Checkbox>
-                      <Checkbox value="orthopedics">Cơ Xương Khớp</Checkbox>
+                      <Checkbox value="internal-medicine">Nội khoa</Checkbox>
+                      <Checkbox value="surgery">Ngoại khoa</Checkbox>
                     </Space>
                   </Checkbox.Group>
                 </Panel>
@@ -225,43 +223,61 @@ export default function BookingPage() {
                     style: { textAlign: 'center', marginTop: 30 } 
                 }}
               renderItem={(doctor) => (
-                <List.Item style={{ height: viewMode === 'grid' ? '100%' : 'auto' }}>
+                <List.Item style={{ height: '100%' }}>
                   <Card 
-                    style={{ width: '100%', borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", height: '100%' }}
-                    styles={{ body: { height: '100%' } }}
+                    style={{ 
+                        width: '100%', 
+                        borderRadius: 12, 
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.05)", 
+                        height: viewMode === 'grid' ? 380 : '100%',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}
+                    styles={{ body: { height: '100%', flex: 1, display: 'flex', flexDirection: 'column' } }}
                     variant="borderless"
                     hoverable
                   >
                     {viewMode === 'list' ? (
-                    <Row gutter={[16, 16]} align="middle">
-                      <Col xs={24} sm={8} md={6} lg={4} style={{ textAlign: 'center' }}>
-                        <Avatar size={{ xs: 100, sm: 120, md: 140, lg: 160 }} src={doctor.avatarUrl} icon={<UserOutlined />} />
+                    <Row gutter={[24, 24]} align="middle">
+                      <Col xs={24} sm={8} md={6} lg={5} xl={4} style={{ textAlign: 'center' }}>
+                        <Avatar 
+                          src={doctor.avatarUrl} 
+                          icon={<UserOutlined />} 
+                          style={{ 
+                              width: 160, 
+                              height: 160, 
+                              lineHeight: '160px', 
+                              fontSize: 64,
+                              backgroundColor: '#f0f0f0', 
+                              color: '#bfbfbf' 
+                          }} 
+                        />
                       </Col>
                       
-                      <Col xs={24} sm={16} md={18} lg={20}>
+                      <Col xs={24} sm={16} md={18} lg={19} xl={20}>
                         <Title level={5} style={{ color: '#1677ff', cursor: 'pointer', margin: 0, fontSize: 20 }}>
-                                {doctor.lastName} {doctor.firstName}
-                            </Title>
-                            <Space style={{ margin: '8px 0' }}>
-                                <Text type="secondary" style={{ marginLeft: 8 }}>Mã BS: {doctor.doctorCode}</Text>
-                            </Space>
-                            
-                            <Text strong style={{ display: 'block', marginTop: 10, fontSize: 15 }}>
-                                <MedicineBoxOutlined style={{ color: '#1677ff', marginRight: 8 }}/> 
-                                Khoa: {doctor.department == "Dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
-                            </Text>
-
-                            <Paragraph type="secondary" style={{ marginTop: 10, marginBottom: 0 }}>
-                                <InfoCircleOutlined style={{ marginRight: 8 }}/>
-                                {doctor.experience || "Nhiều năm kinh nghiệm trong nghề."}
-                            </Paragraph>
-
-                            {doctor.description && (
-                                <Paragraph type="secondary" style={{ marginTop: 4, fontStyle: 'italic' }}>
-                                    {doctor.description}
-                                </Paragraph>
-                            )}
+                            {doctor.lastName} {doctor.firstName}
+                        </Title>
+                        <Space style={{ margin: '8px 0' }}>
+                            <Text type="secondary" style={{ marginLeft: 8 }}>Mã BS: {doctor.doctorCode}</Text>
+                        </Space>
                         
+                        <Text strong style={{ display: 'block', marginTop: 10, fontSize: 15 }}>
+                            <MedicineBoxOutlined style={{ color: '#1677ff', marginRight: 8 }}/> 
+                            Khoa: {doctor.department == "dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
+                        </Text>
+
+                        <Paragraph type="secondary" style={{ marginTop: 10, marginBottom: 0 }}>
+                            <InfoCircleOutlined style={{ marginRight: 8 }}/>
+                            {doctor.experience || "Nhiều năm kinh nghiệm trong nghề."}
+                        </Paragraph>
+
+                        {doctor.description && (
+                            <Paragraph type="secondary" style={{ marginTop: 4, fontStyle: 'italic' }}>
+                                {doctor.description}
+                            </Paragraph>
+                        )}
+
                         <div style={{ marginTop: 16 }}>
                           <Button 
                             type="primary" 
@@ -275,7 +291,14 @@ export default function BookingPage() {
                     </Row>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', alignItems: 'center', textAlign: 'center' }}>
-                            <Avatar size={100} src={doctor.avatarUrl} icon={<UserOutlined />} style={{ marginBottom: 16 }} />
+                            <Avatar 
+                                src={doctor.avatarUrl} 
+                                icon={<UserOutlined />} 
+                                style={{ 
+                                    width: 100, height: 100, lineHeight: '100px', fontSize: 48, 
+                                    marginBottom: 16, backgroundColor: '#f0f0f0', color: '#bfbfbf' 
+                                }} 
+                            />
                             
                             <Title level={5} style={{ color: '#1677ff', margin: 0, fontSize: 18, minHeight: 44 }}>
                                 {doctor.lastName} {doctor.firstName}
@@ -285,7 +308,7 @@ export default function BookingPage() {
                             
                             <Text strong style={{ fontSize: 14, marginBottom: 8 }}>
                                 <MedicineBoxOutlined style={{ color: '#1677ff', marginRight: 4 }}/> 
-                                {doctor.department == "Dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
+                                {doctor.department == "dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
                             </Text>
 
                             <Paragraph 
@@ -300,7 +323,7 @@ export default function BookingPage() {
                                 type="primary" 
                                 icon={<CalendarOutlined />}
                                 onClick={() => navigate(`/patient/booking/${doctor.id}`)}
-                                style={{ width: '100%', borderRadius: 8 }}
+                                style={{ width: '100%', borderRadius: 8, marginTop: 'auto' }}
                             >
                                 Đặt khám
                             </Button>
