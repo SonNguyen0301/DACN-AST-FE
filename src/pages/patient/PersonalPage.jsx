@@ -293,7 +293,6 @@ useEffect(() => {
                   <Title level={4} style={{ margin: 0 }}>{fullName}</Title>
                   <Button type="primary" shape="circle" icon={<EditOutlined />} onClick={() => showModal(userData)} size="middle" />
                 </div>
-                <Tag color="blue" style={{ marginTop: 8 }}>{userData.role}</Tag>
               </div>
               
               <div style={{ padding: '0 30px' }}>
@@ -347,8 +346,10 @@ useEffect(() => {
                           }}
                           options={[
                               { value: 'all', label: 'Tất cả chuyên khoa' },
-                              { value: 'cardiology', label: 'Tim mạch' },
-                              { value: 'dermatology', label: 'Da liễu' },
+                              { value: 'pediatrics', label: 'Nhi khoa' },
+                              { value: 'Dermatology', label: 'Da liễu' },
+                              { value: 'internal-medicine', label: 'Nội khoa'},
+                              { value: 'surgery', label: 'Ngoại khoa'},
                           ]}
                           allowClear
                       />
@@ -378,7 +379,8 @@ useEffect(() => {
                                 key={apt.id} 
                                 hoverable
                                 variant="borderless" 
-                                style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", transition: 'all 0.3s', border: '1px solid #f0f0f0' }}
+                                style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", transition: 'all 0.3s', border: '1px solid #f0f0f0',cursor: 'pointer' }}
+                                onClick={() => handleViewDetail(apt)}
                                 >
                                 <Row gutter={24} align="middle">
                                     <Col xs={24} md={10}>
@@ -416,7 +418,10 @@ useEffect(() => {
                                         <Button 
                                         type="primary" 
                                         shape="round"
-                                        onClick={() => handleViewDetail(apt)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleViewDetail(apt);
+                                        }}
                                         style={{ minWidth: 110 }}
                                         >
                                         Xem chi tiết

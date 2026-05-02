@@ -127,7 +127,7 @@ export default function ManageStaffSchedulePage() {
   useEffect(() => {
       const fetchDoctorsList = async () => {
           try {
-              const res = await getDoctorsAPI({ page: 1, take: 50, sortDirection: 'ASC' });
+              const res = await getDoctorsAPI({ page: 1, take: 50, sortDirection: 'ASC', department: 'Dermatology' });
               
               if (res.data?.success) {
                   const docs = res.data.data.data || res.data.data;
@@ -281,7 +281,6 @@ export default function ManageStaffSchedulePage() {
   const onSelectDate = (date, { source }) => {
     if (source === 'date') {
         setSelectedDate(date);
-        // Lấy danh sách đã lọc thay vì toàn bộ
         setSelectedDateShifts(getFilteredListData(date));
         setSelectedIds([]);
         setViewDetailsOpen(true);

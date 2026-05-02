@@ -210,8 +210,7 @@ export default function UserManagementPage() {
   const handleSignOut = () => navigate('/');
 
   const menuUserItems = [
-    { key: '1', label: 'Hồ sơ Admin', icon: <UserOutlined /> },
-    { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
+    { key: '1', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
   ];
 
   const handleMenuClick = ({ key }) => {
@@ -634,9 +633,9 @@ export default function UserManagementPage() {
                                 {getFieldValue('role') === 'doctor' ? (
                                     <Select placeholder="Chọn chuyên khoa">
                                         <Option value="dermatology">Da liễu</Option>
-                                        <Option value="internal_medicine">Nội khoa</Option>
                                         <Option value="pediatrics">Nhi khoa</Option>
-                                        <Option value="otolaryngology">Tai Mũi Họng</Option>
+                                        <Option value="internal_medicine">Nội khoa</Option>
+                                        <Option value="surgery">Ngoại khoa</Option>
                                     </Select>
                                 ) : (
                                     <Select placeholder="Chọn phòng ban">

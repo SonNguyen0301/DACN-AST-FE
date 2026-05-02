@@ -45,6 +45,7 @@ dayjs.extend(isoWeek);
 dayjs.extend(isBetween);
 import { getStaffAppointmentsAPI, updateAppointmentNoteAPI } from '../../services/staffService';
 import { cancelAppointmentAPI } from '../../services/appointmentService';
+import { getDoctorsAPI } from '../../services/doctorService';
 import useAuth from "../../hooks/useAuth";
 
 const { Header, Content } = Layout;
@@ -122,11 +123,6 @@ export default function AdmissionStaffAppointmentPage() {
 
             setAppointments(finalData);
 
-            if(filterDoctor === 'all'){
-               const uniqueDoctors = [...new Set(mappedData.map(item => item.doctor))];
-               setDoctorList(uniqueDoctors);
-            }
-
             setPagination({
                 current: res.data.data.meta.page,
                 pageSize: res.data.data.meta.take,
@@ -141,8 +137,28 @@ export default function AdmissionStaffAppointmentPage() {
     }
   };
 
+  const fecthDoctorList = async () => {
+    try {
+        const params = {
+            page: 1,
+            take: 50,
+            sortDirection: 'ASC',
+            department: 'Dermatology' 
+        };
+        const res = await getDoctorsAPI(params);
+        if (res.data?.success) {
+            const uniqueDoctors = [...new Set(res.data.data.data.map(item => item.name))];
+            setDoctorList(uniqueDoctors);
+        }
+    } catch (error) {
+        console.error("Lỗi lấy danh sách bác sĩ:", error);
+        message.error("Không thể tải danh sách bác sĩ.");
+    }
+  };
+
   useEffect(() => {
       fetchAppointments();
+      fecthDoctorList();
   }, []);
 
   const handleCancelAppointment = async (key) => {
