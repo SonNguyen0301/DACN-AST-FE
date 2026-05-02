@@ -8,6 +8,7 @@ import { jwtDecode } from "jwt-decode";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+    
     const [isAuthenticated, setIsAuthenticated] = useState(() => {
         return !!localStorage.getItem('accessToken');
     });
@@ -29,7 +30,7 @@ export const AuthProvider = ({ children }) => {
         return null;
     });
 
-    const login = async (email,password) => {
+    const login = async (email,password,rememberMe = false) => {
         try {
             // --- GIAI ĐOẠN 1: LẤY USER TOKEN ---
             const userRes = await loginAPI(email, password);
@@ -41,6 +42,9 @@ export const AuthProvider = ({ children }) => {
             // Lưu User Token (Quan trọng: api.js sẽ dùng cái này để gọi API Passport)
             localStorage.setItem('accessToken', userToken);
             setIsAuthenticated(true);
+
+            const storage = rememberMe ? localStorage : sessionStorage;
+            storage.setItem('accessToken', userToken);
 
             // --- GIAI ĐOẠN 2: LẤY CHATBOT TOKEN ---
             try {
@@ -73,6 +77,8 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('chatToken'); // <--- Xóa cả 2
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('chatToken');
         setIsAuthenticated(false);
         setChatToken(null);
         setUser(null);

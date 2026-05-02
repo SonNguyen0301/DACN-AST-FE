@@ -233,35 +233,40 @@ export default function BookingPage() {
                     hoverable
                   >
                     {viewMode === 'list' ? (
-                    <Row gutter={[16, 16]} align="middle">
-                      <Col xs={24} sm={8} md={6} lg={4} style={{ textAlign: 'center' }}>
-                        <Avatar size={{ xs: 100, sm: 120, md: 140, lg: 160 }} src={doctor.avatarUrl} icon={<UserOutlined />} />
+                    <Row gutter={[24, 24]} align="middle">
+                      <Col xs={24} sm="auto" style={{ display: 'flex', justifyContent: 'center', minWidth: '150px' }}>
+                        <Avatar 
+                          size={110} 
+                          src={doctor.avatarUrl} 
+                          icon={<UserOutlined />} 
+                          style={{ backgroundColor: '#f0f0f0', color: '#bfbfbf' }} 
+                        />
                       </Col>
                       
-                      <Col xs={24} sm={16} md={18} lg={20}>
+                      <Col xs={24} sm={16} flex="auto">
                         <Title level={5} style={{ color: '#1677ff', cursor: 'pointer', margin: 0, fontSize: 20 }}>
-                                {doctor.lastName} {doctor.firstName}
-                            </Title>
-                            <Space style={{ margin: '8px 0' }}>
-                                <Text type="secondary" style={{ marginLeft: 8 }}>Mã BS: {doctor.doctorCode}</Text>
-                            </Space>
-                            
-                            <Text strong style={{ display: 'block', marginTop: 10, fontSize: 15 }}>
-                                <MedicineBoxOutlined style={{ color: '#1677ff', marginRight: 8 }}/> 
-                                Khoa: {doctor.department == "Dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
-                            </Text>
-
-                            <Paragraph type="secondary" style={{ marginTop: 10, marginBottom: 0 }}>
-                                <InfoCircleOutlined style={{ marginRight: 8 }}/>
-                                {doctor.experience || "Nhiều năm kinh nghiệm trong nghề."}
-                            </Paragraph>
-
-                            {doctor.description && (
-                                <Paragraph type="secondary" style={{ marginTop: 4, fontStyle: 'italic' }}>
-                                    {doctor.description}
-                                </Paragraph>
-                            )}
+                            {doctor.lastName} {doctor.firstName}
+                        </Title>
+                        <Space style={{ margin: '8px 0' }}>
+                            <Text type="secondary">Mã BS: {doctor.doctorCode}</Text>
+                        </Space>
                         
+                        <Text strong style={{ display: 'block', marginTop: 8, fontSize: 15 }}>
+                            <MedicineBoxOutlined style={{ color: '#1677ff', marginRight: 8 }}/> 
+                            Khoa: {doctor.department == "Dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
+                        </Text>
+
+                        <Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
+                            <InfoCircleOutlined style={{ marginRight: 8 }}/>
+                            {doctor.experience || "Nhiều năm kinh nghiệm trong nghề."}
+                        </Paragraph>
+
+                        {doctor.description && (
+                            <Paragraph type="secondary" style={{ marginTop: 4, fontStyle: 'italic' }}>
+                                {doctor.description}
+                            </Paragraph>
+                        )}
+                    
                         <div style={{ marginTop: 16 }}>
                           <Button 
                             type="primary" 
