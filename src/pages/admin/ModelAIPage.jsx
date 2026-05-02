@@ -152,29 +152,51 @@ export default function ModelAIPage() {
   };
 
   const getColumns = (type) => [
-    { title: 'Version', dataIndex: 'version', render: (text) => <Text strong>{text}</Text> },
-    { title: 'Tên Model', dataIndex: 'name' },
-    { 
-        title: 'Trạng thái', 
-        dataIndex: 'isPublic', 
+    { title: 'Version', dataIndex: 'version', width: 100, render: (text) => <Text strong>{text}</Text> },
+    {
+        title: 'Tên hiển thị',
+        dataIndex: 'name',
+        width: 180,
+        render: (t) => t ? <Text>{t}</Text> : <Text type="secondary">—</Text>
+    },
+    {
+        title: 'Trạng thái',
+        dataIndex: 'isPublic',
+        width: 110,
         render: (isPublic) => (
             <Tag color={isPublic ? 'success' : 'default'}>
                 {isPublic ? 'Công khai' : 'Nội bộ'}
             </Tag>
-        ) 
+        )
     },
     ...(type === 'chatbot' ? [
-        { title: 'Dify Token', dataIndex: 'accessToken', render: () => '••••••••' },
-        { title: 'Knowledge Base', dataIndex: 'knowledgeName', render: (t) => t || '-' }
+        { title: 'Dify Token', dataIndex: 'accessToken', width: 120, render: () => '••••••••' },
+        { title: 'Knowledge Base', dataIndex: 'knowledgeName', width: 180, render: (t) => t || <Text type="secondary">—</Text> }
     ] : [
-        { title: 'Loại AI', dataIndex: ['modelConfig', 'providerType'], render: (t) => <Tag color="blue">{t || 'INTERNAL'}</Tag> },
-        { title: 'Tên/Key', dataIndex: ['modelConfig', 'nameModel'] },
-        { title: 'URL/Host', dataIndex: 'modelUrl', render: (t) => t ? <a href={t} target="_blank" rel="noreferrer">Link</a> : '-' }
+        {
+            title: 'Loại AI',
+            dataIndex: ['modelConfig', 'providerType'],
+            width: 140,
+            render: (t) => <Tag color="blue">{t || 'INTERNAL'}</Tag>
+        },
+        {
+            title: 'Tên/Key Model',
+            dataIndex: ['modelConfig', 'nameModel'],
+            width: 160,
+            render: (t) => t ? <Tag color="cyan">{t}</Tag> : <Text type="secondary">—</Text>
+        },
+        {
+            title: 'URL/Host',
+            dataIndex: 'modelUrl',
+            width: 100,
+            render: (t) => t ? <a href={t} target="_blank" rel="noreferrer">Link</a> : <Text type="secondary">—</Text>
+        }
     ]),
     {
         title: 'Hành động',
         key: 'action',
-        fixed: 'right', 
+        fixed: 'right',
+        width: 90,
         render: (_, record) => (
             <Space>
                 <Button type="text" icon={<EditOutlined style={{ color: '#1677ff' }} />} onClick={() => handleEdit(record)} />
@@ -288,8 +310,8 @@ export default function ModelAIPage() {
                 </Col>
             </Row>
 
-            <Form.Item label="Tên Model (Hiển thị)" name="name" style={{ marginTop: 16 }}>
-                <Input placeholder="Tùy chọn hiển thị tên (VD: Model da liễu)" />
+            <Form.Item label="Tên hiển thị (tuỳ chọn)" name="name" style={{ marginTop: 16 }}>
+                <Input placeholder="VD: Model da liễu v2 — dùng để hiển thị cho người dùng" />
             </Form.Item>
 
             {activeTab === 'chatbot' ? (
@@ -319,8 +341,13 @@ export default function ModelAIPage() {
                             ]}
                         />
                     </Form.Item>
-                    <Form.Item label="Tên Model/Key" name={['modelConfig', 'nameModel']} rules={[{ required: true }]}>
-                        <Input placeholder="Nhập Key của Model (VD: skin_v1)" />
+                    <Form.Item
+                        label="Tên/Key kỹ thuật"
+                        name={['modelConfig', 'nameModel']}
+                        rules={[{ required: true, message: 'Vui lòng nhập key kỹ thuật của model' }]}
+                        extra="Key dùng để hệ thống gọi model, VD: skin_v1, derma_yolo_v3"
+                    >
+                        <Input placeholder="VD: skin_v1" />
                     </Form.Item>
                     <Form.Item 
                         noStyle 
