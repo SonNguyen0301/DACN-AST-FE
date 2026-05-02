@@ -70,6 +70,7 @@ export default function ExaminationPage() {
 
   const [activePatient, setActivePatient] = useState(location.state?.patient || null);
   const [consultationId, setConsultationId] = useState(location.state?.consultationId || null);
+  const [clinicalInfo, setClinicalInfo] = useState(null);
 
   const [todayPatients, setTodayPatients] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
@@ -209,8 +210,23 @@ export default function ExaminationPage() {
     { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
   ];
 
+  const extractClinicalInfo = (values) => ({
+    symptom: values.symptom,
+    location: values.location,
+    duration: values.duration,
+    skinType: values.skinType,
+    skinTypeNote: values.skinTypeNote,
+    severity: values.severity,
+    allergy: values.allergy,
+    history: values.history,
+    gender: values.gender,
+    age: values.age,
+    genetic: values.genetic,
+  });
+
   const handleAIAssist = () => {
     form.validateFields().then(async values => {
+          setClinicalInfo(extractClinicalInfo(values));
           setUseAI(true);
           setViewState('result');
           setIsAILoading(true);
@@ -311,6 +327,7 @@ export default function ExaminationPage() {
 
   const handleManualDiagnose = () => {
       form.validateFields().then(values => {
+          setClinicalInfo(extractClinicalInfo(values));
           setUseAI(false);
           setViewState('result');
           resultForm.resetFields(); 
@@ -333,7 +350,8 @@ export default function ExaminationPage() {
               finalDiagnosis: values.finalDiagnosis,
               department: values.department,
               currentCondition: values.currentCondition,
-              medicines: values.medicines
+              medicines: values.medicines,
+              clinicalInfo: clinicalInfo ?? undefined,
           });
           message.success("Đã lưu hồ sơ khám bệnh và gửi toa thuốc!");
           setActivePatient(null);
@@ -496,7 +514,24 @@ export default function ExaminationPage() {
                                         <Col xs={24} sm={12}><Form.Item label="Triệu chứng chính" name="symptom" rules={[{ required: true }]}><Input /></Form.Item></Col>
                                         <Col xs={24} sm={12}><Form.Item label="Vị trí trên cơ thể" name="location" rules={[{ required: true }]}><Input /></Form.Item></Col>
                                         <Col xs={24} sm={8}><Form.Item label="Thời gian kéo dài" name="duration"><Input /></Form.Item></Col>
-                                        <Col xs={24} sm={8}><Form.Item label="Đặc điểm tổn thương" name="skinType"><Checkbox.Group><Checkbox value="surface">Ngoài da</Checkbox><Checkbox value="deep">Dưới da/Sâu</Checkbox></Checkbox.Group></Form.Item></Col>
+                                        <Col xs={24} sm={8}>
+                                          <Form.Item label="Đặc điểm tổn thương" name="skinType">
+                                            <Checkbox.Group>
+                                              <Checkbox value="surface">Ngoài da</Checkbox>
+                                              <Checkbox value="deep">Dưới da/Sâu</Checkbox>
+                                              <Checkbox value="other">Ghi chú khác</Checkbox>
+                                            </Checkbox.Group>
+                                          </Form.Item>
+                                          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.skinType !== cur.skinType}>
+                                            {({ getFieldValue }) =>
+                                              getFieldValue('skinType')?.includes('other') ? (
+                                                <Form.Item name="skinTypeNote" style={{ marginTop: -8 }}>
+                                                  <TextArea rows={2} placeholder="Mô tả thêm đặc điểm tổn thương..." />
+                                                </Form.Item>
+                                              ) : null
+                                            }
+                                          </Form.Item>
+                                        </Col>
                                         <Col xs={24} sm={8}><Form.Item label="Mức độ lan rộng" name="severity"><Select><Option value="local">Khu trú</Option><Option value="spread">Lan rộng</Option><Option value="whole">Toàn thân</Option></Select></Form.Item></Col>
                                         <Col xs={24} sm={12}><Form.Item label="Dị ứng" name="allergy"><Input /></Form.Item></Col>
                                         <Col xs={24} sm={12}><Form.Item label="Tiền sử bệnh lý" name="history"><Input /></Form.Item></Col>

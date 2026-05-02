@@ -220,7 +220,7 @@ export default function AdminDashboardPage() {
 
   const statsData = [
     { 
-      title: "Tổng lượt dùng AI", 
+      title: "Lượt dùng AI chẩn đoán (Bác sĩ)",
       value: systemOverview.totalAiUsage, 
       prefix: <ApiOutlined />, 
       color: "#1677ff", 
@@ -247,7 +247,7 @@ export default function AdminDashboardPage() {
       trendVal: `${Math.abs(systemOverview.patientGrowth)}%`
     },
     { 
-      title: "Sử dụng Chatbot", 
+      title: "Sử dụng Chatbot (Bệnh nhân)",
       value: systemOverview.chatbotUsage, 
       prefix: <MessageOutlined />, 
       color: "#722ed1", 
