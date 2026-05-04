@@ -26,7 +26,10 @@ import {
   Alert,
   Spin,
   Table,
-  Checkbox
+  Checkbox,
+  Modal,
+  Descriptions,
+  Empty
 } from "antd";
 import { 
   UserOutlined, 
@@ -40,7 +43,10 @@ import {
   FileProtectOutlined,
   PlusOutlined,
   DeleteOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  HistoryOutlined,
+  EyeOutlined,
+  CameraOutlined
 } from "@ant-design/icons";
 import { useNavigate, useLocation } from "react-router-dom";
 import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
@@ -67,6 +73,7 @@ export default function ExaminationPage() {
   const [useAI, setUseAI] = useState(true);
   const [isAILoading, setIsAILoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
+  const [manualImages, setManualImages] = useState([]); // base64 images for manual diagnosis flow
 
   const [activePatient, setActivePatient] = useState(location.state?.patient || null);
   const [consultationId, setConsultationId] = useState(location.state?.consultationId || null);
@@ -74,6 +81,10 @@ export default function ExaminationPage() {
 
   const [todayPatients, setTodayPatients] = useState([]);
   const [loadingList, setLoadingList] = useState(false);
+
+  // History detail modal state
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
+  const [selectedHistory, setSelectedHistory] = useState(null);
 
   useEffect(() => {
       const fetchTodayPatients = async () => {
@@ -107,7 +118,8 @@ export default function ExaminationPage() {
                           detailedSymptoms: apt.description || 'Chưa có mô tả chi tiết',
                           history: apt.previousDiseases?.length > 0 ? apt.previousDiseases.join(', ') : 'Không có ghi nhận',
                           images: imageUrls,
-                          status: apt.status
+                          status: apt.status,
+                          date: apt.date
                       };
                   });
                   const activeAppointments = mapped.filter(a => a.status === 'SCHEDULED' || a.status === 'EXAMINING');
@@ -146,7 +158,7 @@ export default function ExaminationPage() {
 
                         const pastDiseases = data.pastConsultations
                           ? [...new Set(data.pastConsultations
-                              .map(c => c.diagnosisResult?.description)
+                              .map(c => c.diagnosisResult?.symstomsText || c.diagnosisResult?.diseases?.[0]?.diseaseName)
                               .filter(Boolean))] 
                           : [];
 
@@ -163,7 +175,8 @@ export default function ExaminationPage() {
                           history: pastDiseases.length > 0 ? pastDiseases.join(', ') : 'Không có ghi nhận',
                           images: imageUrls,
                           status: apt.status,
-                          pastConsultations: data.pastConsultations 
+                          pastConsultations: data.pastConsultations,
+                          date: apt.date 
                       };
 
                       setActivePatient(patientData);
@@ -330,6 +343,7 @@ export default function ExaminationPage() {
           setClinicalInfo(extractClinicalInfo(values));
           setUseAI(false);
           setViewState('result');
+          setManualImages([]); // Reset manual images
           resultForm.resetFields(); 
           resultForm.setFieldsValue({
               department: "dermatology",
@@ -345,6 +359,15 @@ export default function ExaminationPage() {
              message.error("Lỗi: Không tìm thấy phiên khám bệnh.");
              return;
           }
+
+          // Collect images based on flow
+          let imagesToSend = [];
+          if (useAI && aiResult?.aiImages?.length > 0) {
+              imagesToSend = aiResult.aiImages;
+          } else if (!useAI && manualImages.length > 0) {
+              imagesToSend = manualImages;
+          }
+
           await finishExaminationAPI({
               consultationId: consultationId,
               finalDiagnosis: values.finalDiagnosis,
@@ -352,9 +375,14 @@ export default function ExaminationPage() {
               currentCondition: values.currentCondition,
               medicines: values.medicines,
               clinicalInfo: clinicalInfo ?? undefined,
+              images: imagesToSend.length > 0 ? imagesToSend : undefined,
+              doctorAdvice: values.doctorAdvice ?? undefined,
           });
           message.success("Đã lưu hồ sơ khám bệnh và gửi toa thuốc!");
           setActivePatient(null);
+          setConsultationId(null);
+          setAiResult(null);
+          setManualImages([]);
           setViewState('input');
       } catch (error) {
           console.error("Lỗi khi kết thúc khám:", error);
@@ -490,7 +518,59 @@ export default function ExaminationPage() {
                                     <Divider />
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                                         <div><Text type="secondary" style={{ fontSize: 12 }}>Tuổi & Giới tính</Text><div style={{ fontWeight: 500 }}>{activePatient.age} tuổi - {activePatient.gender === 'MALE' ? 'Nam' : 'Nữ'}</div></div>
-                                        <div><Text type="secondary" style={{ fontSize: 12 }}>Tiền sử bệnh ghi nhận</Text><div style={{ fontWeight: 500 }}>{activePatient.history ? <Tag color="orange" style={{ whiteSpace: 'normal', height: 'auto', padding: '4px' }}>{activePatient.history}</Tag> : 'Không có'}</div></div>
+                                        <div><Text type="secondary" style={{ fontSize: 12 }}>Thời gian lịch hẹn</Text><div style={{ fontWeight: 500 }}>{activePatient.time} {activePatient.date ? `(${dayjs(activePatient.date).format('DD/MM/YYYY')})` : ''}</div></div>
+                                        <div><Text type="secondary" style={{ fontSize: 12 }}>Lý do khám</Text><div style={{ fontWeight: 500 }}>{activePatient.reason}</div></div>
+                                        <div>
+                                            <Text type="secondary" style={{ fontSize: 12 }}><HistoryOutlined style={{ marginRight: 4 }} />Tiểu sử khám bệnh</Text>
+                                            {activePatient.pastConsultations && activePatient.pastConsultations.length > 0 ? (
+                                                <Table
+                                                    dataSource={activePatient.pastConsultations}
+                                                    rowKey="id"
+                                                    size="small"
+                                                    pagination={false}
+                                                    scroll={{ y: 180 }}
+                                                    style={{ marginTop: 8 }}
+                                                    columns={[
+                                                        {
+                                                            title: 'Ngày',
+                                                            dataIndex: 'createdAt',
+                                                            key: 'createdAt',
+                                                            width: 85,
+                                                            render: (val) => <Text style={{ fontSize: 12 }}>{dayjs(val).format('DD/MM/YY')}</Text>
+                                                        },
+                                                        {
+                                                            title: 'Chẩn đoán',
+                                                            key: 'diagnosis',
+                                                            ellipsis: true,
+                                                            render: (_, record) => {
+                                                                const name = record.diagnosisResult?.diseases?.[0]?.diseaseName
+                                                                    || record.diagnosisResult?.symstomsText
+                                                                    || '—';
+                                                                return <Tag color="blue" style={{ fontSize: 11, margin: 0, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</Tag>;
+                                                            }
+                                                        },
+                                                        {
+                                                            title: '',
+                                                            key: 'action',
+                                                            width: 40,
+                                                            render: (_, record) => (
+                                                                <Button
+                                                                    type="link"
+                                                                    size="small"
+                                                                    icon={<EyeOutlined />}
+                                                                    onClick={() => {
+                                                                        setSelectedHistory(record);
+                                                                        setHistoryModalVisible(true);
+                                                                    }}
+                                                                />
+                                                            )
+                                                        }
+                                                    ]}
+                                                />
+                                            ) : (
+                                                <div style={{ textAlign: 'center', padding: '12px 0', color: '#999', fontSize: 12 }}>Chưa có lịch sử khám</div>
+                                            )}
+                                        </div>
                                         {activePatient.images && activePatient.images.length > 0 && (
                                             <div>
                                                 <Text type="secondary" style={{ fontSize: 12, marginBottom: 4, display: 'block' }}>Ảnh bệnh nhân gửi:</Text>
@@ -559,9 +639,10 @@ export default function ExaminationPage() {
                 )}
 
                 {viewState === 'result' && (
-                    <Row gutter={[24, 24]} justify={!useAI ? "center" : "start"}>
-                        {useAI && (
+                    <Row gutter={[24, 24]}>
+                        {/* Left panel: AI results OR Manual image upload */}
                         <Col xs={24} lg={10}>
+                            {useAI ? (
                             <Card 
                                 title={<><RobotOutlined style={{ color: '#1677ff', marginRight: 8 }} /> Kết quả phân tích AI</>}
                                 style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: '100%', borderTop: '4px solid #1677ff' }}
@@ -647,9 +728,50 @@ export default function ExaminationPage() {
                                     </div>
                                 )}
                             </Card>
+                            ) : (
+                            <Card 
+                                title={<><CameraOutlined style={{ color: '#52c41a', marginRight: 8 }} /> Hình ảnh tổn thương</>}
+                                style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: '100%', borderTop: '4px solid #52c41a' }}
+                            >
+                                <Upload.Dragger
+                                    multiple
+                                    listType="picture"
+                                    beforeUpload={(file) => {
+                                        const reader = new FileReader();
+                                        reader.onload = (e) => {
+                                            setManualImages(prev => [...prev, e.target.result]);
+                                        };
+                                        reader.readAsDataURL(file);
+                                        return false; // Prevent auto upload
+                                    }}
+                                    onRemove={(file) => {
+                                        const idx = file.uid;
+                                        setManualImages(prev => prev.filter((_, i) => `rc-upload-${i}` !== idx));
+                                    }}
+                                    style={{ marginBottom: 16 }}
+                                >
+                                    <p className="ant-upload-drag-icon"><InboxOutlined style={{ color: '#52c41a' }} /></p>
+                                    <p className="ant-upload-text">Kéo thả hoặc click để tải ảnh lên</p>
+                                    <p className="ant-upload-hint">Hỗ trợ định dạng: JPG, PNG</p>
+                                </Upload.Dragger>
+
+                                {manualImages.length > 0 && (
+                                    <>
+                                        <Divider style={{ margin: '12px 0' }} />
+                                        <Text type="secondary" style={{ fontSize: 12, marginBottom: 8, display: 'block' }}>Ảnh đã chọn ({manualImages.length}):</Text>
+                                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                            <Image.PreviewGroup>
+                                                {manualImages.map((img, idx) => (
+                                                    <Image key={idx} width={80} height={80} src={img} style={{ borderRadius: 8, objectFit: 'cover', border: '1px solid #e8e8e8' }} />
+                                                ))}
+                                            </Image.PreviewGroup>
+                                        </div>
+                                    </>
+                                )}
+                            </Card>
+                            )}
                         </Col>
-                        )}
-                        <Col xs={24} lg={useAI ? 14 : 16}>
+                        <Col xs={24} lg={14}>
                             <Card 
                                 title={<><FileProtectOutlined style={{ color: '#52c41a', marginRight: 8 }} /> Kết luận & Kê đơn của Bác sĩ</>}
                                 style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
@@ -729,6 +851,77 @@ export default function ExaminationPage() {
                         </Col>
                     </Row>
                 )}
+
+                {/* Past consultation detail modal */}
+                <Modal
+                    title={<><HistoryOutlined style={{ color: '#1677ff', marginRight: 8 }} />Chi tiết lần khám trước</>}
+                    open={historyModalVisible}
+                    onCancel={() => { setHistoryModalVisible(false); setSelectedHistory(null); }}
+                    footer={null}
+                    width={640}
+                    destroyOnClose
+                >
+                    {selectedHistory ? (
+                        <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                            <Descriptions column={2} bordered size="small" style={{ marginBottom: 16 }}>
+                                <Descriptions.Item label="Ngày khám" span={1}>
+                                    {dayjs(selectedHistory.createdAt).format('DD/MM/YYYY HH:mm')}
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Bệnh nhân" span={1}>
+                                    {selectedHistory.patientName || activePatient?.patientName || '—'}
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Chẩn đoán" span={2}>
+                                    {selectedHistory.diagnosisResult?.diseases?.length > 0
+                                        ? selectedHistory.diagnosisResult.diseases.map((d, i) => (
+                                            <Tag key={i} color="blue">{d.diseaseName}</Tag>
+                                        ))
+                                        : <Text type="secondary">Chưa có</Text>
+                                    }
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Triệu chứng" span={2}>
+                                    {selectedHistory.diagnosisResult?.symstomsText || '—'}
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Mô tả tình trạng" span={2}>
+                                    {selectedHistory.diagnosisResult?.description || '—'}
+                                </Descriptions.Item>
+                                <Descriptions.Item label="Lời khuyên" span={2}>
+                                    {selectedHistory.diagnosisResult?.advices || '—'}
+                                </Descriptions.Item>
+                            </Descriptions>
+
+                            {selectedHistory.diagnosisResult?.prescription?.length > 0 && (
+                                <>
+                                    <Divider orientation="left" style={{ fontSize: 13 }}>Toa thuốc đã kê</Divider>
+                                    <Table
+                                        dataSource={selectedHistory.diagnosisResult.prescription}
+                                        rowKey={(_, idx) => idx}
+                                        size="small"
+                                        pagination={false}
+                                        columns={[
+                                            { title: 'Tên thuốc', dataIndex: 'medicineName', key: 'name', render: (v, r) => v || r.name || '—' },
+                                            { title: 'Số lượng', dataIndex: 'quantity', key: 'qty', width: 80 },
+                                            { title: 'Cách dùng', dataIndex: 'dosage', key: 'dosage' },
+                                        ]}
+                                    />
+                                </>
+                            )}
+
+                            {selectedHistory.aiSuggestedDiagnosis?.length > 0 && (
+                                <>
+                                    <Divider orientation="left" style={{ fontSize: 13 }}>Kết quả AI tham khảo</Divider>
+                                    {selectedHistory.aiSuggestedDiagnosis.map((ai, idx) => (
+                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+                                            <Text>{ai.diseaseName}</Text>
+                                            <Tag color="cyan">{Math.round((ai.accuracy > 1 ? ai.accuracy : ai.accuracy * 100))}%</Tag>
+                                        </div>
+                                    ))}
+                                </>
+                            )}
+                        </div>
+                    ) : (
+                        <Empty description="Không có dữ liệu" />
+                    )}
+                </Modal>
             </>
         )}
       </Content>
