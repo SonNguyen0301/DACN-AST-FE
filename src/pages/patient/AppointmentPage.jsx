@@ -38,10 +38,11 @@ const formatFileName = (fileName) => {
 export default function AppointmentPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth(); 
-  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
-  const [pastAppointments, setPastAppointments] = useState([]);
-  const [examinedAppointments, setExaminedAppointments] = useState([]);
-  const [examiningAppointments, setExaminingAppointments] = useState([]);
+  const [appointments, setAppointments] = useState({
+    '1': { data: [], total: 0 },
+    '2': { data: [], total: 0 },
+    '3': { data: [], total: 0 },
+  });
 
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -52,68 +53,76 @@ export default function AppointmentPage() {
   const [editingAppointment, setEditingAppointment] = useState(null); 
   const [form] = Form.useForm();
 
-  const [tabPages, setTabPages] = useState({ '1': 1, '2': 1, '3': 1, '4': 1 });
+  const [tabPages, setTabPages] = useState({ '1': 1, '2': 1, '3': 1 });
   const pageSize = 5;
+
+  const getStatusByKey = (key) => {
+    switch(key) {
+      case '1': return 'SCHEDULED';
+      case '2': return 'CANCELLED';
+      case '3': return 'EXAMINED';
+      default: return 'SCHEDULED';
+    }
+  };
+
+  const fetchTab = async (tabKey, page) => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const sortDirection = tabKey === '1' ? 'ASC' : 'DESC';
+      const res = await getPatientAppointmentsAPI(user.id, {
+        sort: 'date', sortDirection, page, take: pageSize, status: getStatusByKey(tabKey)
+      });
+      if (res.data?.data) {
+        setAppointments(prev => ({
+          ...prev,
+          [tabKey]: {
+            data: res.data.data.data || [],
+            total: res.data.data.meta?.itemCount || 0
+          }
+        }));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchAppointments = async () => {
     if (!user?.id) return;
     setLoading(true);
     try {
-        const firstRes = await getPatientAppointmentsAPI(user.id, {
-            sort: 'createdAt', sortDirection: 'ASC', page: 1, take: 50
+      const fetchPromises = ['1', '2', '3'].map(key => {
+        const sortDirection = key === '1' ? 'ASC' : 'DESC';
+        return getPatientAppointmentsAPI(user.id, {
+          sort: 'date', sortDirection, page: tabPages[key], take: pageSize, status: getStatusByKey(key)
         });
-
-        if (firstRes.data?.data) {
-            let allData = firstRes.data.data.data || [];
-            const meta = firstRes.data.data.meta;
-
-            const updateStates = (data) => {
-                const upcoming = data.filter(apt => apt.status === 'SCHEDULED' || apt.status === 'PENDING');
-                const past = data.filter(apt => apt.status === 'CANCELLED');
-                const examined = data.filter(apt => apt.status === 'EXAMINED');
-                const examining = data.filter(apt => apt.status === 'EXAMINING');
-
-                setUpcomingAppointments([...upcoming].reverse()); 
-                setPastAppointments(past);
-                setExaminedAppointments(examined);
-                setExaminingAppointments(examining);
-            };
-
-            updateStates(allData);
-            setLoading(false); 
-
-            if (meta && meta.pageCount > 1) {
-                const fetchPromises = [];
-                for (let i = 2; i <= meta.pageCount; i++) {
-                    fetchPromises.push(
-                        getPatientAppointmentsAPI(user.id, {
-                            sort: 'createdAt', sortDirection: 'ASC', page: i, take: 50
-                        })
-                    );
-                }
-
-                const nextResponses = await Promise.all(fetchPromises);
-                
-                nextResponses.forEach(res => {
-                    const pageData = res.data?.data?.data || [];
-                    allData = [...allData, ...pageData];
-                });
-
-                updateStates(allData);
-            }
-        } else {
-            setLoading(false);
+      });
+      const responses = await Promise.all(fetchPromises);
+      
+      const newAppointments = { ...appointments };
+      responses.forEach((res, index) => {
+        const key = String(index + 1);
+        if (res.data?.data) {
+          newAppointments[key] = {
+            data: res.data.data.data || [],
+            total: res.data.data.meta?.itemCount || 0
+          };
         }
+      });
+      setAppointments(newAppointments);
     } catch (error) {
         console.error("Lỗi lấy lịch hẹn:", error);
         message.error("Không thể tải danh sách lịch hẹn.");
+    } finally {
         setLoading(false);
     }
   };
 
   useEffect(() => {
       fetchAppointments();
-  }, [user]);
+  }, [user?.id]);
 
   const handleSignOut = () => { logout(); navigate('/login'); };
   
@@ -259,7 +268,13 @@ export default function AppointmentPage() {
       return null;
     };
 
-  const renderAppointmentList = (data, tabKey, isUpcomingTab = false) => {
+  const handlePageChange = (page, tabKey) => {
+    setTabPages(prev => ({ ...prev, [tabKey]: page }));
+    fetchTab(tabKey, page);
+  };
+
+  const renderAppointmentList = (tabData, tabKey, isUpcomingTab = false) => {
+    const { data, total } = tabData;
     if (data.length === 0) {
       return (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -269,12 +284,9 @@ export default function AppointmentPage() {
       );
     }
   const currentPage = tabPages[tabKey] || 1;
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedData = data.slice(startIndex, endIndex);
     return (
       <Space direction="vertical" style={{ width: '100%' }} size="large">
-        {paginatedData.map(apt => {
+        {data.map(apt => {
            const hasNotesOrFiles = isUpcomingTab && (apt.description || (apt.images && apt.images.length > 0));
 
            return (
@@ -372,13 +384,13 @@ export default function AppointmentPage() {
           );
         })}
 
-        {data.length > pageSize && (
+        {total > pageSize && (
             <div style={{ textAlign: 'center', marginTop: 16, marginBottom: 8 }}>
                 <Pagination 
                     current={currentPage} 
                     pageSize={pageSize} 
-                    total={data.length} 
-                    onChange={(page) => setTabPages(prev => ({ ...prev, [tabKey]: page }))} 
+                    total={total} 
+                    onChange={(page) => handlePageChange(page, tabKey)} 
                     showSizeChanger={false}
                 />
             </div>
@@ -436,23 +448,18 @@ export default function AppointmentPage() {
             items={[
               {
                 key: '1',
-                label: `Lịch hẹn sắp tới (${upcomingAppointments.length})`,
-                children: renderAppointmentList(upcomingAppointments, '1', true)
+                label: `Lịch hẹn sắp tới (${appointments['1'].total})`,
+                children: renderAppointmentList(appointments['1'], '1', true)
               },
               {
                 key: '2',
-                label: `Đã hủy (${pastAppointments.length})`,
-                children: renderAppointmentList(pastAppointments, '2', false)
+                label: `Đã hủy (${appointments['2'].total})`,
+                children: renderAppointmentList(appointments['2'], '2', false)
               },
               {
                 key: '3',
-                label: `Đã khám (${examinedAppointments.length})`,
-                children: renderAppointmentList(examinedAppointments, '3', false)
-              },
-              {
-                key: '4',
-                label: `Đang khám (${examiningAppointments.length})`,
-                children: renderAppointmentList(examiningAppointments, '4', false)
+                label: `Đã khám (${appointments['3'].total})`,
+                children: renderAppointmentList(appointments['3'], '3', false)
               }
             ]}
           />
