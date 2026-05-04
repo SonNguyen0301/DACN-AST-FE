@@ -8,6 +8,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import Footer from '../../components/common/Footer';
 import adminService from '../../services/adminService';
+import useAuth from "../../hooks/useAuth";
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -15,16 +16,22 @@ const { Title, Text } = Typography;
 export default function ModelAIPage() {
   const navigate = useNavigate();
   const [form] = Form.useForm();
+    const { user, logout} = useAuth();
   
-  const user = { name: 'Administrator', role: 'admin' };
+//   const user = { name: 'Administrator', role: 'admin' };
   const menuItems = [
     { key: 'dashboard', label: 'Trang chủ' },
     { key: 'users', label: 'Quản lý tài khoản' },
     { key: 'AI', label: 'Quản lý Model AI' },
   ];
   const menuUserItems = [
-    { key: '1', label: (<a onClick={() => navigate('/')}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
+    { key: '1', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
   ];
+
+  const handleSignOut = () => {
+    logout(); 
+    navigate('/login');
+  };
 
   const [activeTab, setActiveTab] = useState('chatbot');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -228,7 +235,7 @@ export default function ModelAIPage() {
         <Dropdown menu={{ items: menuUserItems }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                 <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.name}</span>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.firstName + ' ' + user.lastName}</span>
                     <span style={{ fontSize: 12, color: '#888' }}>Quản trị hệ thống</span>
                 </div>
                 <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#001529' }} />

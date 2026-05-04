@@ -41,7 +41,6 @@ export default function AppointmentPage() {
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [pastAppointments, setPastAppointments] = useState([]);
   const [examinedAppointments, setExaminedAppointments] = useState([]);
-  const [examiningAppointments, setExaminingAppointments] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -71,12 +70,10 @@ export default function AppointmentPage() {
                 const upcoming = data.filter(apt => apt.status === 'SCHEDULED' || apt.status === 'PENDING');
                 const past = data.filter(apt => apt.status === 'CANCELLED');
                 const examined = data.filter(apt => apt.status === 'EXAMINED');
-                const examining = data.filter(apt => apt.status === 'EXAMINING');
 
                 setUpcomingAppointments([...upcoming].reverse()); 
                 setPastAppointments(past);
                 setExaminedAppointments(examined);
-                setExaminingAppointments(examining);
             };
 
             updateStates(allData);
@@ -448,11 +445,6 @@ export default function AppointmentPage() {
                 key: '3',
                 label: `Đã khám (${examinedAppointments.length})`,
                 children: renderAppointmentList(examinedAppointments, '3', false)
-              },
-              {
-                key: '4',
-                label: `Đang khám (${examiningAppointments.length})`,
-                children: renderAppointmentList(examiningAppointments, '4', false)
               }
             ]}
           />

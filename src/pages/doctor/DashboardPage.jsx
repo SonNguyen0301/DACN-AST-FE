@@ -161,6 +161,15 @@ export default function DoctorDashboardPage() {
               progressDetail: `Đã khám: ${dashboardStats.examinationsCount}/${dashboardStats.totalAppointmentsCount} ca`, 
           },
           { 
+              title: "Lịch bị hủy hôm nay", 
+              value: dashboardStats.cancelledAppointmentsCount, 
+              suffix: "ca",
+              icon: <UserDeleteOutlined />, 
+              color: "#ff4d4f", 
+              bg: "#fff1f0", 
+              clickable: true, 
+          },
+          { 
               title: "Bệnh nhân tuần này", 
               value: dashboardStats.currentWeekPatientsCount, 
               suffix: "người",
@@ -181,20 +190,10 @@ export default function DoctorDashboardPage() {
               trend: monthTrend.trend,
               trendValue: `${monthTrend.value}%`,
               subText: "So với tháng trước"
-          },
-          { 
-              title: "Lịch bị hủy", 
-              value: dashboardStats.cancelledAppointmentsCount, 
-              suffix: "ca",
-              icon: <UserDeleteOutlined />, 
-              color: "#ff4d4f", 
-              bg: "#fff1f0", 
-              clickable: true, 
-          },
+          }
       ];
   } 
   
-
   useEffect(() => {
     const fetchCalendarData = async () => {
         if (!user?.id) return; 

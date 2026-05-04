@@ -58,7 +58,7 @@ export default function DoctorAppointmentPage() {
   const { user, logout} = useAuth(); 
 
   const [searchText, setSearchText] = useState('');
-  const [filterStatus, setFilterStatus] = useState('SCHEDULED');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [dateRange, setDateRange] = useState([dayjs().startOf('isoWeek'), dayjs().endOf('isoWeek')]);
   const [timeRange, setTimeRange] = useState(null);
 
@@ -419,7 +419,8 @@ export default function DoctorAppointmentPage() {
 
                 <Col xs={24} md={4}>
                     <Text strong style={{ display: 'block', marginBottom: 4 }}>Trạng thái:</Text>
-                    <Select defaultValue="SCHEDULED" style={{ width: '100%' }} onChange={handleStatusChange} suffixIcon={<FilterOutlined />}>
+                    <Select defaultValue="all" style={{ width: '100%' }} onChange={handleStatusChange} suffixIcon={<FilterOutlined />}>
+                        <Option value="all">Tất cả</Option>
                         <Option value="SCHEDULED">Đã đặt lịch</Option>
                         <Option value="EXAMINING">Đang khám</Option>
                         <Option value="EXAMINED">Đã khám xong</Option>
