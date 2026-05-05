@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { 
-  Layout, Menu, Avatar, Typography, Card, Button,
-  Space, Dropdown, Tabs, Tag, Popconfirm,
+import {
+  Layout, Avatar, Typography, Card, Button,
+  Space, Tabs, Tag, Popconfirm,
   Modal, Form, Input, Upload, Row, Col, message, Spin, Image, Pagination
 } from "antd";
-import { 
-  UserOutlined, LogoutOutlined, CalendarOutlined,
-  HomeOutlined, ScheduleOutlined, EditOutlined, 
+import {
+  UserOutlined, CalendarOutlined,
+  HomeOutlined, ScheduleOutlined, EditOutlined,
   DeleteOutlined, InboxOutlined, PaperClipOutlined, FormOutlined
 } from "@ant-design/icons";
 import ChatBotIcon from "../../components/common/ChatBotIcon";
@@ -16,8 +16,9 @@ import dayjs from 'dayjs';
 
 import { getPatientAppointmentsAPI, cancelAppointmentAPI, updateAppointmentAPI } from '../../services/appointmentService';
 import useAuth from '../../hooks/useAuth';
+import PatientHeader from './components/PatientHeader';
 
-const { Header, Content } = Layout;
+const { Content } = Layout;
 const { Text, Paragraph } = Typography;
 const { TextArea } = Input; 
 const { Dragger } = Upload; 
@@ -37,7 +38,7 @@ const formatFileName = (fileName) => {
 
 export default function AppointmentPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth(); 
+  const { user } = useAuth();
   const [appointments, setAppointments] = useState({
     '1': { data: [], total: 0 },
     '2': { data: [], total: 0 },
@@ -123,13 +124,6 @@ export default function AppointmentPage() {
   useEffect(() => {
       fetchAppointments();
   }, [user?.id]);
-
-  const handleSignOut = () => { logout(); navigate('/login'); };
-  
-  const menuItems = [
-    { key: '1', label: (<a onClick={() => navigate('/patient/personal')}>Thông tin cá nhân</a>), icon: <UserOutlined />},
-    { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true}
-  ];
 
   const renderStatusTag = (status) => {
     const tagStyle = { fontSize: '14px', padding: '5px 10px', borderRadius: '6px', fontWeight: 'bold' };
@@ -402,41 +396,7 @@ export default function AppointmentPage() {
 
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
-      <Header style={{ background: "#fff", padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", position: 'sticky', top: 0, zIndex: 1000 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
-          <img 
-            src="/ASTCare1.png" 
-            alt="ATSCare Logo" 
-            style={{ height: '40px', objectFit: 'contain' }} 
-          />
-        </div>
-        <Menu 
-          mode="horizontal" 
-          defaultSelectedKeys={['4']}          
-          items={[
-            { key: "1", label: "Trang chủ" },
-            { key: "2", label: "Thông tin cá nhân" },
-            { key: "3", label: "Đặt lịch khám" },
-            { key: "4", label: "Lịch khám của bản thân" },
-          ]}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555', flex: 1, justifyContent: 'center' }}
-          onClick={({ key }) => {
-            switch (key) {
-              case "1": navigate('/patient/dashboard'); break;
-              case "2": navigate('/patient/personal'); break;
-              case "3": navigate('/patient/booking'); break;
-              case "4": navigate('/patient/appointments'); break;
-              default: break;
-            }
-          }} 
-        />
-        <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-            <span className="hide-on-mobile" style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user?.firstName + ' ' + user?.lastName}</span>
-            <Avatar size={36} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }}/>
-          </div>
-        </Dropdown>
-      </Header>
+      <PatientHeader selectedKey="4" />
 
       <Content style={{ padding: "24px 40px" }}>
         <Spin spinning={loading} size="large" tip="Đang chuẩn bị dữ liệu...">

@@ -1,21 +1,19 @@
 import { useState, useEffect } from 'react';
-import { 
-  Layout, 
-  Menu, 
-  Avatar, 
-  Typography, 
-  Row, 
-  Col, 
-  Card, 
-  Table, 
-  Tag, 
-  Space, 
-  Button, 
-  Input, 
-  DatePicker, 
+import {
+  Layout,
+  Avatar,
+  Typography,
+  Row,
+  Col,
+  Card,
+  Table,
+  Tag,
+  Space,
+  Button,
+  Input,
+  DatePicker,
   TimePicker,
-  Select, 
-  Dropdown, 
+  Select,
   Tooltip,
   Modal,
   Image,        
@@ -23,10 +21,9 @@ import {
   Divider,
   message
 } from "antd";
-import { 
-  UserOutlined, 
-  LogoutOutlined,
-  CalendarOutlined, 
+import {
+  UserOutlined,
+  CalendarOutlined,
   SearchOutlined,
   FilterOutlined,
   EyeOutlined,
@@ -45,8 +42,9 @@ dayjs.extend(isoWeek);
 import Footer from "../../components/common/Footer"; 
 import { getDoctorAppointmentsAPI, startExaminationAPI } from '../../services/doctorService';
 import useAuth from "../../hooks/useAuth";
+import DoctorHeader from './components/DoctorHeader';
 
-const { Header, Content } = Layout;
+const { Content } = Layout;
 const { Title, Text } = Typography;
 const { Option } = Select;
 const { confirm } = Modal;
@@ -55,7 +53,7 @@ const { RangePicker } = DatePicker;
 
 export default function DoctorAppointmentPage() {
   const navigate = useNavigate();
-  const { user, logout} = useAuth(); 
+  const { user } = useAuth(); 
 
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -334,49 +332,9 @@ export default function DoctorAppointmentPage() {
     },
   ];
   
-  const handleSignOut = () => {
-    logout();
-    navigate('/');
-  };
-  
-  const menuUserItems = [
-    { key: '1', label: (<a onClick={() => navigate('/doctor/profile')}>Hồ sơ bác sĩ</a>), icon: <UserOutlined /> },
-    { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
-  ];
-
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
-      <Header style={{ background: "#fff", padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", position: 'sticky', top: 0, zIndex: 1000 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => navigate('/doctor/dashboard')}>
-            <img src="/ASTCare1.png" alt="ATSCare Logo" style={{ height: '40px', objectFit: 'contain' }} />
-        </div>
-        <Menu
-          mode="horizontal"
-          defaultSelectedKeys={['2']} 
-          items={[
-            { key: "1", label: "Trang chủ" },
-            { key: "2", label: "Lịch đặt khám" },
-            { key: "3", label: "Khám bệnh" },
-            { key: "4", label: "Lịch sử khám bệnh" },
-          ]}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555', borderBottom: 'none', flex: 1, justifyContent: 'center' }}
-          onClick={({ key }) => {
-            if(key === '1') navigate('/doctor/dashboard');
-            if(key === '2') navigate('/doctor/appointments');
-            if(key === '3') navigate('/doctor/consulting');
-            if(key === '4') navigate('/doctor/medical-history');
-          }}
-        />
-        <Dropdown menu={{ items: menuUserItems }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-             <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{"BS. "+ user.firstName + " " + user.lastName}</span>
-                <span style={{ fontSize: 12, color: '#888' }}>Khoa Da liễu</span>
-            </div>
-            <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
-          </div>
-        </Dropdown>
-      </Header>
+      <DoctorHeader selectedKey="2" />
 
       <Content style={{ padding: "30px 40px" }}>
         <div style={{ marginBottom: 24 }}>

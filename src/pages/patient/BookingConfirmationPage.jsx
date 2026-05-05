@@ -1,24 +1,24 @@
 import { useState, useEffect } from 'react';
-import { 
-  Layout, Menu, Avatar, Typography, Card, Button,
-  Space, Dropdown, Row, Col, Collapse,
+import {
+  Layout, Avatar, Typography, Card, Button,
+  Space, Row, Col, Collapse,
   Input, Upload, Spin
 } from "antd";
-import { 
-  UserOutlined, 
-  LogoutOutlined,
+import {
+  UserOutlined,
   LeftOutlined,
   InboxOutlined,
-  SunOutlined 
+  SunOutlined
 } from "@ant-design/icons";
 import ChatBotIcon from "../../components/common/ChatBotIcon";
 import { useNavigate, useLocation } from 'react-router-dom';
 import Footer from '../../components/common/Footer'; 
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import PatientHeader from './components/PatientHeader';
 dayjs.extend(customParseFormat);
 
-const { Header, Content } = Layout;
+const { Content } = Layout;
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
 const { TextArea } = Input;
@@ -27,8 +27,6 @@ const { Dragger } = Upload;
 export default function BookingConfirmationPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = { name: "Nguyen Van A" }; 
-
   const { doctor, selectedDate: initialSelectedDate, selectedTime: initialSelectedTime, bookingSchedule } = location.state || {};
 
   useEffect(() => {
@@ -47,12 +45,6 @@ export default function BookingConfirmationPage() {
 
   const availableTimeSlots = selectedDate ? selectedDate.timeSlots : [];
 
-  const handleSignOut = () => { console.log("Đã đăng xuất!"); };
-  const menuItems = [
-    { key: '1', label: (<a onClick={() => navigate('/patient/personal')}>Thông tin cá nhân</a>), icon: <UserOutlined />},
-    { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true}
-  ];
-  
   const uploadProps = {
     name: 'file',
     multiple: true,
@@ -73,49 +65,7 @@ export default function BookingConfirmationPage() {
 
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
-      {/* HEADER (Giữ nguyên) */}
-      <Header
-        style={{
-          background: "#fff",
-          padding: "0 40px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-        }}
-      >
-<div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
-                    <img 
-            src="/ASTCare1.png" 
-            alt="ATSCare Logo" 
-            style={{ height: '40px', objectFit: 'contain' }} 
-          />
-        </div>
-        <Menu
-          mode="horizontal"
-          defaultSelectedKeys={['2']} 
-          items={[
-            { key: "1", label: "Thông tin cá nhân" },
-            { key: "2", label: "Đặt lịch khám" },
-            { key: "3", label: "Lịch khám của bản thân" },
-          ]}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555' }}
-          onClick={({ key }) => {
-            switch (key) {
-              case "1": navigate('/patient/personal'); break;
-              case "2": navigate('/patient/booking'); break;
-              case "3": navigate('/patient/appointments'); break;
-              default: break;
-            }
-          }}
-        />
-        <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user.name}</span>
-            <Avatar size={36} icon={<UserOutlined />} />
-          </div>
-        </Dropdown>
-      </Header>
+      <PatientHeader selectedKey="3" />
 
       {/* CONTENT */}
       <Content style={{ padding: "40px 60px" }}>

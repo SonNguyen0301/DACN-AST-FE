@@ -6,22 +6,25 @@ import useAuth from '../../../hooks/useAuth';
 const { Header } = Layout;
 
 const MENU_ITEMS = [
-  { key: 'dashboard', label: 'Trang chủ' },
-  { key: 'users',     label: 'Quản lý tài khoản' },
-  { key: 'AI',        label: 'Quản lý Model AI' },
+  { key: '1', label: 'Trang chủ' },
+  { key: '2', label: 'Thông tin cá nhân' },
+  { key: '3', label: 'Đặt lịch khám' },
+  { key: '4', label: 'Lịch khám của bản thân' },
 ];
 
 const ROUTE_MAP = {
-  dashboard: '/admin/dashboard',
-  users:     '/admin/user-management',
-  AI:        '/admin/model-ai',
+  '1': '/patient/dashboard',
+  '2': '/patient/personal',
+  '3': '/patient/booking',
+  '4': '/patient/appointments',
 };
 
-export default function AdminHeader({ selectedKey = '' }) {
+export default function PatientHeader({ selectedKey = '' }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
   const handleSignOut = () => {
+    sessionStorage.removeItem('profileWarningShown');
     logout();
     navigate('/login');
   };
@@ -30,7 +33,7 @@ export default function AdminHeader({ selectedKey = '' }) {
     {
       key: 'profile',
       icon: <UserOutlined />,
-      label: <a onClick={() => navigate('/admin/profile')}>Hồ sơ của tôi</a>,
+      label: <a onClick={() => navigate('/patient/personal')}>Thông tin cá nhân</a>,
     },
     {
       key: 'logout',
@@ -56,7 +59,7 @@ export default function AdminHeader({ selectedKey = '' }) {
     >
       <div
         style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-        onClick={() => navigate('/admin/dashboard')}
+        onClick={() => navigate('/patient/dashboard')}
       >
         <img src="/ASTCare1.png" alt="ASTCare Logo" style={{ height: 40, objectFit: 'contain' }} />
       </div>
@@ -76,18 +79,20 @@ export default function AdminHeader({ selectedKey = '' }) {
         }}
       />
 
-      <Dropdown menu={{ items: userMenuItems }}>
+      <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-          <div
+          <span
             className="hide-on-mobile"
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}
+            style={{ fontSize: 15, fontWeight: 600, color: '#333' }}
           >
-            <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>
-              {user?.firstName} {user?.lastName}
-            </span>
-            <span style={{ fontSize: 12, color: '#888' }}>Quản trị hệ thống</span>
-          </div>
-          <Avatar size={40} src={user?.avatarUrl} icon={<UserOutlined />} style={{ backgroundColor: '#001529' }} />
+            {user?.firstName} {user?.lastName}
+          </span>
+          <Avatar
+            size={36}
+            src={user?.avatarUrl}
+            icon={<UserOutlined />}
+            style={{ backgroundColor: '#1677ff' }}
+          />
         </div>
       </Dropdown>
     </Header>

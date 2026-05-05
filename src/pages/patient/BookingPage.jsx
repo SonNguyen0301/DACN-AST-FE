@@ -1,17 +1,16 @@
-import { 
-  Layout, Menu, Avatar, Typography, Card, Button,
-  Space, List, Dropdown, Row, Col,
+import {
+  Layout, Avatar, Typography, Card, Button,
+  Space, List, Row, Col,
   Collapse, Checkbox, Spin, message, Input, Radio
 } from "antd";
-import { 
-  UserOutlined, 
-  LogoutOutlined,
+import {
+  UserOutlined,
   CalendarOutlined,
   ReloadOutlined,
   InfoCircleOutlined,
   MedicineBoxOutlined,
-  AppstoreOutlined,       
-  UnorderedListOutlined  
+  AppstoreOutlined,
+  UnorderedListOutlined
 } from "@ant-design/icons";
 import ChatBotIcon from "../../components/common/ChatBotIcon";
 import { useNavigate } from 'react-router-dom';
@@ -20,9 +19,9 @@ import { useState, useEffect } from 'react';
 
 import { getDoctorsAPI } from '../../services/doctorService';
 import useAuth from '../../hooks/useAuth';
+import PatientHeader from './components/PatientHeader';
 
-
-const { Header, Content } = Layout; 
+const { Content } = Layout;
 const { Title, Text , Paragraph} = Typography;
 const { Panel } = Collapse;
 const { Search } = Input;
@@ -30,12 +29,8 @@ const { Search } = Input;
 
 export default function BookingPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
-  const handleSignOut = () => {
-    logout(); 
-    navigate('/login');
-  };
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [totalDoctors, setTotalDoctors] = useState(0);
@@ -110,58 +105,9 @@ export default function BookingPage() {
       setCurrentPage(1);
   };
 
-  const menuItems = [
-    { key: '1', label: (<a onClick={() => navigate('/patient/personal')}>Thông tin cá nhân</a>), icon: <UserOutlined />},
-    { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true}
-  ];
-
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
-      <Header
-        style={{
-          background: "#fff",
-          padding: "0 40px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-          position: 'sticky', top: 0, zIndex: 1000
-        }}
-      >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
-                   <img 
-            src="/ASTCare1.png" 
-            alt="ATSCare Logo" 
-            style={{ height: '40px', objectFit: 'contain' }} 
-          />
-        </div>
-        <Menu
-          mode="horizontal"
-          defaultSelectedKeys={['3']} 
-          items={[
-            { key: "1", label: "Trang chủ" },
-            { key: "2", label: "Thông tin cá nhân" },
-            { key: "3", label: "Đặt lịch khám" },
-            { key: "4", label: "Lịch khám của bản thân" },
-          ]}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555', flex: 1, justifyContent: 'center' }}
-          onClick={({ key }) => {
-            switch (key) {
-              case "1": navigate('/patient/dashboard'); break;
-              case "2": navigate('/patient/personal'); break;
-              case "3": navigate('/patient/booking'); break;
-              case "4": navigate('/patient/appointments'); break;
-              default: break;
-            }
-          }}
-        />
-        <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }} className="hide-on-mobile">{user?.firstName + ' ' + user?.lastName}</span>
-            <Avatar size={36} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
-          </div>
-        </Dropdown>
-      </Header>
+      <PatientHeader selectedKey="3" />
 
       <Content style={{ padding: "40px 60px" }}>
         <Row gutter={[24, 24]}>

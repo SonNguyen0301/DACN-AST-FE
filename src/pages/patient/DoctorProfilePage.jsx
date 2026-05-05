@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { 
-  Layout, Menu, Avatar, Typography, Card, Button, Select,
-  Space, Dropdown, Row, Col, Tag, Tabs, Input, Upload, message, Calendar, Empty, Divider , Spin, Modal, Image
+import {
+  Layout, Avatar, Typography, Card, Button, Select,
+  Space, Row, Col, Tag, Tabs, Input, Upload, message, Calendar, Empty, Divider, Spin, Modal, Image
 } from "antd";
-import { 
-  UserOutlined, LogoutOutlined, SafetyOutlined,
+import {
+  UserOutlined, SafetyOutlined,
   BookOutlined, ReadOutlined, TeamOutlined,
-  LeftOutlined, InboxOutlined, SunOutlined, 
+  LeftOutlined, InboxOutlined, SunOutlined,
   CalendarOutlined, ClockCircleOutlined, CloudOutlined, MoonOutlined, DeleteOutlined
 } from "@ant-design/icons";
 import ChatBotIcon from "../../components/common/ChatBotIcon";
@@ -17,9 +17,9 @@ import dayjs from 'dayjs';
 import { getDoctorInfoAPI, getDoctorShiftsAPI, bookAppointmentAPI } from '../../services/doctorService';
 import { getUserInfoAPI } from '../../services/userService';
 import useAuth from '../../hooks/useAuth';
+import PatientHeader from './components/PatientHeader';
 
-
-const { Header, Content } = Layout;
+const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 const { TextArea } = Input;
@@ -28,7 +28,7 @@ const { Dragger } = Upload;
 export default function DoctorProfilePage() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { user, logout } = useAuth(); 
+  const { user } = useAuth(); 
 
   const [doctor, setDoctor] = useState(null);
   const [loadingDoctor, setLoadingDoctor] = useState(true);
@@ -193,8 +193,6 @@ export default function DoctorProfilePage() {
     return isPast || hasNoShift;
   };
 
-  const handleSignOut = () => { logout(); navigate('/login'); };
-  
   const handleConfirmBooking = async () => {
     
     if (!user?.id) {
@@ -264,11 +262,6 @@ export default function DoctorProfilePage() {
       setFileList(prevList => prevList.filter(file => file.uid !== fileToRemove.uid));
   };
 
-  const menuItems = [
-    { key: '1', label: (<a onClick={() => navigate('/patient/personal')}>Thông tin cá nhân</a>), icon: <UserOutlined />},
-    { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true}
-  ];
-
   const uploadProps = {
     name: 'file', 
     multiple: true, 
@@ -336,43 +329,7 @@ export default function DoctorProfilePage() {
 
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
-      <Header style={{ background: "#fff", padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)",position: 'sticky', top: 0, zIndex: 1000 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
-          <img 
-            src="/ASTCare1.png" 
-            alt="ATSCare Logo" 
-            style={{ height: '40px', objectFit: 'contain' }} 
-          />
-        </div>
-
-        <Menu
-          mode="horizontal"
-          defaultSelectedKeys={['1']} 
-          items={[
-            { key: "1", label: "Trang chủ" },
-            { key: "2", label: "Thông tin cá nhân" },
-            { key: "3", label: "Đặt lịch khám" },
-            { key: "4", label: "Lịch khám của bản thân" },
-          ]}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555', flex: 1, justifyContent: 'center' }}
-          onClick={({ key }) => {
-            switch (key) {
-              case "1": navigate('/patient/dashboard'); break;
-              case "2": navigate('/patient/personal'); break;
-              case "3": navigate('/patient/booking'); break;
-              case "4": navigate('/patient/appointments'); break;
-              default: break;
-            }
-          }}
-        />
-        
-        <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-            <span className="hide-on-mobile" style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user?.firstName + ' ' + user?.lastName}</span>
-            <Avatar size={36} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
-          </div>
-        </Dropdown>
-      </Header>
+      <PatientHeader selectedKey="3" />
 
       <Content style={{ padding: "24px 40px" }}>
         

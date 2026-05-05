@@ -1,21 +1,21 @@
-import { useState, useEffect } from 'react';
-import { 
-  Layout, Menu, Avatar, Typography, Card, Button, Row, Col, Image, 
-  Space, Select, Modal, Form, Input, DatePicker, Dropdown, Descriptions, Tag, Pagination, message, Spin, Divider
+import { useState, useEffect, useRef } from 'react';
+import {
+  Layout, Avatar, Typography, Card, Button, Row, Col, Image,
+  Space, Select, Modal, Form, Input, DatePicker, Descriptions, Tag, Pagination, message, Spin, Divider
 } from "antd";
-import { 
-  UserOutlined, 
-  EditOutlined, 
+import {
+  UserOutlined,
+  EditOutlined,
   CalendarOutlined,
-  PhoneOutlined, 
-  MailOutlined, 
-  HomeOutlined, 
-  IdcardOutlined, 
+  PhoneOutlined,
+  MailOutlined,
+  HomeOutlined,
+  IdcardOutlined,
   ScheduleOutlined,
-  LogoutOutlined,
-  SmileOutlined, 
-  TeamOutlined, 
+  SmileOutlined,
+  TeamOutlined,
   LeftOutlined,
+  CameraOutlined,
 } from "@ant-design/icons";
 import ChatBotIcon from "../../components/common/ChatBotIcon";
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -24,9 +24,10 @@ import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import { getUserInfoAPI, updateUserInfoAPI, getHistoryConsultationsAPI } from '../../services/userService';
 import useAuth from '../../hooks/useAuth';
+import PatientHeader from './components/PatientHeader';
 
 dayjs.extend(customParseFormat);
-const { Header, Content } = Layout;
+const { Content } = Layout;
 const { Title, Text } = Typography;
 const { Option } = Select;
 
@@ -39,7 +40,9 @@ const genderDisplayMap = {
 export default function PersonalPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth(); 
+  const { updateUser } = useAuth();
+  const fileInputRef = useRef(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [form] = Form.useForm();
 
@@ -129,6 +132,36 @@ useEffect(() => {
       setSelectedConsultation(apt);
   };
 
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      message.error('Chỉ chấp nhận file JPG hoặc PNG');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      message.error('Ảnh không được vượt quá 2MB');
+      return;
+    }
+    setUploadingAvatar(true);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const base64 = ev.target.result;
+      try {
+        await updateUserInfoAPI({ avatarUrl: base64 });
+        setUserData(prev => ({ ...prev, avatarUrl: base64 }));
+        updateUser({ avatarUrl: base64 });
+        message.success('Cập nhật ảnh đại diện thành công!');
+      } catch {
+        message.error('Lỗi khi cập nhật ảnh đại diện');
+      } finally {
+        setUploadingAvatar(false);
+        e.target.value = '';
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const showModal = (dataToEdit = userData) => {
     if (!dataToEdit) return;
 
@@ -201,26 +234,6 @@ useEffect(() => {
     </div>
   );
 
-  const handleSignOut = () => {
-      localStorage.removeItem('accessToken');
-      if (logout) logout();
-      message.success("Đã đăng xuất!");
-      navigate('/login');
-    };
-
-  const menuItems = [
-    {
-      key: '1',
-      label: (<a onClick={() => navigate('/patient/personal')}>Thông tin cá nhân</a>),
-      icon: <UserOutlined />,
-    },
-    {
-      key: '2',
-      label: (<a onClick={handleSignOut}>Đăng xuất</a>),
-      icon: <LogoutOutlined />,
-      danger: true,
-    }
-  ];
 
   if (loading) {
       return (
@@ -236,51 +249,7 @@ useEffect(() => {
   
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
-      <Header
-        style={{
-          background: "#fff",
-          padding: "0 40px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-          position: 'sticky', top: 0, zIndex: 1000
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
-          <img 
-            src="/ASTCare1.png" 
-            alt="ATSCare Logo" 
-            style={{ height: '40px', objectFit: 'contain' }} 
-          />
-        </div>
-        <Menu
-          mode="horizontal"
-          defaultSelectedKeys={['2']} 
-          items={[
-            { key: "1", label: "Trang chủ" },
-            { key: "2", label: "Thông tin cá nhân" },
-            { key: "3", label: "Đặt lịch khám" },
-            { key: "4", label: "Lịch khám của bản thân" },
-          ]}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555', flex: 1, justifyContent: 'center' }}
-          onClick={({ key }) => {
-            switch (key) {
-              case "1": navigate('/patient/dashboard'); break;
-              case "2": navigate('/patient/personal'); break;
-              case "3": navigate('/patient/booking'); break;
-              case "4": navigate('/patient/appointments'); break;
-              default: break;
-            }
-          }}
-        />
-        <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }} className="hide-on-mobile">{fullName}</span>
-            <Avatar size={36} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
-          </div>
-        </Dropdown>
-      </Header>
+      <PatientHeader selectedKey="2" />
 
       <Content style={{ padding: "40px 60px" }}>
         <Row gutter={[24, 24]}>
@@ -288,7 +257,18 @@ useEffect(() => {
           <Col xs={24} md={8} lg={7} xl={6}>
             <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #f0f0f0', padding: '30px 0', height: '100%' }}>
               <div style={{ padding: '0 24px 24px 24px', textAlign: 'center', borderBottom: '1px solid #f0f0f0', marginBottom: 24 }}>
-                <Avatar size={100} src={userData.avatarUrl} icon={<UserOutlined />} style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}/>
+                <div style={{ position: 'relative', display: 'inline-block' }}>
+                  <Avatar size={100} src={userData.avatarUrl} icon={<UserOutlined />} style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                  <input type="file" accept="image/jpeg,image/png" ref={fileInputRef} onChange={handleAvatarChange} style={{ display: 'none' }} />
+                  <Button
+                    shape="circle"
+                    icon={<CameraOutlined />}
+                    size="small"
+                    loading={uploadingAvatar}
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{ position: 'absolute', bottom: 0, right: 0, border: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
+                  />
+                </div>
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 16 }}>
                   <Title level={4} style={{ margin: 0 }}>{fullName}</Title>
                   <Button type="primary" shape="circle" icon={<EditOutlined />} onClick={() => showModal(userData)} size="middle" />

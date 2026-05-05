@@ -1,14 +1,12 @@
 
-import { 
-  Layout, 
-  Menu, 
-  Avatar, 
-  Typography, 
-  Row, 
-  Col, 
-  Card, 
-  Badge, 
-  Dropdown,
+import {
+  Layout,
+  Avatar,
+  Typography,
+  Row,
+  Col,
+  Card,
+  Badge,
   Calendar,
   List,
   Tag,
@@ -22,9 +20,8 @@ import {
   message,
   Tooltip as AntdTooltip
 } from "antd";
-import { 
-  UserOutlined, 
-  LogoutOutlined,
+import {
+  UserOutlined,
   TeamOutlined,
   RiseOutlined,
   ClockCircleOutlined,
@@ -48,12 +45,13 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recha
 import { useEffect } from "react";
 import { getAppointmentCalendarAPI, getAppointmentsByDateAPI, getDoctorDashboardInfoAPI, getStatisticMonthlyDiseaseAPI, startExaminationAPI } from "../../services/doctorService";
 import useAuth from "../../hooks/useAuth";
-const { Header, Content } = Layout;
+import DoctorHeader from './components/DoctorHeader';
+const { Content } = Layout;
 const { Title, Text } = Typography;
 
 export default function DoctorDashboardPage() {
   const navigate = useNavigate();
-  const { user, logout} = useAuth(); 
+  const { user } = useAuth();
 
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -554,25 +552,6 @@ const getListData = (value) => {
     );
   };
 
-  const handleSignOut = () => {
-      logout();
-      navigate('/');
-  };
-
-  const menuUserItems = [
-    {
-      key: '1',
-      label: (<a onClick={() => navigate('/doctor/profile')}>Hồ sơ bác sĩ</a>),
-      icon: <UserOutlined />,
-    },
-    {
-      key: '2',
-      label: (<a onClick={handleSignOut}>Đăng xuất</a>),
-      icon: <LogoutOutlined />,
-      danger: true,
-    }
-  ];
-
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
 
@@ -593,40 +572,7 @@ const getListData = (value) => {
         }
       `}</style>
 
-      <Header style={{ background: "#fff", padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", position: 'sticky', top: 0, zIndex: 1000 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => navigate('/doctor/dashboard')}>
-            <img src="/ASTCare1.png" alt="ATSCare Logo" style={{ height: '40px', objectFit: 'contain' }} />
-        </div>
-        <Menu
-          mode="horizontal"
-          defaultSelectedKeys={['1']} 
-          items={[
-            { key: "1", label: "Trang chủ" },
-            { key: "2", label: "Lịch đặt khám" },
-            { key: "3", label: "Khám bệnh" },
-            { key: "4", label: "Lịch sử khám bệnh" },
-          ]}
-          onClick ={({ key }) => {
-            switch (key) {
-              case "1": navigate('/doctor/dashboard'); break;
-              case "2": navigate('/doctor/appointments'); break;
-              case "3": navigate('/doctor/consulting'); break;
-              case "4": navigate('/doctor/medical-history'); break;
-              default: break;
-            }
-          }}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555', borderBottom: 'none', flex: 1, justifyContent: 'center' }}
-        />
-         <Dropdown menu={{ items: menuUserItems }} placement="bottomRight" arrow>
-           <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                 <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{"BS. "+ user.firstName + " " + user.lastName}</span>
-                 <span style={{ fontSize: 12, color: '#888' }}>Khoa Da liễu</span>
-             </div>
-             <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
-           </div>
-         </Dropdown>
-      </Header>
+      <DoctorHeader selectedKey="1" />
 
       <Content style={{ padding: "30px 40px" }}>
         

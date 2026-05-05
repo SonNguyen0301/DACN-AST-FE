@@ -6,18 +6,18 @@ import useAuth from '../../../hooks/useAuth';
 const { Header } = Layout;
 
 const MENU_ITEMS = [
-  { key: 'dashboard', label: 'Trang chủ' },
-  { key: 'users',     label: 'Quản lý tài khoản' },
-  { key: 'AI',        label: 'Quản lý Model AI' },
+  { key: '1', label: 'Trang chủ' },
+  { key: '2', label: 'Lịch đặt khám' },
+  { key: '3', label: 'Quản lý lịch' },
 ];
 
 const ROUTE_MAP = {
-  dashboard: '/admin/dashboard',
-  users:     '/admin/user-management',
-  AI:        '/admin/model-ai',
+  '1': '/staff/dashboard',
+  '2': '/staff/appointments',
+  '3': '/staff/manage-schedule',
 };
 
-export default function AdminHeader({ selectedKey = '' }) {
+export default function StaffHeader({ selectedKey = '' }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
@@ -30,7 +30,7 @@ export default function AdminHeader({ selectedKey = '' }) {
     {
       key: 'profile',
       icon: <UserOutlined />,
-      label: <a onClick={() => navigate('/admin/profile')}>Hồ sơ của tôi</a>,
+      label: <a onClick={() => navigate('/staff/profile')}>Hồ sơ nhân viên</a>,
     },
     {
       key: 'logout',
@@ -56,7 +56,7 @@ export default function AdminHeader({ selectedKey = '' }) {
     >
       <div
         style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-        onClick={() => navigate('/admin/dashboard')}
+        onClick={() => navigate('/staff/dashboard')}
       >
         <img src="/ASTCare1.png" alt="ASTCare Logo" style={{ height: 40, objectFit: 'contain' }} />
       </div>
@@ -76,7 +76,7 @@ export default function AdminHeader({ selectedKey = '' }) {
         }}
       />
 
-      <Dropdown menu={{ items: userMenuItems }}>
+      <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
           <div
             className="hide-on-mobile"
@@ -85,9 +85,13 @@ export default function AdminHeader({ selectedKey = '' }) {
             <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>
               {user?.firstName} {user?.lastName}
             </span>
-            <span style={{ fontSize: 12, color: '#888' }}>Quản trị hệ thống</span>
           </div>
-          <Avatar size={40} src={user?.avatarUrl} icon={<UserOutlined />} style={{ backgroundColor: '#001529' }} />
+          <Avatar
+            size={40}
+            src={user?.avatarUrl}
+            icon={<UserOutlined />}
+            style={{ backgroundColor: '#faad14' }}
+          />
         </div>
       </Dropdown>
     </Header>

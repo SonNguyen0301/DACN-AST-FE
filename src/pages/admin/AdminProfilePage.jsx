@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Layout,
   Typography,
@@ -38,6 +38,8 @@ const { Option } = Select;
 
 export default function AdminProfilePage() {
   const { user, logout, updateUser } = useAuth();
+  const fileInputRef = useRef(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -94,6 +96,42 @@ export default function AdminProfilePage() {
       fetchAdminProfile();
   }, []);
 
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      message.error('Chỉ chấp nhận file JPG hoặc PNG');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      message.error('Ảnh không được vượt quá 2MB');
+      return;
+    }
+    setUploadingAvatar(true);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const base64 = ev.target.result;
+      try {
+        const res = await updateAdminInfoAPI({
+          avatarUrl: base64,
+          isOnBoardingCompleted: true,
+          phoneCode: adminInfo.phoneCode || '+84',
+        });
+        if (res.data?.success) {
+          setAdminInfo(prev => ({ ...prev, avatar: base64 }));
+          updateUser({ avatarUrl: base64 });
+          message.success('Cập nhật ảnh đại diện thành công!');
+        }
+      } catch {
+        message.error('Lỗi khi cập nhật ảnh đại diện');
+      } finally {
+        setUploadingAvatar(false);
+        e.target.value = '';
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleOpenEditModal = () => {
     editForm.setFieldsValue({
@@ -221,17 +259,20 @@ const SettingsTab = () => (
                     styles={{ body: { padding: 30 } }}
                 >
                     <div style={{ position: 'relative', display: 'inline-block' }}>
-                        <Avatar 
-                            size={120} 
-                            src={adminInfo.avatar} 
-                            icon={<UserOutlined />} 
-                            style={{ backgroundColor: '#fff1f0', color: '#f5222d', border: '4px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} 
+                        <Avatar
+                            size={120}
+                            src={adminInfo.avatar}
+                            icon={<UserOutlined />}
+                            style={{ backgroundColor: '#fff1f0', color: '#f5222d', border: '4px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
                         />
-                        <Button 
-                            shape="circle" 
-                            icon={<CameraOutlined />} 
-                            size="small" 
-                            style={{ position: 'absolute', bottom: 0, right: 0, border: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} 
+                        <input type="file" accept="image/jpeg,image/png" ref={fileInputRef} onChange={handleAvatarChange} style={{ display: 'none' }} />
+                        <Button
+                            shape="circle"
+                            icon={<CameraOutlined />}
+                            size="small"
+                            loading={uploadingAvatar}
+                            onClick={() => fileInputRef.current?.click()}
+                            style={{ position: 'absolute', bottom: 0, right: 0, border: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
                         />
                     </div>
                     

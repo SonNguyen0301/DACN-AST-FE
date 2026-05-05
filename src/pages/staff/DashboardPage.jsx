@@ -1,26 +1,23 @@
 import { useState, useEffect } from 'react';
-import { 
-  Layout, 
-  Menu, 
-  Avatar, 
-  Typography, 
-  Row, 
-  Col, 
-  Card, 
-  Statistic, 
-  Table, 
-  Tag, 
-  Button, 
-  Dropdown, 
+import {
+  Layout,
+  Avatar,
+  Typography,
+  Row,
+  Col,
+  Card,
+  Statistic,
+  Table,
+  Tag,
+  Button,
   List,
   Badge,
   Space,
   Modal
 } from "antd";
-import { 
-  UserOutlined, 
-  LogoutOutlined,
-  CalendarOutlined, 
+import {
+  UserOutlined,
+  CalendarOutlined,
   ClockCircleOutlined,
   TeamOutlined,
   PhoneOutlined,
@@ -33,8 +30,9 @@ import Footer from "../../components/common/Footer";
 import { getTodayAppointments, getActiveDoctors, getStaffDashboardInfo } from '../../services/staffService'; 
 import dayjs from 'dayjs';
 import useAuth from "../../hooks/useAuth";
+import StaffHeader from './components/StaffHeader';
 
-const { Header, Content } = Layout;
+const { Content } = Layout;
 const { Title, Text } = Typography;
 
 const getTimeRange = () => {
@@ -57,7 +55,7 @@ const getTimeRange = () => {
 
 export default function AdmissionStaffDashboardPage() {
   const navigate = useNavigate();
-  const { user, logout} = useAuth(); 
+  const { user } = useAuth(); 
 
   const [bookingRequests, setBookingRequests] = useState([]);
   const [doctorsOnDuty, setDoctorsOnDuty] = useState([]);
@@ -179,16 +177,6 @@ export default function AdmissionStaffDashboardPage() {
     { title: "Bác sĩ đang trực", value: doctorsOnDuty.length, icon: <TeamOutlined />, color: "#722ed1", bg: "#f9f0ff" },
   ];
 
-  const handleSignOut = () => {
-    logout();
-    navigate('/');
-  };
-
-  const menuUserItems = [
-    { key: '1', label: (<a onClick={() => navigate('/staff/profile')}>Hồ sơ nhân viên</a>), icon: <UserOutlined /> },
-    { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
-  ];
-
   const columns = [
     {
       title: (
@@ -261,37 +249,7 @@ export default function AdmissionStaffDashboardPage() {
 
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
-      <Header style={{ background: "#fff", padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", position: 'sticky', top: 0, zIndex: 1000 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => navigate('/staff/dashboard')}>
-            <img src="/ASTCare1.png" alt="ATSCare Logo" style={{ height: '40px', objectFit: 'contain' }} />
-        </div>
-        
-        <Menu
-          mode="horizontal"
-          defaultSelectedKeys={['1']} 
-          items={[
-            { key: "1", label: "Trang chủ" },
-            { key: "2", label: "Lịch đặt khám" }, 
-            { key: "3", label: "Quản lý lịch" }, 
-          ]}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555', borderBottom: 'none', flex: 1, justifyContent: 'center' }}
-          onClick={({ key }) => {
-             if(key === '1') navigate('/staff/dashboard');
-             if(key === '2') navigate('/staff/appointments');
-             if(key === '3') navigate('/staff/manage-schedule');
-          }}
-        />
-        
-        <Dropdown menu={{ items: menuUserItems }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-             <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user?.firstName + " " + user?.lastName}</span>
-                <span style={{ fontSize: 12, color: '#888' }}>Phòng Tiếp nhận</span>
-            </div>
-            <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#faad14' }} />
-          </div>
-        </Dropdown>
-      </Header>
+      <StaffHeader selectedKey="1" />
 
       <Content style={{ padding: "30px 40px" }}>
         

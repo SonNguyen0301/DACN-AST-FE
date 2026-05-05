@@ -1,27 +1,24 @@
-import { useState, useEffect } from 'react';
-import { 
-  Layout, 
-  Menu, 
-  Avatar, 
-  Typography, 
-  Row, 
-  Col, 
-  Card, 
-  Button, 
-  Descriptions, 
-  Tabs, 
-  Tag, 
+import { useState, useEffect, useRef } from 'react';
+import {
+  Layout,
+  Avatar,
+  Typography,
+  Row,
+  Col,
+  Card,
+  Button,
+  Descriptions,
+  Tabs,
+  Tag,
   Divider,
-  Dropdown,
   message,
   Input,
   Form,
   Modal
 } from "antd";
-import { 
-  UserOutlined, 
-  LogoutOutlined,
-  PhoneOutlined, 
+import {
+  UserOutlined,
+  PhoneOutlined,
   MailOutlined, 
   EnvironmentOutlined,
   EditOutlined,
@@ -32,15 +29,18 @@ import dayjs from 'dayjs';
 import Footer from "../../components/common/Footer"; 
 import { getStaffInfoAPI, updateStaffInfoAPI } from '../../services/staffService';
 import useAuth from '../../hooks/useAuth';
+import StaffHeader from './components/StaffHeader';
 
-const { Header, Content } = Layout;
+const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
 
 export default function StaffProfilePage() {
   const navigate = useNavigate();
-  const { user, logout, updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
 
+  const fileInputRef = useRef(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [editForm] = Form.useForm();
@@ -96,15 +96,35 @@ export default function StaffProfilePage() {
       fetchStaffProfile();
   }, []);
 
-  const handleSignOut = () => {
-    logout();
-    navigate('/');
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      message.error('Chỉ chấp nhận file JPG hoặc PNG');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      message.error('Ảnh không được vượt quá 2MB');
+      return;
+    }
+    setUploadingAvatar(true);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const base64 = ev.target.result;
+      try {
+        await updateStaffInfoAPI({ avatarUrl: base64 });
+        setStaffInfo(prev => ({ ...prev, avatar: base64 }));
+        updateUser({ avatarUrl: base64 });
+        message.success('Cập nhật ảnh đại diện thành công!');
+      } catch {
+        message.error('Lỗi khi cập nhật ảnh đại diện');
+      } finally {
+        setUploadingAvatar(false);
+        e.target.value = '';
+      }
+    };
+    reader.readAsDataURL(file);
   };
-
-  const menuUserItems = [
-    { key: '1', label: (<a onClick={() => navigate('/staff/profile')}>Hồ sơ nhân viên</a>), icon: <UserOutlined /> },
-    { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
-  ];
 
   const handleOpenEditModal = () => {
     editForm.setFieldsValue({
@@ -223,38 +243,7 @@ const SettingsTab = () => (
 
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
-      <Header style={{ background: "#fff", padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", position: 'sticky', top: 0, zIndex: 1000 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => navigate('/staff/dashboard')}>
-            <img src="/ASTCare1.png" alt="ASTCare Logo" style={{ height: '40px', objectFit: 'contain' }} />
-        </div>
-        <Menu
-          mode="horizontal"
-          defaultSelectedKeys={[]} 
-          items={[
-            { key: "1", label: "Trang chủ" },
-            { key: "2", label: "Lịch đặt khám" },
-            { key: "3", label: "Quản lý lịch" },
-          ]}
-          onClick ={({ key }) => {
-            switch (key) {
-              case "1": navigate('/staff/dashboard'); break;
-              case "2": navigate('/staff/appointments'); break;
-              case "3": navigate('/staff/manage-schedule'); break;
-              default: break;
-            }
-          }}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555', borderBottom: 'none', flex: 1, justifyContent: 'center' }}
-        />
-        <Dropdown menu={{ items: menuUserItems }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.firstName} {user.lastName}</span>
-                <span style={{ fontSize: 12, color: '#888' }}>Khoa {staffInfo.department}</span>
-            </div>
-            <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#faad14' }} />
-          </div>
-        </Dropdown>
-      </Header>
+      <StaffHeader selectedKey="" />
 
       <Content style={{ padding: "30px 40px" }}>
          <div style={{ marginBottom: 24 }}>
@@ -269,17 +258,20 @@ const SettingsTab = () => (
                     styles={{ body: { padding: 30 } }}
                 >
                     <div style={{ position: 'relative', display: 'inline-block' }}>
-                        <Avatar 
-                            size={120} 
-                            src={staffInfo.avatar} 
-                            icon={<UserOutlined />} 
-                            style={{ backgroundColor: '#fffbe6', color: '#faad14', border: '4px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} 
+                        <Avatar
+                            size={120}
+                            src={staffInfo.avatar}
+                            icon={<UserOutlined />}
+                            style={{ backgroundColor: '#fffbe6', color: '#faad14', border: '4px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
                         />
-                        <Button 
-                            shape="circle" 
-                            icon={<CameraOutlined />} 
-                            size="small" 
-                            style={{ position: 'absolute', bottom: 0, right: 0, border: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} 
+                        <input type="file" accept="image/jpeg,image/png" ref={fileInputRef} onChange={handleAvatarChange} style={{ display: 'none' }} />
+                        <Button
+                            shape="circle"
+                            icon={<CameraOutlined />}
+                            size="small"
+                            loading={uploadingAvatar}
+                            onClick={() => fileInputRef.current?.click()}
+                            style={{ position: 'absolute', bottom: 0, right: 0, border: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
                         />
                     </div>
                     

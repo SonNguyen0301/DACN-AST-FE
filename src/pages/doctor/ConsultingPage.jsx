@@ -1,24 +1,22 @@
 import { useState, useEffect } from 'react';
-import { 
-  Layout, 
-  Menu, 
-  Avatar, 
-  Typography, 
-  Row, 
-  Col, 
-  Card, 
-  Form, 
-  Input, 
-  Select, 
-  Radio, 
-  InputNumber, 
-  Upload, 
-  Button, 
-  Divider, 
-  Space, 
-  Tag, 
+import {
+  Layout,
+  Avatar,
+  Typography,
+  Row,
+  Col,
+  Card,
+  Form,
+  Input,
+  Select,
+  Radio,
+  InputNumber,
+  Upload,
+  Button,
+  Divider,
+  Space,
+  Tag,
   message,
-  Dropdown,
   Breadcrumb,
   Image,
   Progress,
@@ -31,10 +29,9 @@ import {
   Descriptions,
   Empty
 } from "antd";
-import { 
-  UserOutlined, 
-  LogoutOutlined,
-  InboxOutlined, 
+import {
+  UserOutlined,
+  InboxOutlined,
   SaveOutlined,
   MedicineBoxOutlined,
   ArrowLeftOutlined,
@@ -53,9 +50,10 @@ import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
 import Footer from "../../components/common/Footer"; 
 import { getAppointmentsByDateAPI, createAiDiagnosisAPI, getAiDiagnosisResultAPI, finishExaminationAPI, startExaminationAPI, getConsultationDetailAPI } from '../../services/doctorService';
 import useAuth from '../../hooks/useAuth';
+import DoctorHeader from './components/DoctorHeader';
 import dayjs from 'dayjs';
 
-const { Header, Content } = Layout;
+const { Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 const { Dragger } = Upload;
@@ -64,7 +62,7 @@ const { Option } = Select;
 export default function ExaminationPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   
   const [form] = Form.useForm();
   const [resultForm] = Form.useForm();
@@ -212,16 +210,6 @@ export default function ExaminationPage() {
           });
       }
   }, [activePatient, form]);
-
-  const handleSignOut = () => {
-    logout();
-    navigate('/');
-  };
-
-  const menuUserItems = [
-    { key: '1', label: (<a onClick={() => navigate('/doctor/profile')}>Hồ sơ bác sĩ</a>), icon: <UserOutlined /> },
-    { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
-  ];
 
   const extractClinicalInfo = (values) => ({
     symptom: values.symptom,
@@ -424,43 +412,7 @@ export default function ExaminationPage() {
 
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
-      <Header style={{ background: "#fff", padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", position: 'sticky', top: 0, zIndex: 1000 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => navigate('/doctor/dashboard')}>
-            <img src="/ASTCare1.png" alt="ATSCare Logo" style={{ height: '40px', objectFit: 'contain' }} />
-        </div>
-        <Menu
-          mode="horizontal"
-          defaultSelectedKeys={['3']} 
-          items={[
-            { key: "1", label: "Trang chủ" },
-            { key: "2", label: "Lịch đặt khám" },
-            { key: "3", label: "Khám bệnh" },
-            { key: "4", label: "Lịch sử khám bệnh" },
-          ]}
-          onClick={({ key }) => {
-             if (key === '1') navigate('/doctor/dashboard');
-             if (key === '2') navigate('/doctor/appointments');
-             if (key === '3') {
-                 setActivePatient(null);
-                 setViewState('input');
-                 navigate('/doctor/consulting');
-             }
-             if (key === '4') {
-                 navigate('/doctor/medical-history');
-             }
-          }}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555', borderBottom: 'none', flex: 1, justifyContent: 'center' }}
-        />
-        <Dropdown menu={{ items: menuUserItems }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-             <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{"BS. "+ user?.firstName + " " + user?.lastName}</span>
-                <span style={{ fontSize: 12, color: '#888' }}>Khoa Da liễu</span>
-            </div>
-            <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} />
-          </div>
-        </Dropdown>
-      </Header>
+      <DoctorHeader selectedKey="3" />
 
       <Content style={{ padding: "30px 40px" }}>
 

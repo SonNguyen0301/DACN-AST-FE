@@ -1,7 +1,8 @@
 // src/context/AuthContext.jsx
 import { createContext, useState, useEffect } from 'react';
 import { loginAPI } from '../services/authService';
-import { getChatbotTokenAPI } from '../services/chatService'; // <--- Import mới
+import { getChatbotTokenAPI } from '../services/chatService';
+import api from '../services/api';
 
 import { jwtDecode } from "jwt-decode";
 
@@ -21,7 +22,9 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem('accessToken');
         if (token) {
             try {
-                return jwtDecode(token); 
+                const decoded = jwtDecode(token);
+                const avatarUrl = localStorage.getItem('userAvatarUrl');
+                return avatarUrl ? { ...decoded, avatarUrl } : decoded;
             } catch (error) {
                 console.error("Token lỗi khi reload:", error);
                 return null;
@@ -37,16 +40,26 @@ export const AuthProvider = ({ children }) => {
             const userToken = userRes.data.data.accessToken; 
 
             const decodedUser = jwtDecode(userToken);
-            setUser(decodedUser); 
-            
-            // Lưu User Token (Quan trọng: api.js sẽ dùng cái này để gọi API Passport)
+
+            // Lưu token trước để interceptor có thể dùng
             localStorage.setItem('accessToken', userToken);
             setIsAuthenticated(true);
 
             const storage = rememberMe ? localStorage : sessionStorage;
             storage.setItem('accessToken', userToken);
 
-            // --- GIAI ĐOẠN 2: LẤY CHATBOT TOKEN ---
+            // --- GIAI ĐOẠN 2: LẤY AVATAR TỪ PROFILE ---
+            try {
+                const profileRes = await api.get('/users/info');
+                const avatarUrl = profileRes.data?.data?.avatarUrl || null;
+                localStorage.setItem('userAvatarUrl', avatarUrl || '');
+                setUser({ ...decodedUser, avatarUrl });
+            } catch {
+                localStorage.removeItem('userAvatarUrl');
+                setUser(decodedUser);
+            }
+
+            // --- GIAI ĐOẠN 3: LẤY CHATBOT TOKEN ---
             try {
                 const chatRes = await getChatbotTokenAPI();
                 // API trả về: data.data.access_token (theo mẫu bạn cung cấp)
@@ -76,7 +89,8 @@ export const AuthProvider = ({ children }) => {
 
     const logout = () => {
         localStorage.removeItem('accessToken');
-        localStorage.removeItem('chatToken'); // <--- Xóa cả 2
+        localStorage.removeItem('chatToken');
+        localStorage.removeItem('userAvatarUrl');
         sessionStorage.removeItem('accessToken');
         sessionStorage.removeItem('chatToken');
         setIsAuthenticated(false);
@@ -85,6 +99,9 @@ export const AuthProvider = ({ children }) => {
     };
 
     const updateUser = (newInfo) => {
+        if (newInfo.avatarUrl !== undefined) {
+            localStorage.setItem('userAvatarUrl', newInfo.avatarUrl);
+        }
         setUser((prevUser) => ({
             ...prevUser,
             ...newInfo
@@ -99,10 +116,11 @@ export const AuthProvider = ({ children }) => {
             setIsAuthenticated(true);
             try {
                 const decodedUser = jwtDecode(token);
-                setUser(decodedUser);
+                const savedAvatarUrl = localStorage.getItem('userAvatarUrl');
+                setUser(savedAvatarUrl ? { ...decodedUser, avatarUrl: savedAvatarUrl } : decodedUser);
             } catch (error) {
                 console.error("Token không hợp lệ:", error);
-                logout(); 
+                logout();
             }
         }
         if (cToken) setChatToken(cToken);

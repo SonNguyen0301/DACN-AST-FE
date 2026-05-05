@@ -1,29 +1,25 @@
 
-import { 
-  Layout, 
-  Menu, 
-  Avatar, 
-  Typography, 
-  Row, 
-  Col, 
-  Card, 
-  Tag, 
-  Space, 
+import {
+  Layout,
+  Typography,
+  Row,
+  Col,
+  Card,
+  Tag,
+  Space,
   Carousel,
-  Dropdown,
   Spin,
   Empty,
   Button,
   notification
 } from "antd";
-import { 
-  CalendarOutlined, 
-  UserOutlined, 
-  ClockCircleOutlined, 
-  EnvironmentOutlined, 
-  MedicineBoxOutlined, 
+import {
+  CalendarOutlined,
+  UserOutlined,
+  ClockCircleOutlined,
+  EnvironmentOutlined,
+  MedicineBoxOutlined,
   HomeOutlined,
-  LogoutOutlined,
   ScheduleOutlined,
   PlusCircleOutlined,
   RightOutlined,
@@ -33,16 +29,17 @@ import { useNavigate } from "react-router-dom";
 import Footer from "../../components/common/Footer";
 import { useEffect, useState } from "react";
 import useAuth from "../../hooks/useAuth";
+import PatientHeader from './components/PatientHeader';
 import dayjs from "dayjs";
 import { getUpcomingAppointmentAPI } from "../../services/appointmentService";
 import { getUserInfoAPI } from "../../services/userService";
 
-const { Header, Content } = Layout;
+const { Content } = Layout;
 const { Paragraph, Text, Title } = Typography;
 
 export default function PatientDashboardPage() {
   const navigate = useNavigate();
-  const { user, logout} = useAuth(); 
+  const { user } = useAuth();
   const [upcomingApt, setUpcomingApt] = useState(null);
   const [loadingApt, setLoadingApt] = useState(true);
 
@@ -140,65 +137,10 @@ const featureCards = [
     }
   ];
 
-  const handleSignOut = () => {
-    sessionStorage.removeItem('profileWarningShown');
-    logout();
-    navigate('/');
-  };
-
-  const menuItems = [
-    {
-      key: '1',
-      label: (<a onClick={() => navigate('/patient/personal')}>Thông tin cá nhân</a>),
-      icon: <UserOutlined />,
-    },
-    {
-      key: '2',
-      label: (<a onClick={handleSignOut}>Đăng xuất</a>),
-      icon: <LogoutOutlined />,
-      danger: true,
-    }
-  ];
 
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
-      <Header style={{ background: "#fff", padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)",position: 'sticky', top: 0, zIndex: 1000 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => window.scrollTo(0, 0)}>
-                    <img 
-            src="/ASTCare1.png" 
-            alt="ATSCare Logo" 
-            style={{ height: '40px', objectFit: 'contain' }} 
-          />
-        </div>
-
-        <Menu
-          mode="horizontal"
-          defaultSelectedKeys={['1']} 
-          items={[
-            { key: "1", label: "Trang chủ" },
-            { key: "2", label: "Thông tin cá nhân" },
-            { key: "3", label: "Đặt lịch khám" },
-            { key: "4", label: "Lịch khám của bản thân" },
-          ]}
-          style={{ fontSize: 16, fontWeight: 500, color: '#555' }}
-          onClick={({ key }) => {
-            switch (key) {
-              case "1": navigate('/patient/dashboard'); break;
-              case "2": navigate('/patient/personal'); break;
-              case "3": navigate('/patient/booking'); break;
-              case "4": navigate('/patient/appointments'); break;
-              default: break;
-            }
-          }}
-        />
-        
-        <Dropdown menu={{ items: menuItems }} placement="bottomRight" arrow>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-            <span style={{ fontSize: 16, fontWeight: 500, color: '#555' }}>{user?.firstName + ' ' + user?.lastName}</span>
-            <Avatar size={36} icon={<UserOutlined />} />
-          </div>
-        </Dropdown>
-      </Header>
+      <PatientHeader selectedKey="1" />
 
       <Content style={{ padding: "40px 60px" }}>
         
