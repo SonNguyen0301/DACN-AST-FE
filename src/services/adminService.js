@@ -24,6 +24,7 @@ const adminService = {
 
   // Accounts - Patient
   getListPatients: (params) => axios.get('/admin/patients', { params }),
+  updatePatientOnboarding: (id, data) => axios.patch(`/admin/patients/${id}`, data),
 
   // User Statistics
   getUserStatistics: () => axios.get('/admin/users/statistics'),

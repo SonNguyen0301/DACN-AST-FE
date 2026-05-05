@@ -1,15 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
-import { 
-  Layout, 
-  Menu, 
-  Avatar, 
-  Typography, 
-  Card, 
-  Table, 
-  Tag, 
-  Button, 
-  Space, 
-  Dropdown, 
+import {
+  Layout,
+  Menu,
+  Avatar,
+  Typography,
+  Card,
+  Table,
+  Tag,
+  Button,
+  Space,
+  Dropdown,
   Input,
   Tabs,
   Modal,
@@ -20,7 +20,11 @@ import {
   Badge,
   Row,
   Col,
-  Statistic
+  Statistic,
+  Switch,
+  Descriptions,
+  Drawer,
+  Tooltip,
 } from "antd";
 import {
   UserOutlined,
@@ -34,9 +38,10 @@ import {
   EditOutlined,
   BarChartOutlined,
   EyeInvisibleOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import Footer from "../../components/common/Footer"; 
 import adminService from "../../services/adminService";
 import { getDoctorsAPI } from "../../services/doctorService";
@@ -73,6 +78,8 @@ export default function UserManagementPage() {
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [detailDrawerVisible, setDetailDrawerVisible] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const [globalStats, setGlobalStats] = useState(null);
 
@@ -153,9 +160,13 @@ export default function UserManagementPage() {
               role: 'doctor',
               email: doc.email || doc.user?.email,
               phone: doc.phoneNumber || doc.phone || doc.user?.phoneNumber,
-              department: doc.department, 
+              gender: doc.gender || doc.user?.gender,
+              dateOfBirth: doc.dateOfBirth || doc.user?.dateOfBirth,
+              createdAt: doc.user?.createdAt || doc.createdAt,
+              department: doc.department,
               status: doc.user?.status || 'active',
-              doctorCode: doc.doctorCode
+              doctorCode: doc.doctorCode,
+              isOnboardingCompleted: doc.user?.isOnBoardingCompleted ?? doc.isOnBoardingCompleted ?? false,
           }));
           allUsers = [...allUsers, ...formattedDoctors];
         } else if (res.type === 'staff') {
@@ -166,9 +177,13 @@ export default function UserManagementPage() {
               role: 'staff',
               email: staff.user?.email,
               phone: staff.user?.phoneNumber,
-              department: staff.department, 
+              gender: staff.user?.gender,
+              dateOfBirth: staff.user?.dateOfBirth,
+              createdAt: staff.user?.createdAt || staff.createdAt,
+              department: staff.department,
               status: 'active',
-              staffCode: staff.staffCode
+              staffCode: staff.staffCode,
+              isOnboardingCompleted: staff.user?.isOnBoardingCompleted ?? false,
           }));
           allUsers = [...allUsers, ...formattedStaffs];
         } else if (res.type === 'patient') {
@@ -179,9 +194,13 @@ export default function UserManagementPage() {
               role: 'patient',
               email: patient.user?.email,
               phone: patient.user?.phoneNumber,
-              department: null, 
+              gender: patient.user?.gender,
+              dateOfBirth: patient.user?.dateOfBirth,
+              isOnboardingCompleted: patient.user?.isOnBoardingCompleted ?? false,
+              createdAt: patient.user?.createdAt || patient.createdAt,
+              citizenCode: patient.citizenCode,
+              department: null,
               status: 'active',
-              doctorCode: patient.citizenCode 
           }));
           allUsers = [...allUsers, ...formattedPatients];
         }
@@ -312,6 +331,27 @@ export default function UserManagementPage() {
     }
   };
 
+  const handleToggleOnboarding = async (record, checked) => {
+    try {
+      if (record.role === 'doctor') {
+        await adminService.updateDoctorAccount(record.id, { isOnBoardingCompleted: checked });
+      } else if (record.role === 'staff') {
+        await adminService.updateAdmissionStaffAccount(record.id, { isOnBoardingCompleted: checked });
+      } else {
+        await adminService.updatePatientOnboarding(record.id, { isOnBoardingCompleted: checked });
+      }
+      message.success(checked ? 'Đã kích hoạt tài khoản' : 'Đã vô hiệu hóa tài khoản');
+      fetchUsers();
+    } catch (err) {
+      message.error(err?.response?.data?.message || 'Có lỗi xảy ra');
+    }
+  };
+
+  const handleViewDetail = (record) => {
+    setSelectedUser(record);
+    setDetailDrawerVisible(true);
+  };
+
   const filteredUsers = users.filter(u => {
     const matchRole = activeTab === 'all' || u.role === activeTab;
     const matchDept = departmentFilter === 'all' || u.department === departmentFilter || u.department === null;
@@ -360,7 +400,7 @@ export default function UserManagementPage() {
               <Pie data={statsData} cx="50%" cy="40%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
                 {statsData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
               </Pie>
-              <Tooltip formatter={(value) => [`${value} tài khoản`, 'Số lượng']} />
+              <RechartsTooltip formatter={(value) => [`${value} tài khoản`, 'Số lượng']} />
               <Legend verticalAlign="bottom" height={36} />
             </PieChart>
           </ResponsiveContainer>
@@ -378,7 +418,7 @@ export default function UserManagementPage() {
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
               <XAxis type="number" allowDecimals={false} />
               <YAxis dataKey="name" type="category" width={80} tick={{fontSize: 12}} />
-              <Tooltip formatter={(value) => [`${value} bác sĩ`, 'Số lượng']} />
+              <RechartsTooltip formatter={(value) => [`${value} bác sĩ`, 'Số lượng']} />
               <Bar dataKey="value" fill="#1677ff" radius={[0, 4, 4, 0]} barSize={20} />
             </BarChart>
           </ResponsiveContainer>
@@ -396,7 +436,7 @@ export default function UserManagementPage() {
               <Pie data={statsData} cx="50%" cy="40%" outerRadius={80} dataKey="value" label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
                 {statsData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
               </Pie>
-              <Tooltip formatter={(value) => [`${value} nhân viên`, 'Số lượng']} />
+              <RechartsTooltip formatter={(value) => [`${value} nhân viên`, 'Số lượng']} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -418,7 +458,7 @@ export default function UserManagementPage() {
     }
   };
 
-  const columns = [
+  const defaultColumns = [
     {
       title: 'Họ tên',
       dataIndex: 'name',
@@ -436,7 +476,7 @@ export default function UserManagementPage() {
     {
       title: 'Mã (BS/NV/CCCD)',
       key: 'code',
-      width: 120,
+      width: 130,
       render: (_, record) => record.doctorCode || record.staffCode || record.citizenCode || '-'
     },
     {
@@ -447,26 +487,16 @@ export default function UserManagementPage() {
         let color = 'default';
         let icon = <UserOutlined />;
         let label = 'Unknown';
-        switch(role) {
-            case 'doctor': color = 'blue'; icon = <MedicineBoxOutlined />; label = 'Bác sĩ'; break;
-            case 'staff': color = 'orange'; icon = <SolutionOutlined />; label = 'Nhân viên'; break;
-            case 'patient': color = 'green'; icon = <TeamOutlined />; label = 'Bệnh nhân'; break;
-            default: break;
+        switch (role) {
+          case 'doctor': color = 'blue'; icon = <MedicineBoxOutlined />; label = 'Bác sĩ'; break;
+          case 'staff': color = 'orange'; icon = <SolutionOutlined />; label = 'Nhân viên'; break;
+          case 'patient': color = 'green'; icon = <TeamOutlined />; label = 'Bệnh nhân'; break;
+          default: break;
         }
         return <Tag icon={icon} color={color}>{label.toUpperCase()}</Tag>;
       }
     },
-    { 
-      title: 'SĐT', 
-      dataIndex: 'phone',
-      width: 140 
-    },
-    { 
-      title: 'Khoa/Ban', 
-      dataIndex: 'department',
-      width: 160,
-      render: (text) => DEPARTMENT_MAPPING[text] || text || '-' 
-    },
+    { title: 'SĐT', dataIndex: 'phone', width: 140 },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
@@ -478,24 +508,118 @@ export default function UserManagementPage() {
     {
       title: 'Thao tác',
       key: 'action',
-      width: 100,
-      fixed: 'right', 
+      width: activeTab === 'all' ? 60 : 140,
+      fixed: 'right',
       align: 'center',
       render: (_, record) => {
-        if (record.role === 'patient') {
-          return null; 
+        if (activeTab === 'all') {
+          return (
+            <Tooltip title="Xem chi tiết">
+              <Button type="text" icon={<EyeOutlined style={{ color: '#1677ff' }} />} onClick={() => handleViewDetail(record)} />
+            </Tooltip>
+          );
         }
         return (
-        <Space>
-          <Button type="text" icon={<EditOutlined style={{ color: '#1677ff' }} />} onClick={() => handleEdit(record)} />
-          <Popconfirm title="CHẮC CHẮN xóa tài khoản?" onConfirm={() => handleDelete(record)} okText="Xóa" cancelText="Hủy">
-            <Button type="text" icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />} />
-          </Popconfirm>
-        </Space>
-      )
+          <Space>
+            <Tooltip title={record.isOnboardingCompleted ? 'Vô hiệu hóa' : 'Kích hoạt'}>
+              <Switch
+                size="small"
+                checked={record.isOnboardingCompleted}
+                onChange={(checked) => handleToggleOnboarding(record, checked)}
+              />
+            </Tooltip>
+            <Tooltip title="Xem chi tiết">
+              <Button type="text" icon={<EyeOutlined style={{ color: '#1677ff' }} />} onClick={() => handleViewDetail(record)} />
+            </Tooltip>
+            <Button type="text" icon={<EditOutlined style={{ color: '#1677ff' }} />} onClick={() => handleEdit(record)} />
+            <Popconfirm title="CHẮC CHẮN xóa tài khoản?" onConfirm={() => handleDelete(record)} okText="Xóa" cancelText="Hủy">
+              <Button type="text" icon={<DeleteOutlined style={{ color: '#ff4d4f' }} />} />
+            </Popconfirm>
+          </Space>
+        );
       },
     },
   ];
+
+  const patientColumns = [
+    {
+      title: 'Họ tên',
+      dataIndex: 'name',
+      width: 220,
+      render: (text, record) => (
+        <Space>
+          <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#87d068' }} />
+          <div>
+            <div style={{ fontWeight: 500 }}>{text}</div>
+            <div style={{ fontSize: 12, color: '#888' }}>{record.email}</div>
+          </div>
+        </Space>
+      ),
+    },
+    {
+      title: 'CCCD',
+      dataIndex: 'citizenCode',
+      width: 140,
+      render: (text) => text || '-',
+    },
+    {
+      title: 'Giới tính',
+      dataIndex: 'gender',
+      width: 90,
+      render: (gender) => {
+        if (!gender) return '-';
+        return gender === 'MALE' ? <Tag color="blue">Nam</Tag> : <Tag color="pink">Nữ</Tag>;
+      },
+    },
+    {
+      title: 'Ngày sinh',
+      dataIndex: 'dateOfBirth',
+      width: 120,
+      render: (dob) => dob ? new Date(dob).toLocaleDateString('vi-VN') : '-',
+    },
+    { title: 'SĐT', dataIndex: 'phone', width: 130 },
+    {
+      title: 'Ngày tham gia',
+      dataIndex: 'createdAt',
+      width: 130,
+      render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : '-',
+    },
+    {
+      title: 'Onboarding',
+      dataIndex: 'isOnboardingCompleted',
+      width: 130,
+      render: (val) => (
+        <Badge status={val ? 'success' : 'warning'} text={val ? 'Đã hoàn tất' : 'Chưa hoàn tất'} />
+      ),
+    },
+    {
+      title: 'Thao tác',
+      key: 'action',
+      width: 110,
+      fixed: 'right',
+      align: 'center',
+      render: (_, record) => (
+        <Space>
+          <Tooltip title={record.isOnboardingCompleted ? 'Vô hiệu hóa' : 'Kích hoạt'}>
+            <Switch
+              size="small"
+              checked={record.isOnboardingCompleted}
+              onChange={(checked) => handleToggleOnboarding(record, checked)}
+            />
+          </Tooltip>
+          <Tooltip title="Xem chi tiết">
+            <Button
+              type="text"
+              icon={<EyeOutlined style={{ color: '#1677ff' }} />}
+              onClick={() => handleViewDetail(record)}
+            />
+          </Tooltip>
+        </Space>
+      ),
+    },
+  ];
+
+  const columns = activeTab === 'patient' ? patientColumns : defaultColumns;
 
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
@@ -607,7 +731,7 @@ export default function UserManagementPage() {
                     dataSource={filteredUsers}
                     rowKey="id"
                     pagination={{ pageSize: 10 }}
-                    scroll={{ x: 1020 }}
+                    scroll={{ x: activeTab === 'patient' ? 1100 : 1020 }}
                 />
             </Card>
 
@@ -688,6 +812,69 @@ export default function UserManagementPage() {
                 </div>
             </Form>
         </Modal>
+
+        <Drawer
+          title={
+            <Space>
+              <Avatar
+                icon={<UserOutlined />}
+                style={{
+                  backgroundColor:
+                    selectedUser?.role === 'doctor' ? '#1677ff' :
+                    selectedUser?.role === 'staff' ? '#faad14' : '#87d068'
+                }}
+              />
+              <span>{selectedUser?.name || 'Chi tiết tài khoản'}</span>
+            </Space>
+          }
+          open={detailDrawerVisible}
+          onClose={() => setDetailDrawerVisible(false)}
+          width={480}
+        >
+          {selectedUser && (
+            <Descriptions column={1} bordered size="small" labelStyle={{ fontWeight: 500, width: 150 }}>
+              <Descriptions.Item label="Họ và tên">{selectedUser.name || '-'}</Descriptions.Item>
+              <Descriptions.Item label="Email">{selectedUser.email || '-'}</Descriptions.Item>
+              <Descriptions.Item label="Số điện thoại">{selectedUser.phone || '-'}</Descriptions.Item>
+              {selectedUser.role === 'doctor' && (
+                <Descriptions.Item label="Mã bác sĩ">{selectedUser.doctorCode || '-'}</Descriptions.Item>
+              )}
+              {selectedUser.role === 'staff' && (
+                <Descriptions.Item label="Mã nhân viên">{selectedUser.staffCode || '-'}</Descriptions.Item>
+              )}
+              {selectedUser.role === 'patient' && (
+                <Descriptions.Item label="CCCD">{selectedUser.citizenCode || '-'}</Descriptions.Item>
+              )}
+              {(selectedUser.role === 'doctor' || selectedUser.role === 'staff') && (
+                <Descriptions.Item label="Khoa/Phòng ban">
+                  {DEPARTMENT_MAPPING[selectedUser.department] || selectedUser.department || '-'}
+                </Descriptions.Item>
+              )}
+              <Descriptions.Item label="Giới tính">
+                {selectedUser.gender === 'MALE' ? 'Nam' : selectedUser.gender === 'FEMALE' ? 'Nữ' : '-'}
+              </Descriptions.Item>
+              {selectedUser.dateOfBirth && (
+                <Descriptions.Item label="Ngày sinh">
+                  {new Date(selectedUser.dateOfBirth).toLocaleDateString('vi-VN')}
+                </Descriptions.Item>
+              )}
+              {selectedUser.createdAt && (
+                <Descriptions.Item label="Ngày tham gia">
+                  {new Date(selectedUser.createdAt).toLocaleDateString('vi-VN')}
+                </Descriptions.Item>
+              )}
+              <Descriptions.Item label="Onboarding">
+                <Badge
+                  status={selectedUser.isOnboardingCompleted ? 'success' : 'warning'}
+                  text={selectedUser.isOnboardingCompleted ? 'Đã hoàn tất' : 'Chưa hoàn tất'}
+                />
+              </Descriptions.Item>
+              <Descriptions.Item label="Trạng thái">
+                <Badge status="success" text="Hoạt động" />
+              </Descriptions.Item>
+            </Descriptions>
+          )}
+        </Drawer>
 
         <style>{`
           @media (max-width: 576px) {

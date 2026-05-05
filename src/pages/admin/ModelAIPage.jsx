@@ -19,6 +19,11 @@ export default function ModelAIPage() {
     const { user, logout} = useAuth();
   
 //   const user = { name: 'Administrator', role: 'admin' };
+  const handleSignOut = () => {
+    logout();
+    navigate('/login');
+  };
+
   const menuItems = [
     { key: 'dashboard', label: 'Trang chủ' },
     { key: 'users', label: 'Quản lý tài khoản' },
@@ -27,11 +32,6 @@ export default function ModelAIPage() {
   const menuUserItems = [
     { key: '1', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
   ];
-
-  const handleSignOut = () => {
-    logout(); 
-    navigate('/login');
-  };
 
   const [activeTab, setActiveTab] = useState('chatbot');
   const [isModalOpen, setIsModalOpen] = useState(false);
