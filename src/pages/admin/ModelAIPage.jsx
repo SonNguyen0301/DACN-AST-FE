@@ -25,7 +25,8 @@ export default function ModelAIPage() {
     { key: 'AI', label: 'Quản lý Model AI' },
   ];
   const menuUserItems = [
-    { key: '1', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
+    { key: '1', label: (<a onClick={() => navigate('/admin/profile')}>Hồ sơ của tôi</a>), icon: <UserOutlined /> },
+    { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
   ];
 
   const handleSignOut = () => {
