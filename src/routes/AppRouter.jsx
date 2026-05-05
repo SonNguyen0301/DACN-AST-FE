@@ -43,7 +43,7 @@ export default function AppRouter() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Patient routes */}
-      <Route element={<ProtectedRoute />}>
+      <Route element={<ProtectedRoute  allowedRoles={['PATIENT']}/>}>
         <Route path="/patient/dashboard" element={<PatientDashboardPage />} />
         <Route path="/patient/personal" element={<PersonalPage />} />
         <Route path="/patient/booking" element={<BookingPage />} />
@@ -61,7 +61,7 @@ export default function AppRouter() {
       </Route>
       
       {/* Staff routes */}
-      <Route element={<ProtectedRoute allowedRoles={['STAFF']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['ADMISSION STAFF']} />}>
         <Route path="/staff/dashboard" element={<StaffDashboardPage />} />
         <Route path="/staff/appointments" element={<ListAppointmentStaffPage />} />
         <Route path="/staff/manage-schedule" element={<ManageSchedulePage />} />
