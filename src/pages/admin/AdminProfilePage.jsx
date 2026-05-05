@@ -33,7 +33,7 @@ import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
 import Footer from "../../components/common/Footer"; 
 
-import { getUserInfoAPI, updateUserInfoAPI } from '../../services/userService'; 
+import { getAdminInfoAPI, updateAdminInfoAPI } from '../../services/userService'; 
 import useAuth from '../../hooks/useAuth';
 
 const { Header, Content } = Layout;
@@ -67,7 +67,7 @@ export default function AdminProfilePage() {
   const fetchAdminProfile = async () => {
       try {
           // Gọi API GET /users/info
-          const res = await getUserInfoAPI(); 
+          const res = await getAdminInfoAPI(); 
           if (res.data?.success) {
               const data = res.data.data;
 
@@ -134,7 +134,7 @@ export default function AdminProfilePage() {
             isOnBoardingCompleted: true
         };
 
-        const res = await updateUserInfoAPI(payload);
+        const res = await updateAdminInfoAPI(payload);
         
         if (res.data?.success) {
             message.success("Cập nhật thông tin thành công!");
@@ -388,7 +388,17 @@ const SettingsTab = () => (
                       <Form.Item 
                           name="dateOfBirth" 
                           label="Ngày sinh" 
-                          rules={[{ required: true, message: 'Vui lòng chọn ngày sinh' }]}
+                          rules={[
+                              { required: true, message: 'Vui lòng chọn ngày sinh' },
+                              () => ({
+                                  validator(_, value) {
+                                      if (value && value.isAfter(dayjs(), 'day')) {
+                                          return Promise.reject(new Error('Ngày sinh không thể ở trong tương lai!'));
+                                      }
+                                      return Promise.resolve();
+                                  },
+                              }),
+                          ]}
                       >
                           <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} placeholder="Chọn ngày sinh" />
                       </Form.Item>

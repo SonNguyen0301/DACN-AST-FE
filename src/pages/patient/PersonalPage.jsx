@@ -610,7 +610,19 @@ useEffect(() => {
 
           <Row gutter={16}>
             <Col xs={24} sm={12}>
-              <Form.Item name="dateOfBirth" label="Ngày sinh" rules={[{ message: 'Vui lòng chọn ngày sinh!' , required: true }]}>
+              <Form.Item name="dateOfBirth" label="Ngày sinh"
+                rules={[
+                    { required: true, message: 'Vui lòng chọn ngày sinh' },
+                    () => ({
+                        validator(_, value) {
+                            if (value && value.isAfter(dayjs(), 'day')) {
+                                return Promise.reject(new Error('Ngày sinh không thể ở trong tương lai!'));
+                            }
+                            return Promise.resolve();
+                        },
+                    }),
+                ]}
+              >
                 <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="Chọn ngày sinh" />
               </Form.Item>
             </Col>
