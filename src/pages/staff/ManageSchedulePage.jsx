@@ -373,7 +373,7 @@ export default function ManageStaffSchedulePage() {
           }
       } catch (error) {
           console.error("Lỗi thêm lịch:", error);
-          message.error("Có lỗi xảy ra khi lưu lịch.");
+          message.error(error.response?.data?.message || 'Có lỗi xảy ra khi xóa ca trực.');
       }
   };
 

@@ -170,6 +170,16 @@ export default function DoctorProfilePage() {
 
   const onDateSelect = (value) => {
     setCalendarValue(value);
+    
+    const clickedDateStr = value.format('DD-MM-YYYY');
+    
+    if (scheduleMap[clickedDateStr] && scheduleMap[clickedDateStr].length > 0) {
+        setSelectedDateStr(clickedDateStr);
+    } else {
+        setSelectedDateStr(null); 
+    }
+    
+    setSelectedShift(null);
   };
 
   const disabledDate = (current) => {
