@@ -8,12 +8,14 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import Footer from "../../components/common/Footer"; 
+import useAuth from '../../hooks/useAuth';
 
 const { Header, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
   const carouselRef = useRef(null);
 
   const homeRef = useRef(null);
@@ -125,12 +127,30 @@ export default function LandingPage() {
         </Space>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <Button type="text" style={{ fontSize: '16px', fontWeight: '600', color: '#1677ff' }} onClick={() => navigate('/login')}>
-                Đăng nhập
-            </Button>
-            <Button type="primary" style={btnPrimaryStyle} onClick={() => navigate('/register')}>
-                Đăng ký
-            </Button>
+          {isAuthenticated && user ? (
+            <>
+              <Button type="primary" style={btnPrimaryStyle} onClick={() => {
+                if (user.role === 'PATIENT') navigate('/patient/dashboard');
+                else if (user.role === 'DOCTOR') navigate('/doctor/dashboard');
+                else if (user.role === 'ADMIN') navigate('/admin/dashboard');
+                else navigate('/staff/dashboard');
+              }}>
+                Vào Dashboard
+              </Button>
+              <Button type="default" style={{ height: '50px', borderRadius: '25px', fontWeight: '600' }} onClick={() => { logout(); navigate('/'); }}>
+                Đăng xuất
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button type="text" style={{ fontSize: '16px', fontWeight: '600', color: '#1677ff' }} onClick={() => navigate('/login')}>
+                  Đăng nhập
+              </Button>
+              <Button type="primary" style={btnPrimaryStyle} onClick={() => navigate('/register')}>
+                  Đăng ký
+              </Button>
+            </>
+          )}
         </div>
       </Header>
 

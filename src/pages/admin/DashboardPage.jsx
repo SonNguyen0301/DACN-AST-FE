@@ -221,41 +221,41 @@ export default function AdminDashboardPage() {
   };
 
   const statsData = [
-    { 
-      title: "Tổng lượt dùng AI", 
-      value: systemOverview.totalAiUsage, 
-      prefix: <ApiOutlined />, 
-      color: "#1677ff", 
-      bg: "#e6f4ff",
-      trend: getTrendType(systemOverview.aiUsageGrowth),
-      trendVal: `${Math.abs(systemOverview.aiUsageGrowth)}%`
+    {
+      title: "Sử dụng Chatbot (Bệnh nhân)",
+      value: systemOverview.chatbotUsage,
+      prefix: <MessageOutlined />,
+      color: "#722ed1",
+      bg: "#f9f0ff",
+      trend: getTrendType(systemOverview.chatbotUsageGrowth),
+      trendVal: `${Math.abs(systemOverview.chatbotUsageGrowth)}%`
     },
-    { 
-      title: "Tổng lượt khám", 
-      value: systemOverview.totalExaminations, 
-      prefix: <MedicineBoxOutlined />, 
-      color: "#52c41a", 
-      bg: "#f6ffed",
-      trend: getTrendType(systemOverview.examinationGrowth),
-      trendVal: `${Math.abs(systemOverview.examinationGrowth)}%`
-    },
-    { 
-      title: "Bệnh nhân mới", 
-      value: systemOverview.newPatients, 
-      prefix: <TeamOutlined />, 
-      color: "#faad14", 
+    {
+      title: "Bệnh nhân mới",
+      value: systemOverview.newPatients,
+      prefix: <TeamOutlined />,
+      color: "#faad14",
       bg: "#fffbe6",
       trend: getTrendType(systemOverview.patientGrowth),
       trendVal: `${Math.abs(systemOverview.patientGrowth)}%`
     },
-    { 
-      title: "Sử dụng Chatbot", 
-      value: systemOverview.chatbotUsage, 
-      prefix: <MessageOutlined />, 
-      color: "#722ed1", 
-      bg: "#f9f0ff",
-      trend: getTrendType(systemOverview.chatbotUsageGrowth),
-      trendVal: `${Math.abs(systemOverview.chatbotUsageGrowth)}%`
+    {
+      title: "Tổng lượt khám",
+      value: systemOverview.totalExaminations,
+      prefix: <MedicineBoxOutlined />,
+      color: "#52c41a",
+      bg: "#f6ffed",
+      trend: getTrendType(systemOverview.examinationGrowth),
+      trendVal: `${Math.abs(systemOverview.examinationGrowth)}%`
+    },
+    {
+      title: "Lượt dùng AI chẩn đoán (Bác sĩ)",
+      value: systemOverview.totalAiUsage,
+      prefix: <ApiOutlined />,
+      color: "#1677ff",
+      bg: "#e6f4ff",
+      trend: getTrendType(systemOverview.aiUsageGrowth),
+      trendVal: `${Math.abs(systemOverview.aiUsageGrowth)}%`
     },
   ];
 

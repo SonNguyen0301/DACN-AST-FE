@@ -22,8 +22,8 @@ import {
   Col,
   Statistic
 } from "antd";
-import { 
-  UserOutlined, 
+import {
+  UserOutlined,
   LogoutOutlined,
   PlusOutlined,
   SearchOutlined,
@@ -31,7 +31,9 @@ import {
   MedicineBoxOutlined,
   SolutionOutlined,
   TeamOutlined,
-  EditOutlined
+  EditOutlined,
+  BarChartOutlined,
+  EyeInvisibleOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -67,6 +69,7 @@ export default function UserManagementPage() {
   const [searchText, setSearchText] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [statsVisible, setStatsVisible] = useState(true);
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -530,84 +533,83 @@ export default function UserManagementPage() {
         </Header>
 
         <Content style={{ padding: "30px 40px" }}>
-            
+
+            {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
                 <div>
                     <Title level={3} style={{ margin: 0 }}>Quản lý Tài khoản</Title>
                     <Text type="secondary">Quản lý danh sách Bác sĩ, Nhân viên và Bệnh nhân trong hệ thống</Text>
                 </div>
-                <Button type="primary" icon={<PlusOutlined  />} size="large" onClick={handleAdd}>
-                    Tạo tài khoản
-                </Button>
+                <Space wrap>
+                    <Button
+                        icon={statsVisible ? <EyeInvisibleOutlined /> : <BarChartOutlined />}
+                        onClick={() => setStatsVisible(v => !v)}
+                    >
+                        {statsVisible ? 'Ẩn thống kê' : 'Xem thống kê'}
+                    </Button>
+                    <Button type="primary" icon={<PlusOutlined />} size="large" onClick={handleAdd}>
+                        Tạo tài khoản
+                    </Button>
+                </Space>
             </div>
 
-            <Row gutter={[24, 24]}>
-              {/* LÊN LEFT SIDE (30%) - BIỂU ĐỒ & THỐNG KÊ */}
-              <Col xs={24} lg={7}>
-                <Card 
-                  title={
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <SolutionOutlined style={{ color: '#1677ff' }} />
-                      Tổng quan Dữ liệu
-                    </span>
-                  }
-                  variant="borderless" 
-                  style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", height: '100%' }}
+            {/* Stats panel — collapsible */}
+            {statsVisible && (
+                <Card
+                    title={<span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><SolutionOutlined style={{ color: '#1677ff' }} />Tổng quan Dữ liệu</span>}
+                    variant="borderless"
+                    style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)", marginBottom: 24 }}
                 >
-                   {renderStatistics()}
+                    {renderStatistics()}
                 </Card>
-              </Col>
+            )}
 
-              {/* LÊN RIGHT SIDE (70%) - TABLE */}
-              <Col xs={24} lg={17}>
-                <Card variant="borderless" style={{ borderRadius: 12, marginBottom: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16, paddingBottom: 16 }}>
-                        <Tabs 
-                            activeKey={activeTab} 
-                            onChange={setActiveTab} 
-                            items={[
-                                { key: 'all', label: 'Tất cả', icon: <UserOutlined /> },
-                                { key: 'doctor', label: 'Bác sĩ', icon: <MedicineBoxOutlined /> },
-                                { key: 'staff', label: 'Nhân viên', icon: <SolutionOutlined /> },
-                                { key: 'patient', label: 'Bệnh nhân', icon: <TeamOutlined /> },
-                            ]}
-                            style={{ marginBottom: 0, width: '100%', maxWidth: 'max-content' }}
-                        />
-                        
-                        <Space wrap style={{ width: '100%', flex: 1, justifyContent: 'flex-end' }}>
-                            {(activeTab === 'doctor' || activeTab === 'staff' || activeTab === 'all') && (
-                                <Select
-                                    value={departmentFilter}
-                                    onChange={setDepartmentFilter}
-                                    style={{ width: 180, minWidth: 150, maxWidth: '100%' }}
-                                    placeholder="Lọc chuyên khoa"
-                                    options={[
-                                        { value: 'all', label: 'Tất cả Khoa/Ban' },
-                                        ...filterDepartments
-                                    ]}
-                                />
-                            )}
-                            <Input 
-                                placeholder="Tìm kiếm tên, SĐT, Mã NV..." 
-                                prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />} 
-                                style={{ width: 250, minWidth: 200, maxWidth: '100%' }}
-                                onChange={(e) => setSearchText(e.target.value)}
-                                allowClear
-                            />
-                        </Space>
-                    </div>
-
-                    <Table 
-                        loading={loading}
-                        columns={columns} 
-                        dataSource={filteredUsers} 
-                        rowKey="id"
-                        pagination={{ pageSize: 8 }}
-                        scroll={{ x: 1020 }} 
+            {/* Table card với filter bar nhất quán */}
+            <Card variant="borderless" style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+                    <Tabs
+                        activeKey={activeTab}
+                        onChange={setActiveTab}
+                        items={[
+                            { key: 'all', label: 'Tất cả', icon: <UserOutlined /> },
+                            { key: 'doctor', label: 'Bác sĩ', icon: <MedicineBoxOutlined /> },
+                            { key: 'staff', label: 'Nhân viên', icon: <SolutionOutlined /> },
+                            { key: 'patient', label: 'Bệnh nhân', icon: <TeamOutlined /> },
+                        ]}
+                        style={{ marginBottom: 0 }}
                     />
-                </Card>
-              </Col>
-            </Row>
+                    <Space wrap>
+                        {(activeTab === 'doctor' || activeTab === 'staff' || activeTab === 'all') && (
+                            <Select
+                                value={departmentFilter}
+                                onChange={setDepartmentFilter}
+                                style={{ width: 180 }}
+                                placeholder="Lọc chuyên khoa"
+                                options={[
+                                    { value: 'all', label: 'Tất cả Khoa/Ban' },
+                                    ...filterDepartments
+                                ]}
+                            />
+                        )}
+                        <Input
+                            placeholder="Tìm kiếm tên, SĐT, Mã NV..."
+                            prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                            style={{ width: 240 }}
+                            onChange={(e) => setSearchText(e.target.value)}
+                            allowClear
+                        />
+                    </Space>
+                </div>
+
+                <Table
+                    loading={loading}
+                    columns={columns}
+                    dataSource={filteredUsers}
+                    rowKey="id"
+                    pagination={{ pageSize: 10 }}
+                    scroll={{ x: 1020 }}
+                />
+            </Card>
 
         </Content>
         

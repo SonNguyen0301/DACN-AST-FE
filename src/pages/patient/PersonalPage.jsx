@@ -499,11 +499,11 @@ useEffect(() => {
                                             >
                                                 <Text strong style={{ color: '#1677ff', display: 'block' }}>
                                                     {index + 1}. {item.medicineName || item.name || 'Tên thuốc'}
+                                                    <Divider type="vertical" />
+                                                    Số lượng: <Text strong style={{ color: '#555' }}>{item.quantity || '-'}</Text>
                                                 </Text>
                                                 <Text type="secondary" style={{ fontSize: '13px' }}>
-                                                    Liều lượng: <Text strong style={{ color: '#555' }}>{item.dosage || item.quantity || '-'}</Text> 
-                                                    <Divider type="vertical" /> 
-                                                    Cách dùng: <Text strong style={{ color: '#555' }}>{item.usage || item.durationDays || item.duration || '-'}</Text>
+                                                    Liều lượng: <Text strong style={{ color: '#555' }}>{item.dosage || item.quantity || '-'}</Text>
                                                 </Text>
                                             </div>
                                         ))}
