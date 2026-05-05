@@ -58,7 +58,7 @@ export default function AdmissionStaffAppointmentPage() {
   const { user, logout } = useAuth();
   
   const [searchText, setSearchText] = useState('');
-  const [filterStatus, setFilterStatus] = useState('SCHEDULED');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [filterDoctor, setFilterDoctor] = useState('all');
   
   const [dateRange, setDateRange] = useState([dayjs().startOf('isoWeek'), dayjs().endOf('isoWeek')]);
@@ -84,18 +84,27 @@ export default function AdmissionStaffAppointmentPage() {
             take: pagination.pageSize,
             sort: 'updatedAt', 
             sortDirection: 'ASC',
-            fromDate: dateRange && dateRange[0] ? dateRange[0].format('YYYY-MM-DD') : dayjs().startOf('month').format('YYYY-MM-DD'),
-            toDate: dateRange && dateRange[1] ? dateRange[1].format('YYYY-MM-DD') : dayjs().endOf('month').format('YYYY-MM-DD'),
         };
+
+        if (dateRange && dateRange.length === 2 && dateRange[0] && dateRange[1]) {
+            params.fromDate = dateRange[0].format('YYYY-MM-DD');
+            params.toDate = dateRange[1].format('YYYY-MM-DD');
+        } else {
+             params.fromDate = dayjs().startOf('month').format('YYYY-MM-DD');
+             params.toDate = dayjs().endOf('month').format('YYYY-MM-DD');
+        }
 
         if (searchText) params.keyword = searchText;
         if (filterStatus !== 'all') params.status = filterStatus;
-        if (timeRange && timeRange[0] && timeRange[1]) {
+        
+        if (timeRange && timeRange.length === 2 && timeRange[0] && timeRange[1]) {
             params.from = timeRange[0].format('HH:mm'); 
             params.to = timeRange[1].format('HH:mm');
-        }
+      }
 
-        const res = await getStaffAppointmentsAPI(params); 
+        if (filterDoctor !== 'all') params.doctorId = filterDoctor;
+
+        const res = await getStaffAppointmentsAPI(params);
         
         if (res.data?.success) {
             const rawData = res.data.data.data;
@@ -119,9 +128,8 @@ export default function AdmissionStaffAppointmentPage() {
                 };
             });
 
-            const finalData = filterDoctor === 'all' ? mappedData : mappedData.filter(d => d.doctor === filterDoctor);
 
-            setAppointments(finalData);
+            setAppointments(mappedData);
 
             setPagination({
                 current: res.data.data.meta.page,
@@ -137,28 +145,22 @@ export default function AdmissionStaffAppointmentPage() {
     }
   };
 
-  const fecthDoctorList = async () => {
-    try {
-        const params = {
-            page: 1,
-            take: 50,
-            sortDirection: 'ASC',
-            department: 'Dermatology' 
-        };
-        const res = await getDoctorsAPI(params);
-        if (res.data?.success) {
-            const uniqueDoctors = [...new Set(res.data.data.data.map(item => item.name))];
-            setDoctorList(uniqueDoctors);
-        }
-    } catch (error) {
-        console.error("Lỗi lấy danh sách bác sĩ:", error);
-        message.error("Không thể tải danh sách bác sĩ.");
-    }
+  const fetchDoctorsList = async () => {
+      try {
+          const res = await getDoctorsAPI({ page: 1, take: 50, sortDirection: 'ASC', department: 'Dermatology' });
+          
+          if (res.data?.success) {
+              const docs = res.data.data.data || res.data.data;
+              setDoctorList(docs);
+          }
+      } catch (error) {
+          console.error("Lỗi tải danh sách bác sĩ:", error);
+      }
   };
 
   useEffect(() => {
       fetchAppointments();
-      fecthDoctorList();
+      fetchDoctorsList();
   }, []);
 
   const handleCancelAppointment = async (key) => {
@@ -441,7 +443,7 @@ export default function AdmissionStaffAppointmentPage() {
                     >
                         <Option value="all">Tất cả bác sĩ</Option>
                         {doctorList.map(doctor => (
-                          <Option key={doctor} value={doctor}>{doctor}</Option>
+                          <Option key={doctor.id} value={doctor.id}>BS. {doctor.firstName} {doctor.lastName}</Option>
                         ))}
                     </Select>
                 </Col>

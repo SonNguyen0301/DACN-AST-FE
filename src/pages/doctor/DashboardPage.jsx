@@ -161,6 +161,15 @@ export default function DoctorDashboardPage() {
               progressDetail: `Đã khám: ${dashboardStats.examinationsCount}/${dashboardStats.totalAppointmentsCount} ca`, 
           },
           { 
+              title: "Lịch bị hủy hôm nay", 
+              value: dashboardStats.cancelledAppointmentsCount, 
+              suffix: "ca",
+              icon: <UserDeleteOutlined />, 
+              color: "#ff4d4f", 
+              bg: "#fff1f0", 
+              clickable: true, 
+          },
+          { 
               title: "Bệnh nhân tuần này", 
               value: dashboardStats.currentWeekPatientsCount, 
               suffix: "người",
@@ -181,20 +190,10 @@ export default function DoctorDashboardPage() {
               trend: monthTrend.trend,
               trendValue: `${monthTrend.value}%`,
               subText: "So với tháng trước"
-          },
-          { 
-              title: "Lịch bị hủy", 
-              value: dashboardStats.cancelledAppointmentsCount, 
-              suffix: "ca",
-              icon: <UserDeleteOutlined />, 
-              color: "#ff4d4f", 
-              bg: "#fff1f0", 
-              clickable: true, 
-          },
+          }
       ];
   } 
   
-
   useEffect(() => {
     const fetchCalendarData = async () => {
         if (!user?.id) return; 
@@ -467,6 +466,24 @@ const getListData = (value) => {
         )}
       </ul>
     );
+  };
+
+  const monthCellRender = (value) => {
+    const monthStr = value.format('YYYY-MM');
+    let totalMonthAppointments = 0;
+    
+    Object.keys(calendarMap).forEach(dateKey => {
+        if (dateKey.startsWith(monthStr)) {
+            totalMonthAppointments += (calendarMap[dateKey].appointments?.length || 0);
+        }
+    });
+
+    return totalMonthAppointments > 0 ? (
+        <div style={{ textAlign: 'center', marginTop: 16 }}>
+            <Badge count={totalMonthAppointments} color="#1677ff" />
+            <Text type="secondary" style={{ display: 'block', fontSize: 12, marginTop: 4 }}>ca khám</Text>
+        </div>
+    ) : null;
   };
 
   const renderStatusTag = (status) => {
@@ -777,7 +794,8 @@ const getListData = (value) => {
                   <Spin spinning={loadingCalendar}>
                     {viewMode === 'month' ? (
                         <Calendar 
-                            cellRender={dateCellRender} 
+                            dateCellRender={dateCellRender}
+                            monthCellRender={monthCellRender}
                             style={{ padding: 24, borderRadius: 16 }} 
                             value={currentDate}
                             onSelect={(newDate) => setCurrentDate(newDate)}

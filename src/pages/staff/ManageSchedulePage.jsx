@@ -69,7 +69,6 @@ export default function ManageStaffSchedulePage() {
   const [currentMonthView, setCurrentMonthView] = useState(dayjs());
   const [doctorOptions, setDoctorOptions] = useState([]);
   
-  // States cho tính năng Lọc (Filter)
   const [filterDoctorId, setFilterDoctorId] = useState('all');
   const [filterRoom, setFilterRoom] = useState('all');
 
@@ -141,7 +140,6 @@ export default function ManageStaffSchedulePage() {
       fetchDoctorsList();
   }, []);
 
-  // Tự động thu thập danh sách các phòng khám dựa trên dữ liệu lịch
   const allRooms = useMemo(() => {
       const rooms = new Set();
       Object.values(scheduleData).flat().forEach(shift => {
@@ -186,7 +184,6 @@ export default function ManageStaffSchedulePage() {
       }
   };
 
-  // Hàm lấy dữ liệu đã được áp dụng bộ lọc (Filter)
   const getFilteredListData = (value) => {
     const dateString = value.format('YYYY-MM-DD');
     let list = scheduleData[dateString] || [];
@@ -376,7 +373,7 @@ export default function ManageStaffSchedulePage() {
           }
       } catch (error) {
           console.error("Lỗi thêm lịch:", error);
-          message.error("Có lỗi xảy ra khi lưu lịch.");
+          message.error(error.response?.data?.message || 'Có lỗi xảy ra khi xóa ca trực.');
       }
   };
 
@@ -467,7 +464,6 @@ export default function ManageStaffSchedulePage() {
     });
   };
 
-  // --- LOGIC XÂY DỰNG BẢNG TRẠNG THÁI KHUNG GIỜ ---
   const displayRooms = filterRoom === 'all' ? allRooms : [filterRoom];
   const timeSlots = [
       "07:30 - 08:00", "08:00 - 08:30", "08:30 - 09:00", "09:00 - 09:30", 
@@ -580,7 +576,6 @@ export default function ManageStaffSchedulePage() {
             </Col>
         </Row>
 
-        {/* THÊM TÍNH NĂNG FILTER LÊN ĐÂY */}
         <Card variant="borderless" style={{ borderRadius: 16, boxShadow: "0 4px 12px rgba(0,0,0,0.05)", marginBottom: 24 }}>
             <Row gutter={[16, 16]}>
                 <Col xs={24} md={12}>

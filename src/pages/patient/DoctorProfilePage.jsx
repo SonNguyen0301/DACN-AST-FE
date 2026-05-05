@@ -40,6 +40,9 @@ export default function DoctorProfilePage() {
   const [calendarValue, setCalendarValue] = useState(dayjs());
   const [selectedDateStr, setSelectedDateStr] = useState(null); 
   const [selectedShift, setSelectedShift] = useState(null); 
+
+  const [currentMonthView, setCurrentMonthView] = useState(dayjs()); 
+  const [availableDates, setAvailableDates] = useState(new Set()); 
   
   const [notes, setNotes] = useState("");
   const [fileList, setFileList] = useState([]); 
@@ -91,15 +94,23 @@ export default function DoctorProfilePage() {
       setLoadingShifts(true);
       
       try {
-        const startDate = dayjs(calendarValue).format('YYYY-MM-DD');
-        const endDate = startDate;
+        const startDate = currentMonthView.startOf('month').format('YYYY-MM-DD');
+        const endDate = currentMonthView.endOf('month').format('YYYY-MM-DD');
+
         const res = await getDoctorShiftsAPI(id, { startDate, endDate });
         const rawData = res.data?.data || [];
         
         const map = {};
+        const available = new Set();
 
         rawData.forEach(dayItem => {
-            const dateStr = dayjs(dayItem.date).format('DD-MM-YYYY');
+            const dateStr = dayjs(dayItem.date).format('DD-MM-YYYY'); 
+            const rawDateStr = dayjs(dayItem.date).format('YYYY-MM-DD');
+
+            if (dayItem.shift && dayItem.shift.length > 0) {
+               available.add(rawDateStr);
+            }
+
             map[dateStr] = [];
 
             dayItem.shift.forEach(shiftItem => {
@@ -117,6 +128,7 @@ export default function DoctorProfilePage() {
         });
 
         setScheduleMap(map);
+        setAvailableDates(available);
 
         const clickedDateStr = dayjs(calendarValue).format('DD-MM-YYYY');
         if (map[clickedDateStr] && map[clickedDateStr].length > 0) {
@@ -136,7 +148,7 @@ export default function DoctorProfilePage() {
     };
 
     fetchShifts();
-  }, [calendarValue.format('YYYY-MM-DD'), id]);
+  }, [currentMonthView.format('YYYY-MM-DD'), id]);
   
   const currentScheduleSlots = selectedDateStr ? scheduleMap[selectedDateStr] : [];
 
@@ -158,10 +170,27 @@ export default function DoctorProfilePage() {
 
   const onDateSelect = (value) => {
     setCalendarValue(value);
+    
+    const clickedDateStr = value.format('DD-MM-YYYY');
+    
+    if (scheduleMap[clickedDateStr] && scheduleMap[clickedDateStr].length > 0) {
+        setSelectedDateStr(clickedDateStr);
+    } else {
+        setSelectedDateStr(null); 
+    }
+    
+    setSelectedShift(null);
   };
 
   const disabledDate = (current) => {
-    return current && current.isBefore(dayjs().startOf('day'));
+    if (!current) return false;
+    
+    const isPast = current.isBefore(dayjs().startOf('day'));
+    
+    const dateString = current.format('YYYY-MM-DD');
+    const hasNoShift = !availableDates.has(dateString);
+
+    return isPast || hasNoShift;
   };
 
   const handleSignOut = () => { logout(); navigate('/login'); };
@@ -405,7 +434,10 @@ export default function DoctorProfilePage() {
                         value={calendarValue}
                         disabledDate={disabledDate}
                         onSelect={onDateSelect}
-                        onPanelChange={(newDate) => setCalendarValue(newDate)}
+                        onPanelChange={(newDate) => {
+                            setCalendarValue(newDate); 
+                            setCurrentMonthView(newDate); 
+                        }}
                         style={{ flex: 1 }}
                         headerRender={({ value, onChange }) => {
                             const start = 0;

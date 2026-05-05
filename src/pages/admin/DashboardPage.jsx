@@ -31,14 +31,16 @@ import Footer from "../../components/common/Footer";
 import adminService from "../../services/adminService";
 import DoctorPatientsDrawer from "./components/DoctorPatientsDrawer";
 import MonthlyDiseasesChart from "./components/MonthlyDiseasesChart";
+import useAuth from "../../hooks/useAuth";
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
 
 export default function AdminDashboardPage() {
   const navigate = useNavigate();
+  const { user, logout} = useAuth(); 
   
-  const user = { name: "Administrator", role: "admin" };
+  // const user = { name: "Administrator", role: "admin" };
 
   const menuItems = [
     { 
@@ -296,7 +298,10 @@ export default function AdminDashboardPage() {
     },
   ];
 
-  const handleSignOut = () => navigate('/');
+  const handleSignOut = () => {
+    logout(); 
+    navigate('/login');
+  };
 
   const menuUserItems = [
     { key: '1', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
@@ -338,7 +343,7 @@ export default function AdminDashboardPage() {
             <Dropdown menu={{ items: menuUserItems }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
                     <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                        <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.name}</span>
+                        <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.firstName + ' ' + user.lastName}</span>
                         <span style={{ fontSize: 12, color: '#888' }}>Quản trị hệ thống</span>
                     </div>
                     <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#001529' }} />
