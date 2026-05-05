@@ -59,7 +59,7 @@ export default function BookingPage() {
           };
 
           if (selectedDepartments.length > 0) {
-              params.department = selectedDepartments[0]; 
+              params.departments = selectedDepartments; 
           }
 
           if (searchKeyword) {

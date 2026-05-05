@@ -304,7 +304,8 @@ export default function AdminDashboardPage() {
   };
 
   const menuUserItems = [
-    { key: '1', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
+    { key: '1', label: (<a onClick={() => navigate('/admin/profile')}>Hồ sơ của tôi</a>), icon: <UserOutlined /> },
+    { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
   ];
 
   const handleMenuClick = ({ key }) => {
