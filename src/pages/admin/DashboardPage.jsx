@@ -1,39 +1,35 @@
 import { useEffect, useMemo, useState } from "react";
-import { 
-  Layout, 
-  Menu, 
-  Avatar, 
-  Typography, 
-  Row, 
-  Col, 
-  Card, 
-  Table, 
-  Tag, 
-  Button, 
-  Dropdown, 
+import {
+  Layout,
+  Typography,
+  Row,
+  Col,
+  Card,
+  Table,
+  Tag,
+  Button,
   Select,
   Spin,
   Empty,
 } from "antd";
-import { 
-  UserOutlined, 
-  LogoutOutlined,
+import {
   TeamOutlined,
   MedicineBoxOutlined,
   ApiOutlined,
   RiseOutlined,
   FallOutlined,
-  MessageOutlined
+  MessageOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import Footer from "../../components/common/Footer"; 
+import Footer from "../../components/common/Footer";
 import adminService from "../../services/adminService";
+import AdminHeader from "./components/AdminHeader";
 import DoctorPatientsDrawer from "./components/DoctorPatientsDrawer";
 import MonthlyDiseasesChart from "./components/MonthlyDiseasesChart";
 import useAuth from "../../hooks/useAuth";
 
-const { Header, Content } = Layout;
+const { Content } = Layout;
 const { Title, Text } = Typography;
 
 export default function AdminDashboardPage() {
@@ -41,21 +37,6 @@ export default function AdminDashboardPage() {
   const { user, logout} = useAuth(); 
   
   // const user = { name: "Administrator", role: "admin" };
-
-  const menuItems = [
-    { 
-      key: 'dashboard', 
-      label: 'Trang chủ', 
-    },
-    { 
-      key: 'users', 
-      label: 'Quản lý tài khoản', 
-    },
-    { 
-      key: 'AI', 
-      label: 'Quản lý Model AI', 
-    },
-  ];
 
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
@@ -298,59 +279,10 @@ export default function AdminDashboardPage() {
     },
   ];
 
-  const handleSignOut = () => {
-    logout(); 
-    navigate('/login');
-  };
-
-  const menuUserItems = [
-    { key: '1', label: (<a onClick={() => navigate('/admin/profile')}>Hồ sơ của tôi</a>), icon: <UserOutlined /> },
-    { key: '2', label: (<a onClick={handleSignOut}>Đăng xuất</a>), icon: <LogoutOutlined />, danger: true }
-  ];
-
-  const handleMenuClick = ({ key }) => {
-    switch (key) {
-        case 'dashboard': navigate('/admin/dashboard'); break;
-        case 'users': navigate('/admin/user-management'); break;
-        case 'AI': navigate('/admin/model-ai'); break;
-        default: break;
-    }
-  };
-
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
         
-        <Header style={{ background: "#fff", padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 2px 10px rgba(0,0,0,0.08)", position: 'sticky', top: 0, zIndex: 1000 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => navigate('/admin/dashboard')}>
-                <img src="/ASTCare1.png" alt="ATSCare Logo" style={{ height: '40px', objectFit: 'contain' }} />
-            </div>
-
-            <Menu
-                mode="horizontal"
-                defaultSelectedKeys={['dashboard']}
-                items={menuItems}
-                onClick={handleMenuClick}
-                style={{ 
-                    fontSize: 15, 
-                    fontWeight: 500, 
-                    color: '#555', 
-                    borderBottom: 'none', 
-                    flex: 1, 
-                    justifyContent: 'center',
-                    marginLeft: 20
-                }}
-            />
-
-            <Dropdown menu={{ items: menuUserItems }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: 'pointer' }}>
-                    <div className="hide-on-mobile" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-                        <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>{user.firstName + ' ' + user.lastName}</span>
-                        <span style={{ fontSize: 12, color: '#888' }}>Quản trị hệ thống</span>
-                    </div>
-                    <Avatar size={40} icon={<UserOutlined />} style={{ backgroundColor: '#001529' }} />
-                </div>
-            </Dropdown>
-        </Header>
+        <AdminHeader selectedKey="dashboard" />
 
         <Content style={{ padding: "30px 40px" }}>
             
