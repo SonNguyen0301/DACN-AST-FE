@@ -335,21 +335,31 @@ const getListData = (value) => {
   };
 
   const renderAppointmentItem = (item, index) => {
-    const patientName = item.content.includes('-') ? item.content.split('-')[1].trim() : item.content;
+    const apt = item.raw;
+    const patientName = apt.patientName || item.content.split('-')[1]?.trim();
+    
+    const age = apt.dateOfBirth ? dayjs().diff(dayjs(apt.dateOfBirth), 'year') : 'Không rõ';
+    
+    let genderStr = 'Không rõ';
+    if (apt.gender === 'MALE') genderStr = 'Nam';
+    else if (apt.gender === 'FEMALE') genderStr = 'Nữ';
+
+    const reason = apt.description || 'Bệnh nhân chưa cung cấp lý do khám.';
+
     const popoverContent = (
       <div style={{ width: 280 }}>
         <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
            <Avatar size={48} icon={<UserOutlined />} style={{ backgroundColor: item.type === 'success' ? '#87d068' : '#1677ff' }} />
            <div>
               <Text strong style={{ display: 'block', fontSize: 16 }}>{patientName}</Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>Nam - 32 tuổi • {index % 2 === 0 ? 'Bệnh nhân mới' : 'Tái khám'}</Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>{genderStr} - {age} tuổi</Text>
            </div>
         </div>
         <div style={{ background: '#f5f7fa', padding: 10, borderRadius: 8, marginBottom: 12 }}>
            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
               <FileTextOutlined style={{ color: '#1677ff' }} /> <Text strong style={{ fontSize: 12 }}>Lý do khám:</Text>
            </div>
-           <Text style={{ fontSize: 13, color: '#555' }}>Dị ứng da mặt, ngứa nhiều về đêm, đã dùng thuốc bôi nhưng không đỡ.</Text>
+           <Text style={{ fontSize: 13, color: '#555' }}>{reason}</Text>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f0f0f0', paddingTop: 12 }}>
             <Tag color={item.type === 'warning' ? 'warning' : item.type === 'error' ? 'red' : 'success'}>
@@ -363,7 +373,7 @@ const getListData = (value) => {
     );
 
     return (
-      <li key={index} style={{ marginBottom: 6 }}>
+      <li key={apt.id || index} style={{ marginBottom: 6 }}>
         <Popover content={popoverContent} title={null} trigger="hover" placement="rightTop">
           <div style={{ 
               display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',

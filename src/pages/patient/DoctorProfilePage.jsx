@@ -281,20 +281,20 @@ export default function DoctorProfilePage() {
     onChange: (info) => {
         setFileList(info.fileList);
     },
-    onPreview: async (file) => {
-        let src = file.url || file.thumbUrl;
-        if (!src && file.originFileObj) {
-            src = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file.originFileObj);
-                reader.onload = () => resolve(reader.result);
-            });
-        }
-        const image = new window.Image();
-        image.src = src;
-        const imgWindow = window.open(src);
-        imgWindow?.document.write(image.outerHTML);
-    }
+    // onPreview: async (file) => {
+    //     let src = file.url || file.thumbUrl;
+    //     if (!src && file.originFileObj) {
+    //         src = await new Promise((resolve) => {
+    //             const reader = new FileReader();
+    //             reader.readAsDataURL(file.originFileObj);
+    //             reader.onload = () => resolve(reader.result);
+    //         });
+    //     }
+    //     const image = new window.Image();
+    //     image.src = src;
+    //     const imgWindow = window.open(src);
+    //     imgWindow?.document.write(image.outerHTML);
+    // }
   };
 
   const renderSlotSection = (title, icon, slots) => {
@@ -492,7 +492,7 @@ export default function DoctorProfilePage() {
                </div>
                <div>
                   <Text strong>Tệp đính kèm ({fileList.length}/5):</Text>
-                  <Dragger {...uploadProps} style={{ marginTop: 8, background: '#fafafa' }}>
+                  <Dragger {...uploadProps} showUploadList={false} style={{ marginTop: 8, background: '#fafafa' }}>
                     <p className="ant-upload-drag-icon"><InboxOutlined /></p>
                     <p className="ant-upload-text">Chọn tệp tin hoặc kéo thả vào đây</p>
                     <p className="ant-upload-hint">Hỗ trợ ảnh định dạng PNG, JPG, JPEG</p>

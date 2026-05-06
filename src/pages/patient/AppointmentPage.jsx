@@ -209,20 +209,20 @@ export default function AppointmentPage() {
         onChange(info) { 
             setFileList(info.fileList); 
         },
-        onPreview: async (file) => { 
-            let src = file.url || file.thumbUrl;
-            if (!src) {
-              src = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file.originFileObj);
-                reader.onload = () => resolve(reader.result);
-              });
-            }
-            const image = new window.Image();
-            image.src = src;
-            const imgWindow = window.open(src);
-            imgWindow?.document.write(image.outerHTML);
-        }
+        // onPreview: async (file) => { 
+        //     let src = file.url || file.thumbUrl;
+        //     if (!src) {
+        //       src = await new Promise((resolve) => {
+        //         const reader = new FileReader();
+        //         reader.readAsDataURL(file.originFileObj);
+        //         reader.onload = () => resolve(reader.result);
+        //       });
+        //     }
+        //     const image = new window.Image();
+        //     image.src = src;
+        //     const imgWindow = window.open(src);
+        //     imgWindow?.document.write(image.outerHTML);
+        // }
     };
 
     const handleCancelAppointment = async (aptId) => {
