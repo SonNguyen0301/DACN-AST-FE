@@ -72,7 +72,7 @@ export default function LandingPage() {
       img: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?q=80&w=800&auto=format&fit=crop", 
       alt: "Chẩn đoán AI",
       badgeIcon: <ScanOutlined style={{ color: '#1677ff', fontSize: 20 }} />,
-      badgeTitle: "Phân tích AI",
+      badgeTitle: "Chẩn đoán AI",
       badgeSub: "Độ chính xác cao"
     },
     {
@@ -80,7 +80,7 @@ export default function LandingPage() {
       img: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=800&auto=format&fit=crop", 
       alt: "Đặt lịch khám",
       badgeIcon: <CalendarOutlined style={{ color: '#52c41a', fontSize: 20 }} />,
-      badgeTitle: "Đặt lịch 24/7",
+      badgeTitle: "Đặt lịch & Quản lý",
       badgeSub: "Không cần chờ đợi"
     },
     {
@@ -88,7 +88,7 @@ export default function LandingPage() {
       img: "https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=800&auto=format&fit=crop", 
       alt: "Hỗ trợ chuyên môn",
       badgeIcon: <ReadOutlined style={{ color: '#722ed1', fontSize: 20 }} />,
-      badgeTitle: "Hồ sơ số",
+      badgeTitle: "Hỗ trợ chuyên môn",
       badgeSub: "Quản lý tập trung"
     }
   ];
@@ -250,10 +250,9 @@ export default function LandingPage() {
                   aria-label="Previous slide"
                 />
 
-                <Carousel ref={carouselRef} autoplay autoplaySpeed={3000} effect="fade" dots={false}>
+                <Carousel ref={carouselRef} autoplay autoplaySpeed={3000} dots={false}>
                   {featureSlides.map((slide) => (
                     <div key={slide.key} style={{ position: 'relative', padding: '10px' }}>
-                      {/* Tối ưu ảnh Carousel: Cố định kích thước, thêm lazy load */}
                       <img 
                         src={slide.img} 
                         alt={slide.alt}

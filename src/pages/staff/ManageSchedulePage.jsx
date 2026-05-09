@@ -84,8 +84,8 @@ export default function ManageStaffSchedulePage() {
 
   const fetchSchedule = async (dateObj) => {
       try {
-          const startDate = dateObj.startOf('month').startOf('week').format('YYYY-MM-DD');
-          const endDate = dateObj.endOf('month').endOf('week').format('YYYY-MM-DD');
+          const startDate = dateObj.startOf('month').format('YYYY-MM-DD');
+          const endDate = dateObj.endOf('month').format('YYYY-MM-DD');
 
           const res = await getStaffScheduleAPI(startDate, endDate);
           

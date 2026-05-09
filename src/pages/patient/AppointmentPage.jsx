@@ -201,44 +201,45 @@ export default function AppointmentPage() {
         setEditingAppointment(null);
         setFileList([]); 
     };
-    
-    const uploadProps = {
-        name: 'file', multiple: true, maxCount: 5, accept: '.png,.jpg,.jpeg', listType: 'picture',
-        beforeUpload: () => false, 
-        fileList: fileList,
-        onChange(info) { 
-            setFileList(info.fileList); 
-        },
-        onPreview: async (file) => { 
-            let src = file.url || file.thumbUrl;
-            if (!src) {
-              src = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file.originFileObj);
-                reader.onload = () => resolve(reader.result);
-              });
-            }
-            const image = new window.Image();
-            image.src = src;
-            const imgWindow = window.open(src);
-            imgWindow?.document.write(image.outerHTML);
-        }
-    };
 
-    const handleCancelAppointment = async (aptId) => {
-      setSubmitting(true);
-      try {
-          const res = await cancelAppointmentAPI(aptId);
-          if(res.data?.data.isSuccess) { 
-            message.success("Đã hủy lịch khám thành công.");
-            fetchAppointments(); 
+    const handleRemoveFile = (fileToRemove) => {
+        setFileList(prevList => prevList.filter(file => file.uid !== fileToRemove.uid));
+    };
+    const uploadProps = {
+      name: 'file', 
+      multiple: true, 
+      maxCount: 5, 
+      accept: '.png,.jpg,.jpeg',
+      
+      beforeUpload: (file) => {
+          const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+          if (!isJpgOrPng) {
+              message.error('Bạn chỉ có thể tải lên file JPG/PNG!');
+              return Upload.LIST_IGNORE; 
           }
-      } catch (error) {
-          console.error("Lỗi hủy lịch hẹn:", error);
-          message.error("Hủy lịch thất bại.");
-      } finally {
-          setSubmitting(false);
+          return false; 
+      },
+      
+      fileList: fileList,
+      onChange(info) { 
+          setFileList(info.fileList); 
       }
+  };
+
+  const handleCancelAppointment = async (aptId) => {
+    setSubmitting(true);
+    try {
+        const res = await cancelAppointmentAPI(aptId);
+        if(res.data?.data.isSuccess) { 
+          message.success("Đã hủy lịch khám thành công.");
+          fetchAppointments(); 
+        }
+    } catch (error) {
+        console.error("Lỗi hủy lịch hẹn:", error);
+        message.error("Hủy lịch thất bại.");
+    } finally {
+        setSubmitting(false);
+    }
   };
 
   const renderActionButtons = (apt, isUpcomingTab = false) => {
@@ -435,11 +436,61 @@ export default function AppointmentPage() {
             <TextArea rows={4} placeholder="Triệu chứng, thuốc đang dùng, tiền sử, ..." />
           </Form.Item>
           <Form.Item label="Tệp đính kèm (Tối đa 5 file)" style={{ marginTop: 16 }}>
-            <Dragger {...uploadProps}>
+            <Dragger {...uploadProps} showUploadList={false}>
               <p className="ant-upload-drag-icon"><InboxOutlined /></p>
               <p className="ant-upload-text">Chọn tệp tin hoặc kéo thả vào đây</p>
               <p className="ant-upload-hint">Hỗ trợ ảnh định dạng PNG, JPG, JPEG</p>
             </Dragger>
+            {fileList.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                  <Image.PreviewGroup>
+                      <Space size={[8, 8]} wrap>
+                          {fileList.map((file, index) => {
+                              const imgSrc = file.url || file.thumbUrl || (file.originFileObj ? URL.createObjectURL(file.originFileObj) : '');
+                              
+                              if (!imgSrc) return null;
+
+                              return (
+                                  <div key={file.uid || index} style={{ position: 'relative', display: 'inline-block' }}>
+                                      <Image
+                                          width={80}
+                                          height={80}
+                                          src={imgSrc}
+                                          alt={`preview-${index}`}
+                                          style={{ 
+                                              objectFit: 'cover', 
+                                              borderRadius: 8, 
+                                              border: '1px solid #d9d9d9',
+                                              cursor: 'pointer' 
+                                          }}
+                                      />
+                                      <Button 
+                                          type="primary" 
+                                          danger 
+                                          shape="circle" 
+                                          size="small" 
+                                          icon={<DeleteOutlined />} 
+                                          style={{ 
+                                              position: 'absolute', 
+                                              top: -6, 
+                                              right: -6, 
+                                              zIndex: 10,
+                                              width: 24,
+                                              height: 24,
+                                              minWidth: 24
+                                          }}
+                                          onClick={(e) => {
+                                              e.stopPropagation(); 
+                                              handleRemoveFile(file);
+                                          }}
+                                      />
+                                  </div>
+                              );
+                          })}
+                      </Space>
+                  </Image.PreviewGroup>
+              </div>
+            )}
           </Form.Item>
         </Form>
       </Modal>
