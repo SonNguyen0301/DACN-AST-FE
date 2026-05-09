@@ -262,7 +262,7 @@ export default function DoctorProfilePage() {
       setFileList(prevList => prevList.filter(file => file.uid !== fileToRemove.uid));
   };
 
-  const uploadProps = {
+const uploadProps = {
     name: 'file', 
     multiple: true, 
     maxCount: 5,
@@ -280,21 +280,7 @@ export default function DoctorProfilePage() {
     fileList: fileList,
     onChange: (info) => {
         setFileList(info.fileList);
-    },
-    // onPreview: async (file) => {
-    //     let src = file.url || file.thumbUrl;
-    //     if (!src && file.originFileObj) {
-    //         src = await new Promise((resolve) => {
-    //             const reader = new FileReader();
-    //             reader.readAsDataURL(file.originFileObj);
-    //             reader.onload = () => resolve(reader.result);
-    //         });
-    //     }
-    //     const image = new window.Image();
-    //     image.src = src;
-    //     const imgWindow = window.open(src);
-    //     imgWindow?.document.write(image.outerHTML);
-    // }
+    }
   };
 
   const renderSlotSection = (title, icon, slots) => {
@@ -502,7 +488,7 @@ export default function DoctorProfilePage() {
                           <Image.PreviewGroup>
                               <Space size={[8, 8]} wrap>
                                   {fileList.map((file, index) => {
-                                      const imgSrc = file.url || file.thumbUrl;
+                                      const imgSrc = file.url || file.thumbUrl || (file.originFileObj ? URL.createObjectURL(file.originFileObj) : '');
                                       
                                       if (!imgSrc) return null;
 

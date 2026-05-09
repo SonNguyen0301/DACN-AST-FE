@@ -405,7 +405,16 @@ const getListData = (value) => {
     return (
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         {displayData.map((item, index) => {
-          const patientName = item.content.includes('-') ? item.content.split('-')[1].trim() : item.content;
+          const apt = item.raw; 
+          const patientName = apt.patientName || item.content.split('-')[1]?.trim();
+          
+          const age = apt.dateOfBirth ? dayjs().diff(dayjs(apt.dateOfBirth), 'year') : 'Không rõ';
+          
+          let genderStr = 'Không rõ';
+          if (apt.gender === 'MALE') genderStr = 'Nam';
+          else if (apt.gender === 'FEMALE') genderStr = 'Nữ';
+
+          const reason = apt.description || 'Bệnh nhân chưa cung cấp lý do khám.';
           
           const popoverContent = (
             <div style={{ width: 280 }}>
@@ -417,7 +426,7 @@ const getListData = (value) => {
                  />
                  <div>
                     <Text strong style={{ display: 'block', fontSize: 16 }}>{patientName}</Text>
-                    <Text type="secondary" style={{ fontSize: 12 }}>Nam - 32 tuổi • {index % 2 === 0 ? 'Bệnh nhân mới' : 'Tái khám'}</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{genderStr} - {age} tuổi</Text>
                  </div>
               </div>    
               
@@ -427,7 +436,7 @@ const getListData = (value) => {
                     <Text strong style={{ fontSize: 12 }}>Lý do khám:</Text>
                  </div>
                  <Text style={{ fontSize: 13, color: '#555' }}>
-                    Dị ứng da mặt, ngứa nhiều về đêm, đã dùng thuốc bôi nhưng không đỡ.
+                    {reason}
                  </Text>
               </div>
   
@@ -443,7 +452,7 @@ const getListData = (value) => {
           );
 
           return (
-            <li key={index} style={{ marginBottom: 6 }}>
+            <li key={apt.id || index} style={{ marginBottom: 6 }}>
                <Popover content={popoverContent} title={null} trigger="hover" placement="rightTop">
                 <div style={{ 
                     display: 'flex', 
