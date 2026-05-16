@@ -145,7 +145,8 @@ export default function DoctorMedicalHistoryPage() {
                 advices: result.advices || record.advices,
                 prescription: result.prescription || record.prescription || [],
                 clinicalInfo: result.clinicalInfo || record.clinicalInfo || null,
-                images: imageUrls
+                images: imageUrls,
+                consultationImages: data.consultationImages || []
             });
         }
     } catch (error) {
@@ -307,7 +308,7 @@ export default function DoctorMedicalHistoryPage() {
       >
         <Spin spinning={detailLoading}>
             {selectedRecord && (
-                <div style={{ marginTop: 20 }}>
+                <div style={{ marginTop: 20, maxHeight: '65vh', overflowY: 'auto', overflowX: 'hidden', paddingRight: 8 }}>
                     <div style={{ display: 'flex', gap: 20, marginBottom: 24, alignItems: 'center', flexWrap: 'wrap' }}>
                           <Avatar 
                               size={80} 
@@ -354,7 +355,7 @@ export default function DoctorMedicalHistoryPage() {
 
                     {selectedRecord.images && selectedRecord.images.length > 0 && (
                         <div style={{ marginTop: 20 }}>
-                            <Title level={5} style={{ marginBottom: 12 }}>Hình ảnh đính kèm</Title>
+                            <Title level={5} style={{ marginBottom: 12 }}>Hình ảnh đính kèm ban đầu (Từ bệnh nhân)</Title>
                             <Image.PreviewGroup>
                                 <Space size={8} wrap>
                                     {selectedRecord.images.map((img, idx) => {
@@ -366,10 +367,50 @@ export default function DoctorMedicalHistoryPage() {
                         </div>
                     )}
 
+                    {selectedRecord.consultationImages && selectedRecord.consultationImages.length > 0 && (
+                        <div style={{ marginTop: 20, background: '#fcfcfc', padding: '16px', borderRadius: '8px', border: '1px solid #f0f0f0' }}>
+                            <Title level={5} style={{ marginBottom: 16 }}>Hình ảnh trong quá trình khám</Title>
+                            
+                            {selectedRecord.consultationImages.filter(img => img.description === 'DOCTOR_UPLOADED').length > 0 && (
+                                <div style={{ marginBottom: 16 }}>
+                                    <Text type="secondary" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                                        <CameraOutlined style={{ marginRight: 6, color: '#52c41a' }} />
+                                        Ảnh thực tế từ bác sĩ:
+                                    </Text>
+                                    <Image.PreviewGroup>
+                                        <Space size={8} wrap>
+                                            {selectedRecord.consultationImages.filter(img => img.description === 'DOCTOR_UPLOADED').map((img, idx) => {
+                                                const validSrc = img.base64 || img.dataUrl || img.url || '';
+                                                return <Image key={`doc-${idx}`} width={80} height={80} src={validSrc} style={{ borderRadius: 6, objectFit: 'cover', border: '1px solid #d9f7be' }} />
+                                            })}
+                                        </Space>
+                                    </Image.PreviewGroup>
+                                </div>
+                            )}
+
+                            {selectedRecord.consultationImages.filter(img => img.description === 'AI_GENERATED').length > 0 && (
+                                <div>
+                                    <Text type="secondary" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                                        <RobotOutlined style={{ marginRight: 6, color: '#1677ff' }} />
+                                        Ảnh phân tích từ AI:
+                                    </Text>
+                                    <Image.PreviewGroup>
+                                        <Space size={8} wrap>
+                                            {selectedRecord.consultationImages.filter(img => img.description === 'AI_GENERATED').map((img, idx) => {
+                                                const validSrc = img.base64 || img.dataUrl || img.url || '';
+                                                return <Image key={`ai-${idx}`} width={100} height={100} src={validSrc} style={{ borderRadius: 6, objectFit: 'contain', border: '1px solid #91caff', background: '#e6f4ff' }} />
+                                            })}
+                                        </Space>
+                                    </Image.PreviewGroup>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <div style={{ marginTop: 24 }}>
                         <Title level={5}>Thông tin lâm sàng</Title>
                         {selectedRecord.clinicalInfo ? (
-                            <Descriptions bordered size="small" column={2} labelStyle={{ width: '140px', background: '#fafafa', fontWeight: 500 }}>
+                            <Descriptions bordered size="small" column={1} labelStyle={{ width: '160px', background: '#fafafa', fontWeight: 'bold' }}>
                                 {selectedRecord.clinicalInfo.symptom && <Descriptions.Item label="Triệu chứng">{selectedRecord.clinicalInfo.symptom}</Descriptions.Item>}
                                 {selectedRecord.clinicalInfo.location && <Descriptions.Item label="Vị trí">{selectedRecord.clinicalInfo.location}</Descriptions.Item>}
                                 {selectedRecord.clinicalInfo.duration && <Descriptions.Item label="Thời gian">{selectedRecord.clinicalInfo.duration}</Descriptions.Item>}

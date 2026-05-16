@@ -16,6 +16,7 @@ import {
   TeamOutlined,
   LeftOutlined,
   CameraOutlined,
+  RobotOutlined,
 } from "@ant-design/icons";
 import ChatBotIcon from "../../components/common/ChatBotIcon";
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -517,24 +518,57 @@ useEffect(() => {
                               <Text type="primary" style={{ whiteSpace: 'pre-wrap' }}>{selectedConsultation.advices || 'Không có lời khuyên'}</Text>
                               </Descriptions.Item>
 
-                              <Descriptions.Item label="Tệp đính kèm">
+                              <Descriptions.Item label="Hình ảnh khám bệnh">
                                   {selectedConsultation.images && selectedConsultation.images.length > 0 ? (
-                                      <Image.PreviewGroup>
-                                          <Space size="middle" wrap>
-                                              {selectedConsultation.images.map((img, idx) => (
-                                                  <Image
-                                                      key={idx}
-                                                      width={120} 
-                                                      height={120}
-                                                      src={img.base64} 
-                                                      fallback="https://via.placeholder.com/150?text=L%E1%BB%97i"
-                                                      style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #d9d9d9' }}
-                                                  />
-                                              ))}
-                                          </Space>
-                                      </Image.PreviewGroup>
+                                      <div style={{ background: '#fcfcfc', padding: '16px', borderRadius: '8px', border: '1px solid #f0f0f0' }}>
+                                          {selectedConsultation.images.filter(img => img.description === 'DOCTOR_UPLOADED').length > 0 && (
+                                              <div style={{ marginBottom: 16 }}>
+                                                  <Text type="secondary" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                                                      <CameraOutlined style={{ marginRight: 6, color: '#52c41a' }} />
+                                                      Ảnh từ bác sĩ:
+                                                  </Text>
+                                                  <Image.PreviewGroup>
+                                                      <Space size={8} wrap>
+                                                          {selectedConsultation.images.filter(img => img.description === 'DOCTOR_UPLOADED').map((img, idx) => (
+                                                              <Image
+                                                                  key={`doc-${idx}`}
+                                                                  width={80} 
+                                                                  height={80}
+                                                                  src={img.base64 || img.dataUrl || img.url || ''} 
+                                                                  fallback="https://via.placeholder.com/150?text=L%E1%BB%97i"
+                                                                  style={{ borderRadius: 6, objectFit: 'cover', border: '1px solid #d9f7be' }}
+                                                              />
+                                                          ))}
+                                                      </Space>
+                                                  </Image.PreviewGroup>
+                                              </div>
+                                          )}
+
+                                          {selectedConsultation.images.filter(img => img.description === 'AI_GENERATED').length > 0 && (
+                                              <div>
+                                                  <Text type="secondary" style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                                                      <RobotOutlined style={{ marginRight: 6, color: '#1677ff' }} />
+                                                      Ảnh phân tích AI:
+                                                  </Text>
+                                                  <Image.PreviewGroup>
+                                                      <Space size={8} wrap>
+                                                          {selectedConsultation.images.filter(img => img.description === 'AI_GENERATED').map((img, idx) => (
+                                                              <Image
+                                                                  key={`ai-${idx}`}
+                                                                  width={100} 
+                                                                  height={100}
+                                                                  src={img.base64 || img.dataUrl || img.url || ''} 
+                                                                  fallback="https://via.placeholder.com/150?text=L%E1%BB%97i"
+                                                                  style={{ borderRadius: 6, objectFit: 'contain', border: '1px solid #91caff', background: '#e6f4ff' }}
+                                                              />
+                                                          ))}
+                                                      </Space>
+                                                  </Image.PreviewGroup>
+                                              </div>
+                                          )}
+                                      </div>
                                   ) : (
-                                      <Text type="secondary">Không có hình ảnh đính kèm</Text>
+                                      <Text type="secondary" style={{ fontStyle: 'italic' }}>Không có hình ảnh đính kèm</Text>
                                   )}
                               </Descriptions.Item>
                           </Descriptions> 

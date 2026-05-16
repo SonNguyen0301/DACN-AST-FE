@@ -72,6 +72,7 @@ export default function ExaminationPage() {
   const [isAILoading, setIsAILoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
   const [manualImages, setManualImages] = useState([]); // base64 images for manual diagnosis flow
+  const [doctorInputImages, setDoctorInputImages] = useState([]); // base64 images uploaded by doctor for AI
 
   const [activePatient, setActivePatient] = useState(location.state?.patient || null);
   const [consultationId, setConsultationId] = useState(location.state?.consultationId || null);
@@ -211,6 +212,13 @@ export default function ExaminationPage() {
       }
   }, [activePatient, form]);
 
+  const getBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+
   const extractClinicalInfo = (values) => ({
     symptom: values.symptom,
     location: values.location,
@@ -264,11 +272,21 @@ export default function ExaminationPage() {
 
               let hasImage = false;
               let imageUrl = '';
+              let base64Images = [];
               if (values.images && values.images.fileList && values.images.fileList.length > 0) {
                   const file = values.images.fileList[0].originFileObj;
                   formData.append('file', file);
                   hasImage = true;
                   imageUrl = URL.createObjectURL(file);
+
+                  // Convert all uploaded files to base64 for doctorImages
+                  for (let item of values.images.fileList) {
+                      if (item.originFileObj) {
+                          const b64 = await getBase64(item.originFileObj);
+                          base64Images.push(b64);
+                      }
+                  }
+                  setDoctorInputImages(base64Images);
               }
 
               if (!hasImage) {
@@ -367,11 +385,14 @@ export default function ExaminationPage() {
           }
 
           // Collect images based on flow
-          let imagesToSend = [];
-          if (useAI && aiResult?.aiImages?.length > 0) {
-              imagesToSend = aiResult.aiImages;
-          } else if (!useAI && manualImages.length > 0) {
-              imagesToSend = manualImages;
+          let doctorImagesPayload = [];
+          let aiImagesPayload = [];
+
+          if (useAI) {
+              doctorImagesPayload = doctorInputImages;
+              aiImagesPayload = aiResult?.aiImages || [];
+          } else {
+              doctorImagesPayload = manualImages;
           }
 
           await finishExaminationAPI({
@@ -381,7 +402,8 @@ export default function ExaminationPage() {
               currentCondition: values.currentCondition,
               medicines: values.medicines,
               clinicalInfo: clinicalInfo ?? undefined,
-              images: imagesToSend.length > 0 ? imagesToSend : undefined,
+              doctorImages: doctorImagesPayload.length > 0 ? doctorImagesPayload : undefined,
+              aiImages: aiImagesPayload.length > 0 ? aiImagesPayload : undefined,
               doctorAdvice: values.doctorAdvice ?? undefined,
           });
           message.success("Đã lưu hồ sơ khám bệnh và gửi toa thuốc!");
@@ -909,7 +931,7 @@ export default function ExaminationPage() {
                     destroyOnClose
                 >
                     {selectedHistory ? (
-                        <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                        <div style={{ maxHeight: '65vh', overflowY: 'auto', overflowX: 'hidden', paddingRight: 8 }}>
                             <Descriptions column={2} bordered size="small" style={{ marginBottom: 16 }}>
                                 <Descriptions.Item label="Ngày khám" span={1}>
                                     {dayjs(selectedHistory.createdAt).format('DD/MM/YYYY HH:mm')}
@@ -939,7 +961,7 @@ export default function ExaminationPage() {
                             {selectedHistory.diagnosisResult?.clinicalInfo && (
                                 <>
                                     <Divider orientation="left" style={{ fontSize: 13 }}>Thông tin lâm sàng</Divider>
-                                    <Descriptions bordered size="small" column={2} labelStyle={{ width: '140px', background: '#fafafa', fontWeight: 500 }}>
+                                    <Descriptions bordered size="small" column={1} labelStyle={{ width: '160px', background: '#fafafa', fontWeight: 'bold' }}>
                                         {selectedHistory.diagnosisResult.clinicalInfo.symptom && <Descriptions.Item label="Triệu chứng">{selectedHistory.diagnosisResult.clinicalInfo.symptom}</Descriptions.Item>}
                                         {selectedHistory.diagnosisResult.clinicalInfo.location && <Descriptions.Item label="Vị trí">{selectedHistory.diagnosisResult.clinicalInfo.location}</Descriptions.Item>}
                                         {selectedHistory.diagnosisResult.clinicalInfo.duration && <Descriptions.Item label="Thời gian">{selectedHistory.diagnosisResult.clinicalInfo.duration}</Descriptions.Item>}
