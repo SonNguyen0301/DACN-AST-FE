@@ -754,25 +754,35 @@ export default function ExaminationPage() {
                                     </Form.Item>
 
                                     <Divider orientation="left">Toa thuốc</Divider>
-                                    <Form.List name="medicines" initialValue={[{ name: '', quantity: 1, usage: '' }]}>
+                                    <Form.List name="medicines" initialValue={[{ name: '', concentration: '', quantity: 1, dosage: '', usage: '' }]}>
                                         {(fields, { add, remove }) => (
                                             <>
                                             {fields.map(({ key, name, ...restField }) => (
                                                 <div key={key} style={{ background: '#f9f9f9', padding: '12px', borderRadius: '8px', marginBottom: '12px' }}>
                                                     <Row gutter={[8, 8]} align="middle">
-                                                        <Col xs={24} md={10}>
-                                                            <Form.Item {...restField} name={[name, 'name']} rules={[{ required: true, message: 'Nhập tên' }]} style={{ margin: 0 }}>
+                                                        <Col xs={24} md={8}>
+                                                            <Form.Item {...restField} name={[name, 'name']} rules={[{ required: true, message: 'Nhập tên thuốc' }]} style={{ margin: 0 }}>
                                                                 <Input placeholder="Tên thuốc" style={{ width: '100%' }} />
                                                             </Form.Item>
                                                         </Col>
-                                                        <Col xs={12} md={4}>
-                                                            <Form.Item {...restField} name={[name, 'quantity']} style={{ margin: 0 }}>
+                                                        <Col xs={12} md={5}>
+                                                            <Form.Item {...restField} name={[name, 'concentration']} rules={[{ required: true, message: 'Nhập hàm lượng' }]} style={{ margin: 0 }}>
+                                                                <Input placeholder="Loại / Hàm lượng" style={{ width: '100%' }} />
+                                                            </Form.Item>
+                                                        </Col>
+                                                        <Col xs={12} md={3}>
+                                                            <Form.Item {...restField} name={[name, 'quantity']} rules={[{ required: true, message: 'Nhập SL' }]} style={{ margin: 0 }}>
                                                                 <InputNumber min={1} placeholder="SL" style={{ width: '100%' }} />
                                                             </Form.Item>
                                                         </Col>
-                                                        <Col xs={12} md={9}>
-                                                            <Form.Item {...restField} name={[name, 'usage']} style={{ margin: 0 }}>
-                                                                <Input placeholder="Cách dùng (Sáng/Chiều...)" style={{ width: '100%' }} />
+                                                        <Col xs={12} md={4}>
+                                                            <Form.Item {...restField} name={[name, 'dosage']} rules={[{ required: true, message: 'Nhập liều lượng' }]} style={{ margin: 0 }}>
+                                                                <Input placeholder="Liều lượng mỗi lần" style={{ width: '100%' }} />
+                                                            </Form.Item>
+                                                        </Col>
+                                                        <Col xs={12} md={3}>
+                                                            <Form.Item {...restField} name={[name, 'usage']} rules={[{ required: true, message: 'Nhập cách dùng' }]} style={{ margin: 0 }}>
+                                                                <Input placeholder="Cách dùng" style={{ width: '100%' }} />
                                                             </Form.Item>
                                                         </Col>
                                                         <Col xs={24} md={1} style={{ textAlign: 'right' }}>
