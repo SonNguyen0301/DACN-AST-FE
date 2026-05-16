@@ -771,45 +771,112 @@ export default function ExaminationPage() {
                                         <TextArea rows={2} />
                                     </Form.Item>
 
-                                    <Divider orientation="left">Toa thuốc</Divider>
+                                    <Divider orientation="left" style={{ fontSize: 15, fontWeight: 600 }}>
+                                        <MedicineBoxOutlined style={{ marginRight: 8, color: '#1677ff' }} />
+                                        Toa thuốc
+                                    </Divider>
+
+                                    {/* Prescription header labels */}
+                                    <div style={{ 
+                                        display: 'grid', 
+                                        gridTemplateColumns: '40px 1fr 1fr 100px 1fr 1fr 40px', 
+                                        gap: '8px', 
+                                        padding: '8px 16px', 
+                                        background: '#e6f4ff', 
+                                        borderRadius: '8px 8px 0 0',
+                                        fontWeight: 600,
+                                        fontSize: 13,
+                                        color: '#1677ff',
+                                    }}>
+                                        <div style={{ textAlign: 'center' }}>#</div>
+                                        <div>Tên thuốc *</div>
+                                        <div>Hàm lượng *</div>
+                                        <div style={{ textAlign: 'center' }}>Số lượng *</div>
+                                        <div>Liều lượng *</div>
+                                        <div>Cách dùng *</div>
+                                        <div></div>
+                                    </div>
+
                                     <Form.List name="medicines" initialValue={[{ name: '', concentration: '', quantity: 1, dosage: '', usage: '' }]}>
                                         {(fields, { add, remove }) => (
                                             <>
-                                            {fields.map(({ key, name, ...restField }) => (
-                                                <div key={key} style={{ background: '#f9f9f9', padding: '12px', borderRadius: '8px', marginBottom: '12px' }}>
-                                                    <Row gutter={[8, 8]} align="middle">
-                                                        <Col xs={24} md={8}>
-                                                            <Form.Item {...restField} name={[name, 'name']} rules={[{ required: true, message: 'Nhập tên thuốc' }]} style={{ margin: 0 }}>
-                                                                <Input placeholder="Tên thuốc" style={{ width: '100%' }} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                        <Col xs={12} md={5}>
-                                                            <Form.Item {...restField} name={[name, 'concentration']} rules={[{ required: true, message: 'Nhập hàm lượng' }]} style={{ margin: 0 }}>
-                                                                <Input placeholder="Loại / Hàm lượng" style={{ width: '100%' }} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                        <Col xs={12} md={3}>
-                                                            <Form.Item {...restField} name={[name, 'quantity']} rules={[{ required: true, message: 'Nhập SL' }]} style={{ margin: 0 }}>
-                                                                <InputNumber min={1} placeholder="SL" style={{ width: '100%' }} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                        <Col xs={12} md={4}>
-                                                            <Form.Item {...restField} name={[name, 'dosage']} rules={[{ required: true, message: 'Nhập liều lượng' }]} style={{ margin: 0 }}>
-                                                                <Input placeholder="Liều lượng mỗi lần" style={{ width: '100%' }} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                        <Col xs={12} md={3}>
-                                                            <Form.Item {...restField} name={[name, 'usage']} rules={[{ required: true, message: 'Nhập cách dùng' }]} style={{ margin: 0 }}>
-                                                                <Input placeholder="Cách dùng" style={{ width: '100%' }} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                        <Col xs={24} md={1} style={{ textAlign: 'right' }}>
-                                                            <Button type="text" danger icon={<DeleteOutlined />} onClick={() => remove(name)} />
-                                                        </Col>
-                                                    </Row>
+                                            {fields.map(({ key, name, ...restField }, index) => (
+                                                <div 
+                                                    key={key} 
+                                                    style={{ 
+                                                        display: 'grid',
+                                                        gridTemplateColumns: '40px 1fr 1fr 100px 1fr 1fr 40px',
+                                                        gap: '8px',
+                                                        padding: '12px 16px',
+                                                        background: index % 2 === 0 ? '#fff' : '#fafbfc',
+                                                        borderLeft: '3px solid #1677ff',
+                                                        borderBottom: '1px solid #f0f0f0',
+                                                        alignItems: 'center',
+                                                        transition: 'all 0.2s ease',
+                                                    }}
+                                                    onMouseEnter={(e) => { e.currentTarget.style.background = '#f0f7ff'; e.currentTarget.style.borderLeftColor = '#4096ff'; }}
+                                                    onMouseLeave={(e) => { e.currentTarget.style.background = index % 2 === 0 ? '#fff' : '#fafbfc'; e.currentTarget.style.borderLeftColor = '#1677ff'; }}
+                                                >
+                                                    <div style={{ 
+                                                        textAlign: 'center', 
+                                                        fontWeight: 700, 
+                                                        fontSize: 14, 
+                                                        color: '#1677ff',
+                                                        background: '#e6f4ff',
+                                                        borderRadius: '50%',
+                                                        width: 28,
+                                                        height: 28,
+                                                        lineHeight: '28px',
+                                                        margin: '0 auto',
+                                                    }}>
+                                                        {index + 1}
+                                                    </div>
+                                                    <Form.Item {...restField} name={[name, 'name']} rules={[{ required: true, message: 'Nhập tên thuốc' }]} style={{ margin: 0 }}>
+                                                        <Input placeholder="VD: Paracetamol" />
+                                                    </Form.Item>
+                                                    <Form.Item {...restField} name={[name, 'concentration']} rules={[{ required: true, message: 'Nhập hàm lượng' }]} style={{ margin: 0 }}>
+                                                        <Input placeholder="VD: 500mg" />
+                                                    </Form.Item>
+                                                    <Form.Item {...restField} name={[name, 'quantity']} rules={[{ required: true, message: 'SL' }]} style={{ margin: 0 }}>
+                                                        <InputNumber min={1} placeholder="SL" style={{ width: '100%' }} />
+                                                    </Form.Item>
+                                                    <Form.Item {...restField} name={[name, 'dosage']} rules={[{ required: true, message: 'Nhập liều' }]} style={{ margin: 0 }}>
+                                                        <Input placeholder="VD: 1 viên/lần" />
+                                                    </Form.Item>
+                                                    <Form.Item {...restField} name={[name, 'usage']} rules={[{ required: true, message: 'Nhập cách dùng' }]} style={{ margin: 0 }}>
+                                                        <Input placeholder="VD: Sáng - Chiều" />
+                                                    </Form.Item>
+                                                    <div style={{ textAlign: 'center' }}>
+                                                        {fields.length > 1 && (
+                                                            <Button 
+                                                                type="text" 
+                                                                danger 
+                                                                icon={<DeleteOutlined />} 
+                                                                onClick={() => remove(name)}
+                                                                style={{ borderRadius: '50%' }}
+                                                            />
+                                                        )}
+                                                    </div>
                                                 </div>
                                             ))}
-                                            <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>Thêm thuốc</Button>
+                                            <Button 
+                                                type="dashed" 
+                                                onClick={() => add()} 
+                                                block 
+                                                icon={<PlusOutlined />}
+                                                style={{ 
+                                                    marginTop: 8,
+                                                    height: 44,
+                                                    borderRadius: '0 0 8px 8px',
+                                                    fontSize: 14,
+                                                    fontWeight: 500,
+                                                    color: '#1677ff',
+                                                    borderColor: '#91caff',
+                                                    background: '#f0f7ff',
+                                                }}
+                                            >
+                                                Thêm thuốc vào toa
+                                            </Button>
                                             </>
                                         )}
                                     </Form.List>
