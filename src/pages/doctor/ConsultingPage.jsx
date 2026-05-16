@@ -242,7 +242,25 @@ export default function ExaminationPage() {
 
               const formData = new FormData();
               formData.append('consultationId', consultationId);
-              formData.append('description', values.description || values.symptom || "Không có mô tả");
+
+              // Build rich description from clinical info for AI
+              const clinicalParts = [];
+              if (values.symptom) clinicalParts.push(`Triệu chứng chính: ${values.symptom}`);
+              if (values.location) clinicalParts.push(`Vị trí trên cơ thể: ${values.location}`);
+              if (values.duration) clinicalParts.push(`Thời gian kéo dài: ${values.duration}`);
+              if (values.skinType?.length) clinicalParts.push(`Đặc điểm tổn thương: ${values.skinType.join(', ')}`);
+              if (values.skinTypeNote) clinicalParts.push(`Ghi chú tổn thương: ${values.skinTypeNote}`);
+              if (values.severity) clinicalParts.push(`Mức độ lan rộng: ${values.severity}`);
+              if (values.allergy) clinicalParts.push(`Dị ứng: ${values.allergy}`);
+              if (values.history) clinicalParts.push(`Tiền sử bệnh lý: ${values.history}`);
+              if (values.gender) clinicalParts.push(`Giới tính: ${values.gender === 'MALE' ? 'Nam' : 'Nữ'}`);
+              if (values.age) clinicalParts.push(`Tuổi: ${values.age}`);
+              if (values.genetic) clinicalParts.push(`Yếu tố di truyền: ${values.genetic === 'yes' ? 'Có' : 'Không'}`);
+              const clinicalText = clinicalParts.join('. ');
+              const descText = values.description || '';
+              const fullDescription = [clinicalText, descText].filter(Boolean).join('\n\nMô tả thêm từ bác sĩ: ');
+
+              formData.append('description', fullDescription || "Không có mô tả");
 
               let hasImage = false;
               let imageUrl = '';
@@ -851,6 +869,24 @@ export default function ExaminationPage() {
                                 </Descriptions.Item>
                             </Descriptions>
 
+                            {selectedHistory.diagnosisResult?.clinicalInfo && (
+                                <>
+                                    <Divider orientation="left" style={{ fontSize: 13 }}>Thông tin lâm sàng</Divider>
+                                    <Descriptions bordered size="small" column={2} labelStyle={{ width: '140px', background: '#fafafa', fontWeight: 500 }}>
+                                        {selectedHistory.diagnosisResult.clinicalInfo.symptom && <Descriptions.Item label="Triệu chứng">{selectedHistory.diagnosisResult.clinicalInfo.symptom}</Descriptions.Item>}
+                                        {selectedHistory.diagnosisResult.clinicalInfo.location && <Descriptions.Item label="Vị trí">{selectedHistory.diagnosisResult.clinicalInfo.location}</Descriptions.Item>}
+                                        {selectedHistory.diagnosisResult.clinicalInfo.duration && <Descriptions.Item label="Thời gian">{selectedHistory.diagnosisResult.clinicalInfo.duration}</Descriptions.Item>}
+                                        {selectedHistory.diagnosisResult.clinicalInfo.skinType?.length > 0 && <Descriptions.Item label="Đặc điểm tổn thương">{selectedHistory.diagnosisResult.clinicalInfo.skinType.join(', ')}</Descriptions.Item>}
+                                        {selectedHistory.diagnosisResult.clinicalInfo.severity && <Descriptions.Item label="Mức độ lan rộng">{selectedHistory.diagnosisResult.clinicalInfo.severity === 'local' ? 'Khu trú' : selectedHistory.diagnosisResult.clinicalInfo.severity === 'spread' ? 'Lan rộng' : 'Toàn thân'}</Descriptions.Item>}
+                                        {selectedHistory.diagnosisResult.clinicalInfo.allergy && <Descriptions.Item label="Dị ứng">{selectedHistory.diagnosisResult.clinicalInfo.allergy}</Descriptions.Item>}
+                                        {selectedHistory.diagnosisResult.clinicalInfo.history && <Descriptions.Item label="Tiền sử">{selectedHistory.diagnosisResult.clinicalInfo.history}</Descriptions.Item>}
+                                        {selectedHistory.diagnosisResult.clinicalInfo.gender && <Descriptions.Item label="Giới tính">{selectedHistory.diagnosisResult.clinicalInfo.gender === 'MALE' ? 'Nam' : 'Nữ'}</Descriptions.Item>}
+                                        {selectedHistory.diagnosisResult.clinicalInfo.age && <Descriptions.Item label="Tuổi">{selectedHistory.diagnosisResult.clinicalInfo.age}</Descriptions.Item>}
+                                        {selectedHistory.diagnosisResult.clinicalInfo.genetic && <Descriptions.Item label="Di truyền">{selectedHistory.diagnosisResult.clinicalInfo.genetic === 'yes' ? 'Có' : 'Không'}</Descriptions.Item>}
+                                    </Descriptions>
+                                </>
+                            )}
+
                             {selectedHistory.diagnosisResult?.prescription?.length > 0 && (
                                 <>
                                     <Divider orientation="left" style={{ fontSize: 13 }}>Toa thuốc đã kê</Divider>
@@ -860,9 +896,11 @@ export default function ExaminationPage() {
                                         size="small"
                                         pagination={false}
                                         columns={[
-                                            { title: 'Tên thuốc', dataIndex: 'medicineName', key: 'name', render: (v, r) => v || r.name || '—' },
+                                            { title: 'Tên thuốc', dataIndex: 'name', key: 'name', render: (v) => v || '—' },
+                                            { title: 'Hàm lượng', dataIndex: 'concentration', key: 'concentration', width: 120, render: (v) => v || '—' },
                                             { title: 'Số lượng', dataIndex: 'quantity', key: 'qty', width: 80 },
-                                            { title: 'Cách dùng', dataIndex: 'dosage', key: 'dosage' },
+                                            { title: 'Liều lượng', dataIndex: 'dosage', key: 'dosage', render: (v) => v || '—' },
+                                            { title: 'Cách dùng', dataIndex: 'duration', key: 'duration', render: (v) => v || '—' },
                                         ]}
                                     />
                                 </>

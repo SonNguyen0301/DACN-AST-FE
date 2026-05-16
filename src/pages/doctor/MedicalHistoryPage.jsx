@@ -75,7 +75,8 @@ export default function DoctorMedicalHistoryPage() {
                       symptoms: result.symstomsText,
                       advices: result.advices,
                       feedBackAI: result.feedBackAI,
-                      prescription: result.prescription || []
+                      prescription: result.prescription || [],
+                      clinicalInfo: result.clinicalInfo || null
                   };
               });
 
@@ -143,6 +144,7 @@ export default function DoctorMedicalHistoryPage() {
                 diagnosis: result.description || record.diagnosis,
                 advices: result.advices || record.advices,
                 prescription: result.prescription || record.prescription || [],
+                clinicalInfo: result.clinicalInfo || record.clinicalInfo || null,
                 images: imageUrls
             });
         }
@@ -365,6 +367,26 @@ export default function DoctorMedicalHistoryPage() {
                     )}
 
                     <div style={{ marginTop: 24 }}>
+                        <Title level={5}>Thông tin lâm sàng</Title>
+                        {selectedRecord.clinicalInfo ? (
+                            <Descriptions bordered size="small" column={2} labelStyle={{ width: '140px', background: '#fafafa', fontWeight: 500 }}>
+                                {selectedRecord.clinicalInfo.symptom && <Descriptions.Item label="Triệu chứng">{selectedRecord.clinicalInfo.symptom}</Descriptions.Item>}
+                                {selectedRecord.clinicalInfo.location && <Descriptions.Item label="Vị trí">{selectedRecord.clinicalInfo.location}</Descriptions.Item>}
+                                {selectedRecord.clinicalInfo.duration && <Descriptions.Item label="Thời gian">{selectedRecord.clinicalInfo.duration}</Descriptions.Item>}
+                                {selectedRecord.clinicalInfo.skinType?.length > 0 && <Descriptions.Item label="Đặc điểm tổn thương">{selectedRecord.clinicalInfo.skinType.join(', ')}</Descriptions.Item>}
+                                {selectedRecord.clinicalInfo.severity && <Descriptions.Item label="Mức độ lan rộng">{selectedRecord.clinicalInfo.severity === 'local' ? 'Khu trú' : selectedRecord.clinicalInfo.severity === 'spread' ? 'Lan rộng' : 'Toàn thân'}</Descriptions.Item>}
+                                {selectedRecord.clinicalInfo.allergy && <Descriptions.Item label="Dị ứng">{selectedRecord.clinicalInfo.allergy}</Descriptions.Item>}
+                                {selectedRecord.clinicalInfo.history && <Descriptions.Item label="Tiền sử">{selectedRecord.clinicalInfo.history}</Descriptions.Item>}
+                                {selectedRecord.clinicalInfo.gender && <Descriptions.Item label="Giới tính">{selectedRecord.clinicalInfo.gender === 'MALE' ? 'Nam' : 'Nữ'}</Descriptions.Item>}
+                                {selectedRecord.clinicalInfo.age && <Descriptions.Item label="Tuổi">{selectedRecord.clinicalInfo.age}</Descriptions.Item>}
+                                {selectedRecord.clinicalInfo.genetic && <Descriptions.Item label="Di truyền">{selectedRecord.clinicalInfo.genetic === 'yes' ? 'Có' : 'Không'}</Descriptions.Item>}
+                            </Descriptions>
+                        ) : (
+                            <div style={{ padding: '12px', background: '#f5f5f5', borderRadius: 8, textAlign: 'center', color: '#999' }}>Không có thông tin lâm sàng</div>
+                        )}
+                    </div>
+
+                    <div style={{ marginTop: 24 }}>
                         <Title level={5} style={{ marginBottom: 12 }}><MedicineBoxOutlined /> Đơn thuốc chỉ định</Title>
                         {selectedRecord.prescription && selectedRecord.prescription.length > 0 ? (
                             <List
@@ -374,10 +396,13 @@ export default function DoctorMedicalHistoryPage() {
                                     <List.Item>
                                         <List.Item.Meta
                                             avatar={<CheckCircleOutlined style={{ color: '#52c41a', marginTop: 4 }} />}
-                                            title={<Text strong>{item.medicineName || item.name}</Text>}
+                                            title={<Text strong>{item.name}</Text>}
                                             description={
                                                 <Space split={<Divider type="vertical" />} wrap>
-                                                    <span>Liều dùng: <Text strong>{item.dosage}</Text></span>
+                                                    {item.concentration && <span>Hàm lượng: <Text strong>{item.concentration}</Text></span>}
+                                                    <span>Số lượng: <Text strong>{item.quantity}</Text></span>
+                                                    {item.dosage && <span>Liều lượng: <Text strong>{item.dosage}</Text></span>}
+                                                    {item.duration && <span>Cách dùng: <Text strong>{item.duration}</Text></span>}
                                                 </Space>
                                             }
                                         />

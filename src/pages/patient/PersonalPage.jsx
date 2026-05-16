@@ -464,6 +464,25 @@ useEffect(() => {
                               </Text>
                               </Descriptions.Item>
 
+                              <Descriptions.Item label="Thông tin lâm sàng">
+                                {selectedConsultation.clinicalInfo ? (
+                                    <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                                        {selectedConsultation.clinicalInfo.symptom && <Text>Triệu chứng: <Text strong>{selectedConsultation.clinicalInfo.symptom}</Text></Text>}
+                                        {selectedConsultation.clinicalInfo.location && <Text>Vị trí: <Text strong>{selectedConsultation.clinicalInfo.location}</Text></Text>}
+                                        {selectedConsultation.clinicalInfo.duration && <Text>Thời gian: <Text strong>{selectedConsultation.clinicalInfo.duration}</Text></Text>}
+                                        {selectedConsultation.clinicalInfo.skinType?.length > 0 && <Text>Đặc điểm tổn thương: <Text strong>{selectedConsultation.clinicalInfo.skinType.join(', ')}</Text></Text>}
+                                        {selectedConsultation.clinicalInfo.severity && <Text>Mức độ: <Text strong>{selectedConsultation.clinicalInfo.severity === 'local' ? 'Khu trú' : selectedConsultation.clinicalInfo.severity === 'spread' ? 'Lan rộng' : 'Toàn thân'}</Text></Text>}
+                                        {selectedConsultation.clinicalInfo.allergy && <Text>Dị ứng: <Text strong>{selectedConsultation.clinicalInfo.allergy}</Text></Text>}
+                                        {selectedConsultation.clinicalInfo.history && <Text>Tiền sử: <Text strong>{selectedConsultation.clinicalInfo.history}</Text></Text>}
+                                        {selectedConsultation.clinicalInfo.gender && <Text>Giới tính: <Text strong>{selectedConsultation.clinicalInfo.gender === 'MALE' ? 'Nam' : 'Nữ'}</Text></Text>}
+                                        {selectedConsultation.clinicalInfo.age && <Text>Tuổi: <Text strong>{selectedConsultation.clinicalInfo.age}</Text></Text>}
+                                        {selectedConsultation.clinicalInfo.genetic && <Text>Di truyền: <Text strong>{selectedConsultation.clinicalInfo.genetic === 'yes' ? 'Có' : 'Không'}</Text></Text>}
+                                    </Space>
+                                ) : (
+                                    <Text type="secondary" style={{ fontStyle: 'italic' }}>Không có thông tin lâm sàng</Text>
+                                )}
+                              </Descriptions.Item>
+
                               <Descriptions.Item label="Đơn thuốc">
                                 {selectedConsultation.prescription && selectedConsultation.prescription.length > 0 ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -477,13 +496,14 @@ useEffect(() => {
                                                     border: '1px solid #f0f0f0' 
                                                 }}
                                             >
-                                                <Text strong style={{ color: '#1677ff', display: 'block' }}>
-                                                    {index + 1}. {item.medicineName || item.name || 'Tên thuốc'}
-                                                    <Divider type="vertical" />
-                                                    Số lượng: <Text strong style={{ color: '#555' }}>{item.quantity || '-'}</Text>
+                                                <Text strong style={{ color: '#1677ff', display: 'block', marginBottom: 4 }}>
+                                                    {index + 1}. {item.name || 'Tên thuốc'}
+                                                    {item.concentration && <><Divider type="vertical" />Hàm lượng: <Text strong style={{ color: '#555' }}>{item.concentration}</Text></>}
                                                 </Text>
                                                 <Text type="secondary" style={{ fontSize: '13px' }}>
-                                                    Liều lượng: <Text strong style={{ color: '#555' }}>{item.dosage || item.quantity || '-'}</Text>
+                                                    Số lượng: <Text strong style={{ color: '#555' }}>{item.quantity || '-'}</Text>
+                                                    {item.dosage && <><Divider type="vertical" />Liều lượng: <Text strong style={{ color: '#555' }}>{item.dosage}</Text></>}
+                                                    {item.duration && <><Divider type="vertical" />Cách dùng: <Text strong style={{ color: '#555' }}>{item.duration}</Text></>}
                                                 </Text>
                                             </div>
                                         ))}
