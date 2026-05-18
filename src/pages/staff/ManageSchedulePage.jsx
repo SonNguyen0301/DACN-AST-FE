@@ -318,12 +318,12 @@ export default function ManageStaffSchedulePage() {
 
               if (errors && errors.length > 0) {
                   message.warning({ 
-                      content: `Thành công ${successes?.length || 0} ca. Thất bại ${errors.length} ca (VD: ${errors[0].message})`, 
+                      content: `Nhập ca trực thất bại!`, 
                       key: 'uploadCsv', 
                       duration: 6 
                   });
               } else {
-                  message.success({ content: `Đã nhập thành công ${successes?.length || 0} ca trực!`, key: 'uploadCsv', duration: 3 });
+                  message.success({ content: `Đã nhập thành công các ca trực!`, key: 'uploadCsv', duration: 3 });
               }
           }
       } catch (error) {

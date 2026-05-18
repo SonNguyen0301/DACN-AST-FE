@@ -19,7 +19,8 @@ import {
   Image,        
   Descriptions,  
   Divider,
-  message
+  message,
+  Popconfirm
 } from "antd";
 import {
   UserOutlined,
@@ -32,7 +33,8 @@ import {
   WomanOutlined,
   FileImageOutlined,
   MedicineBoxOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  CloseCircleOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
@@ -41,6 +43,7 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 dayjs.extend(isoWeek);
 import Footer from "../../components/common/Footer"; 
 import { getDoctorAppointmentsAPI, startExaminationAPI } from '../../services/doctorService';
+import { cancelAppointmentAPI } from '../../services/appointmentService';
 import useAuth from "../../hooks/useAuth";
 import DoctorHeader from './components/DoctorHeader';
 
@@ -186,6 +189,29 @@ export default function DoctorAppointmentPage() {
       }
   };
 
+    const handleCancelAppointment = async (key) => {
+    try {
+        const res = await cancelAppointmentAPI(key);
+        
+        if (res.data?.success || res.data?.isSuccess) {
+            const newData = appointments.map(item => {
+                if (item.key === key) return { ...item, status: 'CANCELLED' }; 
+                return item;
+            });
+            setAppointments(newData);
+            fetchAppointments(pagination.current);
+            
+            message.success(res.data?.message || 'Đã hủy lịch hẹn thành công!');
+        } else {
+            message.error('Không thể hủy lịch hẹn này.');
+        }
+    } catch (error) {
+        console.error("Lỗi khi hủy lịch hẹn:", error);
+        const errorMsg = error.response?.data?.message || 'Đã xảy ra lỗi hệ thống khi hủy lịch.';
+        message.error(errorMsg);
+    }
+  };
+
   const proceedToConsultation = async () => {
       try {
           const res = await startExaminationAPI({
@@ -327,6 +353,30 @@ export default function DoctorAppointmentPage() {
               Chi tiết
             </Button>
           </Tooltip>
+          {(record.status === 'SCHEDULED'  ||  record.status === 'EXAMINING') && (
+             <Tooltip title="Hủy lịch">
+               <Popconfirm
+                 title="Hủy lịch khám"
+                 description="Bạn có chắc chắn muốn hủy lịch hẹn này không?"
+                 onConfirm={(e) => {
+                   e.stopPropagation(); 
+                   handleCancelAppointment(record.key);
+                 }}
+                 onCancel={(e) => e.stopPropagation()}
+                 okText="Xác nhận"
+                 cancelText="Đóng"
+                 placement="topRight"
+               >
+                 <Button 
+                   type="text" 
+                   danger
+                   size="small" 
+                   icon={<CloseCircleOutlined style={{ fontSize: 18 }} />} 
+                   onClick={(e) => e.stopPropagation()}
+                 />
+               </Popconfirm>
+             </Tooltip>
+          )}
         </Space>
       ),
     },

@@ -390,7 +390,7 @@ const SettingsTab = () => (
                         items={[
                             { label: 'Thông tin chung', key: '1', children: <OverviewTab /> },
                             { label: 'Chuyên môn & Học vấn', key: '2', children: <ProfessionalTab /> },
-                            { label: 'Cài đặt tài khoản', key: '3', children: <SettingsTab /> },
+                            { label: 'Thông tin tài khoản', key: '3', children: <SettingsTab /> },
                         ]}
                     />
                 </Card>

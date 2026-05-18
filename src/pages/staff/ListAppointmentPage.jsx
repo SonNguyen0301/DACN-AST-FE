@@ -321,7 +321,7 @@ export default function AdmissionStaffAppointmentPage() {
                     }} 
                 />
             </Tooltip>
-          {record.status === 'SCHEDULED' && (
+          {(record.status === 'SCHEDULED'  ||  record.status === 'EXAMINING') && (
              <Tooltip title="Hủy lịch">
                <Popconfirm
                  title="Hủy lịch khám"
