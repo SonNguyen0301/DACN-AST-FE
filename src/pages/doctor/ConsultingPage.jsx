@@ -87,7 +87,7 @@ export default function ExaminationPage() {
   const [useAI, setUseAI] = useState(true);
   const [isAILoading, setIsAILoading] = useState(false);
   const [aiResult, setAiResult] = useState(null);
-  const [manualImages, setManualImages] = useState([]); // base64 images for manual diagnosis flow
+  const [manualImages, setManualImages] = useState([]); // {uid, base64}[] for manual diagnosis flow
   const [doctorInputImages, setDoctorInputImages] = useState([]); // base64 images uploaded by doctor for AI
 
   const [activePatient, setActivePatient] = useState(location.state?.patient || null);
@@ -380,12 +380,24 @@ export default function ExaminationPage() {
   };
 
   const handleManualDiagnose = () => {
-      form.validateFields().then(values => {
+      form.validateFields().then(async values => {
           setClinicalInfo(extractClinicalInfo(values));
           setUseAI(false);
           setViewState('result');
-          setManualImages([]); // Reset manual images
-          resultForm.resetFields(); 
+
+          // Transfer doctor-uploaded images from input form to result panel
+          const imageObjs = [];
+          if (values.images?.fileList?.length > 0) {
+              for (const item of values.images.fileList) {
+                  if (item.originFileObj) {
+                      const b64 = await getBase64(item.originFileObj);
+                      imageObjs.push({ uid: item.uid, base64: b64 });
+                  }
+              }
+          }
+          setManualImages(imageObjs);
+
+          resultForm.resetFields();
           resultForm.setFieldsValue({
               department: "dermatology",
               currentCondition: values.description || values.symptom || ""
@@ -409,7 +421,7 @@ export default function ExaminationPage() {
               doctorImagesPayload = doctorInputImages;
               aiImagesPayload = aiResult?.aiImages || [];
           } else {
-              doctorImagesPayload = manualImages;
+              doctorImagesPayload = manualImages.map(img => img.base64);
           }
 
           await finishExaminationAPI({
@@ -762,14 +774,14 @@ export default function ExaminationPage() {
                                         <Col xs={24} sm={8}>
                                           <Form.Item label="Đặc điểm tổn thương" name="skinType">
                                             <Checkbox.Group>
-                                              <Checkbox value="surface">Ngoài da</Checkbox>
-                                              <Checkbox value="deep">Dưới da/Sâu</Checkbox>
-                                              <Checkbox value="other">Ghi chú khác</Checkbox>
+                                              <Checkbox value="Ngoài da">Ngoài da</Checkbox>
+                                              <Checkbox value="Dưới da/Sâu">Dưới da/Sâu</Checkbox>
+                                              <Checkbox value="Ghi chú khác">Ghi chú khác</Checkbox>
                                             </Checkbox.Group>
                                           </Form.Item>
                                           <Form.Item noStyle shouldUpdate={(prev, cur) => prev.skinType !== cur.skinType}>
                                             {({ getFieldValue }) =>
-                                              getFieldValue('skinType')?.includes('other') ? (
+                                              getFieldValue('skinType')?.includes('Ghi chú khác') ? (
                                                 <Form.Item name="skinTypeNote" style={{ marginTop: -8 }}>
                                                   <TextArea rows={2} placeholder="Mô tả thêm đặc điểm tổn thương..." />
                                                 </Form.Item>
@@ -904,14 +916,13 @@ export default function ExaminationPage() {
                                     beforeUpload={(file) => {
                                         const reader = new FileReader();
                                         reader.onload = (e) => {
-                                            setManualImages(prev => [...prev, e.target.result]);
+                                            setManualImages(prev => [...prev, { uid: file.uid, base64: e.target.result }]);
                                         };
                                         reader.readAsDataURL(file);
-                                        return false; // Prevent auto upload
+                                        return false;
                                     }}
                                     onRemove={(file) => {
-                                        const idx = file.uid;
-                                        setManualImages(prev => prev.filter((_, i) => `rc-upload-${i}` !== idx));
+                                        setManualImages(prev => prev.filter(img => img.uid !== file.uid));
                                     }}
                                     style={{ marginBottom: 16 }}
                                 >
@@ -926,8 +937,8 @@ export default function ExaminationPage() {
                                         <Text type="secondary" style={{ fontSize: 12, marginBottom: 8, display: 'block' }}>Ảnh đã chọn ({manualImages.length}):</Text>
                                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                                             <Image.PreviewGroup>
-                                                {manualImages.map((img, idx) => (
-                                                    <Image key={idx} width={80} height={80} src={img} style={{ borderRadius: 8, objectFit: 'cover', border: '1px solid #e8e8e8' }} />
+                                                {manualImages.map((img) => (
+                                                    <Image key={img.uid} width={80} height={80} src={img.base64} style={{ borderRadius: 8, objectFit: 'cover', border: '1px solid #e8e8e8' }} />
                                                 ))}
                                             </Image.PreviewGroup>
                                         </div>

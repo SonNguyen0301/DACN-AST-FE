@@ -7,7 +7,7 @@ import {
 } from "antd";
 import {
   UserOutlined, SearchOutlined, EyeOutlined,
-  MedicineBoxOutlined,
+  MedicineBoxOutlined, CameraOutlined,
   FileTextOutlined, RobotOutlined, CheckCircleOutlined, PhoneOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
