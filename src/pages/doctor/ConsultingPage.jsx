@@ -27,7 +27,8 @@ import {
   Checkbox,
   Modal,
   Descriptions,
-  Empty
+  Empty,
+  Popconfirm
 } from "antd";
 import {
   UserOutlined,
@@ -49,6 +50,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
 import Footer from "../../components/common/Footer"; 
 import { getAppointmentsByDateAPI, createAiDiagnosisAPI, getAiDiagnosisResultAPI, finishExaminationAPI, startExaminationAPI, getConsultationDetailAPI } from '../../services/doctorService';
+import {cancelAppointmentAPI} from '../../services/appointmentService';
 import useAuth from '../../hooks/useAuth';
 import DoctorHeader from './components/DoctorHeader';
 import dayjs from 'dayjs';
@@ -58,6 +60,20 @@ const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 const { Dragger } = Upload;
 const { Option } = Select;
+
+const getDetailAge = (dateOfBirth) => {
+      if (!dateOfBirth) return 'N/A';
+      const dob = dayjs(dateOfBirth);
+      const years = dayjs().diff(dob, 'year');
+      
+      if (years >= 1) return years; 
+      
+      const months = dayjs().diff(dob, 'month');
+      if (months >= 1) return `${months} tháng`; 
+      
+      const days = dayjs().diff(dob, 'day');
+      return `${days} ngày`; 
+  };
 
 export default function ExaminationPage() {
   const navigate = useNavigate();
@@ -109,7 +125,7 @@ export default function ExaminationPage() {
                           key: apt.id || index,
                           patientId: apt.patientId, 
                           patientName: apt.patientName,
-                          age: apt.dateOfBirth ? dayjs().diff(dayjs(apt.dateOfBirth), 'year') : 'N/A',
+                          age: apt.dateOfBirth ? getDetailAge(apt.dateOfBirth) : 'N/A',
                           gender: apt.gender === 'MALE' ? 'MALE' : 'FEMALE',
                           phone: apt.phoneNumber || 'Không có',
                           time: `${fromTime} - ${toTime}`,
@@ -165,7 +181,8 @@ export default function ExaminationPage() {
                           key: apt.id,
                           patientId: pat.id,
                           patientName: pat.name,
-                          age: pat.dateOfBirth ? dayjs().diff(dayjs(pat.dateOfBirth), 'year') : 'N/A',
+                          DoB: pat.dateOfBirth,
+                          age: pat.dateOfBirth ? getDetailAge(pat.dateOfBirth) : 'N/A',
                           gender: pat.gender,
                           phone: pat.phoneNumber || 'Không có',
                           time: `${fromTime} - ${toTime}`,
@@ -419,36 +436,192 @@ export default function ExaminationPage() {
   };
 
   const columns = [
-      { title: 'Khung giờ', dataIndex: 'time', key: 'time', render: (text) => <Tag color="blue">{text}</Tag> },
-      { title: 'Họ và tên', dataIndex: 'patientName', key: 'patientName', render: (text) => <Text strong>{text}</Text> },
-      { title: 'Lý do', dataIndex: 'reason', key: 'reason' },
-      { title: 'Tiền sử bệnh', dataIndex: 'history', key: 'history' , render: (history) => <Tag color={history !== 'Không có' ? 'orange' : 'green'}>{history}</Tag>},
-      { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (status) => <Tag color={status === 'EXAMINING' ? 'processing' : 'warning'}>{status === 'EXAMINING' ? 'Đang khám' : 'Chờ khám'}</Tag> },
+      { title: 'Khung giờ',width: 120, dataIndex: 'time', key: 'time', render: (text) => <Tag color="blue">{text}</Tag> },
+      { title: 'Họ và tên',width: 150, dataIndex: 'patientName', key: 'patientName', render: (text) => <Text strong>{text}</Text> },
+      { title: 'Lý do',width: 150, dataIndex: 'reason', key: 'reason' },
+      { title: 'Tiền sử bệnh',width: 500, dataIndex: 'history', key: 'history' , render: (history) => <Tag color={history !== 'Không có' ? 'orange' : 'green'}>{history}</Tag>},
+      { title: 'Trạng thái',width: 120, dataIndex: 'status', key: 'status', render: (status) => <Tag color={status === 'EXAMINING' ? 'processing' : 'warning'}>{status === 'EXAMINING' ? 'Đang khám' : 'Chờ khám'}</Tag> },
       { 
           title: '', 
           key: 'action', 
+          width: 150,
           render: (_, record) => (
-              <Button type="primary" onClick={async () => {
-                  try {
-                      const res = await startExaminationAPI({
-                          appointmentId: record.key,
-                          patientId: record.patientId
-                      });
-                      if (res.data?.success || res.status === 201 || res.status === 200) {
-                          const id = res.data?.data?.consultationId || res.data?.consultationId;
-                          setConsultationId(id);
-                          setActivePatient(record);
+              <Space>
+                  <Button type="primary" onClick={async () => {
+                      try {
+                          const res = await startExaminationAPI({
+                              appointmentId: record.key,
+                              patientId: record.patientId
+                          });
+                          if (res.data?.success || res.status === 201 || res.status === 200) {
+                              const id = res.data?.data?.consultationId || res.data?.consultationId;
+                              setConsultationId(id);
+                              setActivePatient(record);
+                          }
+                      } catch (error) {
+                          console.error("Lỗi khi bắt đầu khám:", error);
+                          message.error(error.response?.data?.message || "Không thể bắt đầu ca khám.");
                       }
-                  } catch (error) {
-                      console.error("Lỗi khi bắt đầu khám:", error);
-                      message.error(error.response?.data?.message || "Không thể bắt đầu ca khám.");
-                  }
-              }}>
-                  {record.status === 'EXAMINING' ? 'Tiếp tục khám' : 'Bắt đầu khám'}
-              </Button>
+                  }}>
+                      {record.status === 'EXAMINING' ? 'Tiếp tục khám' : 'Bắt đầu khám'}
+                  </Button>
+
+                  <Popconfirm
+                      title="Xác nhận hủy ca khám"
+                      description="Bạn có chắc chắn muốn hủy ca khám này không?"
+                      onConfirm={async () => {
+                          try {
+                              const res = await cancelAppointmentAPI(record.key);
+                              if(res.data?.data?.isSuccess || res.data?.success) { 
+                                  message.success("Đã hủy ca khám!");
+                                  window.location.reload();
+                              }
+                          } catch (error) {
+                              console.error("Lỗi khi hủy ca khám:", error);
+                              message.error(error.response?.data?.message || "Không thể hủy ca khám.");
+                          }
+                      }}
+                      okText="Đồng ý"
+                      cancelText="Hủy bỏ"
+                      placement="topRight"
+                  >
+                      <Button type="primary" danger>
+                          Hủy ca khám
+                      </Button>
+                  </Popconfirm>
+              </Space>
           ) 
       }
   ];
+
+  const handlePrintPrescription = () => {
+      const values = resultForm.getFieldsValue();
+      const medicines = values.medicines || [];
+
+      if (medicines.length === 0 || !medicines[0].name) {
+          message.warning("Vui lòng kê ít nhất một loại thuốc trước khi in.");
+          return;
+      }
+
+      const patientName = activePatient?.patientName || '';
+      const DoB = activePatient?.DoB ? dayjs(activePatient.DoB).format('DD/MM/YYYY') : '';  
+      const gender = activePatient?.gender === 'MALE' ? 'Nam' : 'Nữ';
+      const phone = activePatient?.phone || '';
+      const diagnosis = values.finalDiagnosis || '';
+      const advice = values.doctorAdvice || 'Uống thuốc theo đơn. Tái khám khi có dấu hiệu bất thường.';
+      const doctorName = user?.lastName ? `BS. ${user.firstName} ${user.lastName}` : 'Bác sĩ chỉ định';
+      const today = dayjs();
+
+      let medicineRows = '';
+      medicines.forEach((med, index) => {
+          if (med.name) {
+              const concentrationText = med.concentration ? ` - ${med.concentration}` : '';
+              const fullName = `${med.name}${concentrationText}`;
+
+              let usageArr = [];
+              if (med.dosage) usageArr.push(med.dosage); 
+              if (med.usage) usageArr.push(med.usage);  
+              const fullUsageText = usageArr.join('* '); 
+
+              medicineRows += `
+                  <tr>
+                      <td><strong>${fullName}</strong></td>
+                      <td style="text-align: center;">${med.quantity || 1}</td>
+                      <td>${fullUsageText}</td>
+                  </tr>
+              `;
+          }
+      });
+
+     const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <style>
+                  body { font-family: 'Times New Roman', Times, serif; padding: 30px; line-height: 1.6; color: #000; }
+                  .header { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+                  .clinic-info { font-size: 14px; }
+                  .clinic-name { font-weight: bold; font-size: 16px; text-transform: uppercase; }
+                  .title { text-align: center; font-size: 26px; font-weight: bold; color: #003366; margin: 25px 0; text-transform: uppercase; letter-spacing: 1px; }
+                  .patient-info { margin-bottom: 20px; font-size: 15px; }
+                  .patient-info div { margin-bottom: 8px; }
+                  .patient-info-row { display: flex; justify-content: space-between; }
+                  table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 25px; font-size: 15px; }
+                  th, td { border: 1px solid #000; padding: 10px; text-align: left; }
+                  th { background-color: #f5f5f5; text-align: center !important; }
+                  .footer { display: flex; justify-content: space-between; margin-top: 40px; font-size: 15px; }
+                  .advice { width: 60%; }
+                  .signature { width: 35%; text-align: center; }
+                  .signature-space { height: 90px; }
+                  
+                  
+                  @media print {
+                      @page { margin: 15mm; }
+                      body { -webkit-print-color-adjust: exact; }
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="header">
+                  <div class="clinic-info">
+                      <div class="clinic-name">HỆ THỐNG Y TẾ ASTCARE</div>
+                      <div>Địa chỉ: Dĩ An, Bình Dương, Việt Nam</div>
+                  </div>
+              </div>
+              <div class="title">ĐƠN THUỐC</div>
+
+              <div class="patient-info">
+                  <div class="patient-info-row">
+                      <div style="width: 50%;">Họ tên: <strong>${patientName}</strong></div>
+                      <div style="width: 50%;">Ngày sinh: ${DoB}</div>
+                  </div>
+                  <div class="patient-info-row">
+                      <div style="width: 50%;">Số điện thoại: ${phone}</div>
+                      <div style="width: 50%;">Giới tính: ${gender}</div>
+                  </div>
+                  <div>Chẩn đoán: <strong>${diagnosis}</strong></div>
+              </div>
+
+              <div style="font-weight: bold; font-size: 16px; font-style: italic;">Thuốc điều trị:</div>
+              <table>
+                  <thead>
+                      <tr>
+                          <th style="width: 45%;">Tên thuốc</th>
+                          <th style="width: 10%;">SL</th>
+                          <th style="width: 45%;">Cách dùng</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      ${medicineRows}
+                  </tbody>
+              </table>
+
+              <div class="footer">
+                  <div class="advice">
+                      <strong>Lời dặn của bác sĩ:</strong>
+                      <div style="white-space: pre-line; margin-top: 5px;">${advice}</div>
+                  </div>
+                  <div class="signature">
+                      <div><em>Ngày ${today.format('DD')} tháng ${today.format('MM')} năm ${today.format('YYYY')}</em></div>
+                      <div style="font-weight: bold; margin-top: 5px;">Bác sĩ chỉ định</div>
+                      <div class="signature-space"></div>
+                      <div style="font-weight: bold;">${doctorName}</div>
+                  </div>
+              </div>
+          </body>
+          </html>
+      `);
+      
+      printWindow.document.close();
+      printWindow.focus();
+      
+      setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+      }, 500);
+                                
+  };
 
   return (
     <Layout style={{ minHeight: "100vh", background: "#f5f7fa" }}>
@@ -910,7 +1083,9 @@ export default function ExaminationPage() {
                                     <Divider />
 
                                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
-                                        <Button size="large" disabled={isAILoading}>In toa thuốc</Button>
+                                        <Button size="large" disabled={isAILoading} onClick={handlePrintPrescription}>
+                                            In toa thuốc
+                                        </Button>
                                         <Button type="primary" size="large" icon={<SaveOutlined />} htmlType="submit" disabled={isAILoading}>
                                             Lưu hồ sơ & Kết thúc
                                         </Button>

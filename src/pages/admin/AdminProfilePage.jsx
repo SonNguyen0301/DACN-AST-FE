@@ -317,7 +317,7 @@ const SettingsTab = () => (
                         defaultActiveKey="1" 
                         items={[
                             { label: 'Thông tin chung', key: '1', children: <OverviewTab /> },
-                            { label: 'Cài đặt tài khoản', key: '2', children: <SettingsTab /> },
+                            { label: 'Thông tin tài khoản', key: '2', children: <SettingsTab /> },
                         ]}
                     />
                 </Card>
