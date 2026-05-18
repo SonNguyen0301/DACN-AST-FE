@@ -353,7 +353,7 @@ export default function DoctorAppointmentPage() {
               Chi tiết
             </Button>
           </Tooltip>
-          {record.status === 'SCHEDULED'  &&  record.status === 'EXAMINING' && (
+          {(record.status === 'SCHEDULED'  ||  record.status === 'EXAMINING') && (
              <Tooltip title="Hủy lịch">
                <Popconfirm
                  title="Hủy lịch khám"

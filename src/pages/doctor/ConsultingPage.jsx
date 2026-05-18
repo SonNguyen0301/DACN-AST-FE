@@ -521,7 +521,7 @@ export default function ExaminationPage() {
               let usageArr = [];
               if (med.dosage) usageArr.push(med.dosage); 
               if (med.usage) usageArr.push(med.usage);  
-              const fullUsageText = usageArr.join('* '); 
+              const fullUsageText = usageArr.join(' * '); 
 
               medicineRows += `
                   <tr>
@@ -587,9 +587,9 @@ export default function ExaminationPage() {
               <table>
                   <thead>
                       <tr>
-                          <th style="width: 45%;">Tên thuốc</th>
+                          <th style="width: 35%;">Tên thuốc</th>
                           <th style="width: 10%;">SL</th>
-                          <th style="width: 45%;">Cách dùng</th>
+                          <th style="width: 55%;">Cách dùng</th>
                       </tr>
                   </thead>
                   <tbody>
