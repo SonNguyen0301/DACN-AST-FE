@@ -345,7 +345,7 @@ export default function ExaminationPage() {
                                   };
                               }),
                               explanation: aiResData.suggestedDiagnosis || "Chẩn đoán hình ảnh AI",
-                              severityLevel: aiResData.severityLevel || "medium",
+                                          severityLevel: aiResData.severityLevel || "MINOR",
                               analyzedImage: imageUrl,
                               aiImages: formattedImages, 
                               advice: aiResData.aiAdvice || "Cần theo dõi thêm và kết hợp chỉ định y khoa."
@@ -864,9 +864,19 @@ export default function ExaminationPage() {
                                             </div>
                                         )}
 
-                                        <Alert 
-                                            message={`Mức độ nghiêm trọng: ${aiResult.severityLevel === 'medium' ? 'TRUNG BÌNH' : aiResult.severityLevel === 'high' ? 'CAO' : 'CHƯA XÁC ĐỊNH'}`}
-                                            type={aiResult.severityLevel === 'medium' ? 'warning' : aiResult.severityLevel === 'high' ? 'error' : 'info'}
+                                        <Alert
+                                            message={`Mức độ nghiêm trọng: ${{
+                                                MINOR: 'THẤP',
+                                                MODERATE: 'TRUNG BÌNH',
+                                                SEVERE: 'NGHIÊM TRỌNG',
+                                                CRITICAL: 'NGUY HIỂM',
+                                            }[aiResult.severityLevel] ?? 'CHƯA XÁC ĐỊNH'}`}
+                                            type={{
+                                                MINOR: 'success',
+                                                MODERATE: 'warning',
+                                                SEVERE: 'error',
+                                                CRITICAL: 'error',
+                                            }[aiResult.severityLevel] ?? 'info'}
                                             showIcon
                                             style={{ marginBottom: 20, fontWeight: 'bold' }}
                                         />
