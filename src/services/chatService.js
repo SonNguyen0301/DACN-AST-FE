@@ -39,7 +39,7 @@ const uploadFileChatAPI = async (file, chatToken) => {
     return response.json(); // { success, data: { id, name, ... } }
 };
 
-const sendChatStreamAPI = async ({ query, conversation_id, parent_message_id, files, chatToken, onData, onEnd, onError }) => {
+const sendChatStreamAPI = async ({ query, patientId, conversation_id, parent_message_id, files, chatToken, onData, onEnd, onError }) => {
     try {
         const response = await fetch(`${API_BASE_URL}/embedded-chat/chat-messages-stream`, {
             method: 'POST',
@@ -49,6 +49,7 @@ const sendChatStreamAPI = async ({ query, conversation_id, parent_message_id, fi
             },
             body: JSON.stringify({
                 query,
+                patientId,
                 conversation_id: conversation_id || "",
                 parent_message_id: parent_message_id || "",
                 files: files || [],

@@ -125,6 +125,7 @@ export default function ChatBotPopup({ onClose }) {
 
     await sendChatStreamAPI({
         query: userText || '.',
+        patientId: user?.id,
         conversation_id: currentConversationId,
         parent_message_id: parentMessageId,
         files: uploadedFileId ? [{ type: 'image', transfer_method: 'local_file', upload_file_id: uploadedFileId }] : [],
