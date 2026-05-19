@@ -774,9 +774,8 @@ export default function ExaminationPage() {
                                         <Col xs={24} sm={8}>
                                           <Form.Item label="Đặc điểm tổn thương" name="skinType">
                                             <Checkbox.Group>
-                                              <Checkbox value="Ngoài da">Ngoài da</Checkbox>
-                                              <Checkbox value="Dưới da/Sâu">Dưới da/Sâu</Checkbox>
-                                              <Checkbox value="Ghi chú khác">Ghi chú khác</Checkbox>
+                                              <Checkbox value="surface">Ngoài da</Checkbox>
+                                              <Checkbox value="deep">Dưới da/Sâu</Checkbox>
                                             </Checkbox.Group>
                                           </Form.Item>
                                           <Form.Item noStyle shouldUpdate={(prev, cur) => prev.skinType !== cur.skinType}>
