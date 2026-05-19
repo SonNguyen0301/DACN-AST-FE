@@ -391,7 +391,8 @@ useEffect(() => {
                                             Chẩn đoán sơ bộ:
                                         </Text>
                                         <Text strong style={{ color: '#333', fontSize: 15 }}>
-                                            {apt.diseases && apt.diseases.length > 0 ? apt.diseases.join(', ') : 'Chưa cập nhật'}
+                                            {/* {apt.diseases && apt.diseases.length > 0 ? apt.diseases.join(', ') : 'Chưa cập nhật'} */}
+                                            {apt.symptoms}
                                         </Text>
                                         </div>
                                     </Col>
@@ -458,10 +459,11 @@ useEffect(() => {
                               <Descriptions.Item label="Phòng khám">{selectedConsultation.room}</Descriptions.Item>
                               
                               <Descriptions.Item label="Kết luận bác sĩ">
-                              <Text strong>Chẩn đoán: {selectedConsultation.diseases?.join(', ') || 'Chưa cập nhật'}</Text>
+                              {/* <Text strong>Chẩn đoán: {selectedConsultation.diseases?.join(', ') || 'Chưa cập nhật'}</Text> */}
+                              <Text strong>Chẩn đoán: {selectedConsultation.symptoms}</Text>
                               <br />
                               <Text type="primary" style={{ whiteSpace: 'pre-wrap' }}>
-                                  Mô tả triệu chứng: {selectedConsultation.symptoms || 'Không có mô tả'}
+                                  Mô tả triệu chứng: {selectedConsultation.description || 'Không có mô tả'}
                               </Text>
                               </Descriptions.Item>
 
