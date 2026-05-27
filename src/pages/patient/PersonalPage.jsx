@@ -20,10 +20,11 @@ import {
 } from "@ant-design/icons";
 import ChatBotIcon from "../../components/common/ChatBotIcon";
 import { useNavigate, useLocation } from 'react-router-dom';
-import Footer from '../../components/common/Footer'; 
+import ReactMarkdown from 'react-markdown';
+import Footer from '../../components/common/Footer';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { getUserInfoAPI, updateUserInfoAPI, getHistoryConsultationsAPI } from '../../services/userService';
+import { getUserInfoAPI, updateUserInfoAPI, getHistoryConsultationsAPI, getAiDiagnosisResultAPI } from '../../services/userService';
 import useAuth from '../../hooks/useAuth';
 import PatientHeader from './components/PatientHeader';
 
@@ -64,6 +65,7 @@ export default function PersonalPage() {
 
   const [selectedConsultation, setSelectedConsultation] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [aiDiagnosisResult, setAiDiagnosisResult] = useState(null);
   
   useEffect(() => {
     fetchUserProfile();
@@ -129,8 +131,30 @@ useEffect(() => {
     }
   };
 
+  const toDataUrl = (img) => {
+    if (!img) return null;
+    return img.startsWith('http') || img.startsWith('data:') ? img : `data:image/jpeg;base64,${img}`;
+  };
+
   const handleViewDetail = async (apt) => {
-      setSelectedConsultation(apt);
+    setSelectedConsultation(apt);
+    setAiDiagnosisResult(null);
+
+    try {
+      const aiRes = await getAiDiagnosisResultAPI(apt.id);
+      if (aiRes.data?.success && aiRes.data?.data) {
+        const d = aiRes.data.data;
+        setAiDiagnosisResult({
+          suggestedDiagnosis: d.suggestedDiagnosis,
+          severityLevel: d.severityLevel,
+          imageWithAllBboxes: toDataUrl(d.imageWithAllBboxes),
+          aiAdvice: d.aiAdvice,
+          lesionCount: (d.lesions || []).length,
+        });
+      }
+    } catch {
+      // 404 = no AI used for this consultation
+    }
   };
 
   const handleAvatarChange = async (e) => {
@@ -436,7 +460,7 @@ useEffect(() => {
                     type="link" 
                     icon={<LeftOutlined />} 
                     style={{ padding: 0, marginBottom: 16 }}
-                    onClick={() => setSelectedConsultation(null)} 
+                    onClick={() => { setSelectedConsultation(null); setAiDiagnosisResult(null); }}
                   >
                     Quay lại danh sách
                   </Button>
@@ -519,6 +543,45 @@ useEffect(() => {
                               <Descriptions.Item label="Lời khuyên">
                               <Text type="primary" style={{ whiteSpace: 'pre-wrap' }}>{selectedConsultation.advices || 'Không có lời khuyên'}</Text>
                               </Descriptions.Item>
+
+                              {aiDiagnosisResult && (
+                                <Descriptions.Item label={<span style={{ color: '#1677ff' }}><RobotOutlined /> Kết quả AI</span>}>
+                                  <Space size={8} wrap style={{ marginBottom: 12 }}>
+                                    <Tag color="blue" style={{ fontSize: 13, padding: '3px 10px' }}>
+                                      {aiDiagnosisResult.suggestedDiagnosis}
+                                    </Tag>
+                                    {aiDiagnosisResult.severityLevel && (
+                                      <Tag color={
+                                        aiDiagnosisResult.severityLevel === 'MINOR' ? 'green' :
+                                        aiDiagnosisResult.severityLevel === 'MODERATE' ? 'orange' : 'red'
+                                      }>
+                                        {{ MINOR: 'Mức độ thấp', MODERATE: 'Mức độ trung bình', SEVERE: 'Nghiêm trọng', CRITICAL: 'Nguy hiểm' }[aiDiagnosisResult.severityLevel]}
+                                      </Tag>
+                                    )}
+                                    {aiDiagnosisResult.lesionCount > 0 && (
+                                      <Tag color="cyan">{aiDiagnosisResult.lesionCount} tổn thương phát hiện</Tag>
+                                    )}
+                                  </Space>
+
+                                  {aiDiagnosisResult.imageWithAllBboxes && (
+                                    <div style={{ marginBottom: 12 }}>
+                                      <Image
+                                        src={aiDiagnosisResult.imageWithAllBboxes}
+                                        style={{ borderRadius: 8, maxHeight: 220, objectFit: 'contain', border: '1px solid #e8e8e8' }}
+                                      />
+                                    </div>
+                                  )}
+
+                                  {aiDiagnosisResult.aiAdvice && (
+                                    <div style={{ background: '#f0f7ff', padding: 12, borderRadius: 8, borderLeft: '4px solid #1677ff' }}>
+                                      <Text strong style={{ fontSize: 12, color: '#1677ff', display: 'block', marginBottom: 6 }}>
+                                        Tư vấn từ AI:
+                                      </Text>
+                                      <ReactMarkdown>{aiDiagnosisResult.aiAdvice}</ReactMarkdown>
+                                    </div>
+                                  )}
+                                </Descriptions.Item>
+                              )}
 
                               <Descriptions.Item label="Hình ảnh khám bệnh">
                                   {selectedConsultation.images && selectedConsultation.images.length > 0 ? (

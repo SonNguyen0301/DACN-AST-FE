@@ -22,4 +22,7 @@ const getHistoryConsultationsAPI = (patientId,params) => {
 const getConsultationDetailAPI = (consultationId) => {
     return axios.get(`/consultations/${consultationId}`);
 }
-export { getUserInfoAPI, updateUserInfoAPI , getHistoryConsultationsAPI, getConsultationDetailAPI, getAdminInfoAPI, updateAdminInfoAPI };
+const getAiDiagnosisResultAPI = (consultationId) => {
+    return axios.get(`/doctors/ai-diagnosis/${consultationId}`);
+};
+export { getUserInfoAPI, updateUserInfoAPI , getHistoryConsultationsAPI, getConsultationDetailAPI, getAdminInfoAPI, updateAdminInfoAPI, getAiDiagnosisResultAPI };

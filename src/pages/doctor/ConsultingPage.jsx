@@ -325,34 +325,37 @@ export default function ExaminationPage() {
                           
                           const aiResData = res.data.data;
 
-                          const formattedImages = (aiResData.images || []).map(img => {
-                              if (img && !img.startsWith('http') && !img.startsWith('data:')) {
-                                  return `data:image/jpeg;base64,${img}`;
-                              }
-                              return img;
-                          });
-                          
+                          const toDataUrl = (img) => {
+                              if (!img) return null;
+                              return img.startsWith('http') || img.startsWith('data:')
+                                  ? img
+                                  : `data:image/jpeg;base64,${img}`;
+                          };
+
+                          const lesions = (aiResData.lesions || []).map(l => ({
+                              lesionIndex: l.lesionIndex,
+                              topDisease: l.topDisease,
+                              severity: l.severity || 'MINOR',
+                              croppedImage: toDataUrl(l.croppedImage),
+                              diseases: (l.diseases || [])
+                                  .map(d => {
+                                      const prob = d.accuracy > 1 ? d.accuracy : d.accuracy * 100;
+                                      return { name: d.diseaseName, probability: Math.round(prob) };
+                                  })
+                                  .filter(d => d.probability >= 10)
+                                  .slice(0, 4),
+                          }));
+
                           setAiResult({
-                              diagnoses: (aiResData.diseases || []).map(d => {
-                                  // Chống lỗi nhân lố 100%: 
-                                  // Nếu accuracy > 1 (ví dụ 49.92), giữ nguyên. 
-                                  // Nếu accuracy <= 1 (ví dụ 0.4992), nhân 100.
-                                  const prob = d.accuracy > 1 ? d.accuracy : d.accuracy * 100;
-                                  return {
-                                      name: d.diseaseName,
-                                      probability: Math.round(prob),
-                                      severity: "Tiềm năng"
-                                  };
-                              }),
+                              lesions,
                               explanation: aiResData.suggestedDiagnosis || "Chẩn đoán hình ảnh AI",
-                                          severityLevel: aiResData.severityLevel || "MINOR",
-                              analyzedImage: imageUrl,
-                              aiImages: formattedImages, 
-                              advice: aiResData.aiAdvice || "Cần theo dõi thêm và kết hợp chỉ định y khoa."
+                              severityLevel: aiResData.severityLevel || "MINOR",
+                              imageWithAllBboxes: toDataUrl(aiResData.imageWithAllBboxes) || imageUrl,
+                              advice: aiResData.aiAdvice || "Cần theo dõi thêm và kết hợp chỉ định y khoa.",
                           });
 
                           resultForm.setFieldsValue({
-                              finalDiagnosis: aiResData.suggestedDiagnosis || aiResData.diseases?.[0]?.diseaseName || "",
+                              finalDiagnosis: aiResData.suggestedDiagnosis || aiResData.lesions?.[0]?.topDisease || "",
                               department: "dermatology",
                               doctorAdvice: aiResData.aiAdvice || "",
                               currentCondition: values.description || values.symptom
@@ -829,83 +832,80 @@ export default function ExaminationPage() {
                                     </div>
                                 ) : aiResult ? (
                                     <>
-                                        {aiResult.aiImages && aiResult.aiImages.length > 0 ? (
-                                            <div style={{ marginBottom: 20 }}>
-                                                <Row gutter={[12, 12]}>
-                                                    <Col span={12}>
-                                                        <div style={{ textAlign: 'center' }}>
-                                                            <Text type="secondary" style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>Vùng tổn thương</Text>
-                                                            <Image 
-                                                                src={aiResult.aiImages[0]} 
-                                                                style={{ borderRadius: 8, maxHeight: 180, objectFit: 'contain', border: '1px solid #e8e8e8' }} 
-                                                            />
-                                                        </div>
-                                                    </Col>
-                                                    <Col span={12}>
-                                                        <div style={{ textAlign: 'center' }}>
-                                                            <Text type="secondary" style={{ display: 'block', marginBottom: 4, fontSize: 12 }}>Ảnh cận cảnh</Text>
-                                                            <Image 
-                                                                src={aiResult.aiImages[1]} 
-                                                                style={{ borderRadius: 8, maxHeight: 180, objectFit: 'contain', border: '1px solid #e8e8e8' }} 
-                                                            />
-                                                        </div>
-                                                    </Col>
-                                                </Row>
-                                                <Divider style={{ margin: '12px 0' }} />
-                                            </div>
-                                        ) : aiResult.analyzedImage && (
-                                            <div style={{ textAlign: 'center', marginBottom: 20, position: 'relative' }}>
-                                                <Image 
-                                                    src={aiResult.analyzedImage} 
-                                                    style={{ borderRadius: 8, maxHeight: 250, objectFit: 'contain' }} 
-                                                />
-                                                <Tag color="cyan" style={{ position: 'absolute', top: 10, right: 10 }}>AI Analyzed</Tag>
+                                        {/* Ảnh gốc với tất cả bounding boxes */}
+                                        <div style={{ textAlign: 'center', marginBottom: 16, position: 'relative' }}>
+                                            <Image
+                                                src={aiResult.imageWithAllBboxes}
+                                                style={{ borderRadius: 8, maxHeight: 220, objectFit: 'contain', border: '1px solid #e8e8e8' }}
+                                            />
+                                            <Tag color="cyan" style={{ position: 'absolute', top: 8, right: 8 }}>
+                                                {aiResult.lesions?.length || 1} tổn thương
+                                            </Tag>
+                                        </div>
+
+                                        {/* Tabs per lesion */}
+                                        {aiResult.lesions?.length > 0 && (
+                                            <div style={{ marginBottom: 16 }}>
+                                                <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 12 }}>
+                                                    {aiResult.lesions.map((_, i) => (
+                                                        <Button
+                                                            key={i}
+                                                            size="small"
+                                                            type={i === (aiResult.activeLesion ?? 0) ? 'primary' : 'default'}
+                                                            onClick={() => setAiResult(prev => ({ ...prev, activeLesion: i }))}
+                                                        >
+                                                            Tổn thương #{i + 1}
+                                                        </Button>
+                                                    ))}
+                                                </div>
+
+                                                {(() => {
+                                                    const lesion = aiResult.lesions[aiResult.activeLesion ?? 0];
+                                                    if (!lesion) return null;
+                                                    const severityMap = { MINOR: 'THẤP', MODERATE: 'TRUNG BÌNH', SEVERE: 'NGHIÊM TRỌNG', CRITICAL: 'NGUY HIỂM' };
+                                                    const severityType = { MINOR: 'success', MODERATE: 'warning', SEVERE: 'error', CRITICAL: 'error' };
+                                                    return (
+                                                        <>
+                                                            <Row gutter={[12, 12]} style={{ marginBottom: 12 }}>
+                                                                {lesion.croppedImage && (
+                                                                    <Col span={10}>
+                                                                        <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Ảnh cận cảnh</Text>
+                                                                        <Image src={lesion.croppedImage} style={{ borderRadius: 6, width: '100%', maxHeight: 130, objectFit: 'contain', border: '1px solid #e8e8e8' }} />
+                                                                    </Col>
+                                                                )}
+                                                                <Col span={lesion.croppedImage ? 14 : 24}>
+                                                                    <Alert
+                                                                        message={`Mức độ: ${severityMap[lesion.severity] ?? 'CHƯA XÁC ĐỊNH'}`}
+                                                                        type={severityType[lesion.severity] ?? 'info'}
+                                                                        showIcon
+                                                                        style={{ marginBottom: 8 }}
+                                                                    />
+                                                                    <Tag color="blue" style={{ fontSize: 13, padding: '3px 10px', marginBottom: 8 }}>{lesion.topDisease}</Tag>
+                                                                    <List
+                                                                        size="small"
+                                                                        dataSource={lesion.diseases}
+                                                                        renderItem={item => (
+                                                                            <List.Item style={{ display: 'block', padding: '4px 0', borderBottom: '1px dashed #f0f0f0' }}>
+                                                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                                                                                    <Text style={{ fontSize: 12 }}>{item.name}</Text>
+                                                                                    <Tag color={item.probability > 50 ? 'green' : 'orange'} style={{ fontSize: 11 }}>{item.probability}%</Tag>
+                                                                                </div>
+                                                                                <Progress percent={item.probability} showInfo={false} size="small" status={item.probability > 50 ? 'success' : 'normal'} />
+                                                                            </List.Item>
+                                                                        )}
+                                                                    />
+                                                                </Col>
+                                                            </Row>
+                                                        </>
+                                                    );
+                                                })()}
                                             </div>
                                         )}
 
-                                        <Alert
-                                            message={`Mức độ nghiêm trọng: ${{
-                                                MINOR: 'THẤP',
-                                                MODERATE: 'TRUNG BÌNH',
-                                                SEVERE: 'NGHIÊM TRỌNG',
-                                                CRITICAL: 'NGUY HIỂM',
-                                            }[aiResult.severityLevel] ?? 'CHƯA XÁC ĐỊNH'}`}
-                                            type={{
-                                                MINOR: 'success',
-                                                MODERATE: 'warning',
-                                                SEVERE: 'error',
-                                                CRITICAL: 'error',
-                                            }[aiResult.severityLevel] ?? 'info'}
-                                            showIcon
-                                            style={{ marginBottom: 20, fontWeight: 'bold' }}
-                                        />
-
-                                        <Title level={5}>Chẩn đoán hình ảnh AI:</Title>
-                                        <div style={{ marginBottom: 16 }}>
-                                            <Tag color="blue" style={{ fontSize: 14, padding: '4px 12px' }}>{aiResult.explanation}</Tag>
-                                        </div>
-
-                                        <Title level={5}>Xác suất chi tiết:</Title>
-                                        <List
-                                            dataSource={aiResult.diagnoses}
-                                            renderItem={item => (
-                                                <List.Item style={{ display: 'block', borderBottom: '1px dashed #f0f0f0' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                                                        <Text strong>{item.name}</Text>
-                                                        <Tag color={item.probability > 80 ? 'green' : 'orange'}>{item.probability}%</Tag>
-                                                    </div>
-                                                    <Progress percent={item.probability} showInfo={false} size="small" status={item.probability > 80 ? 'success' : 'normal'} />
-                                                </List.Item>
-                                            )}
-                                        />
-                                        
-                                        <div style={{ marginTop: 20 }}>
-                                            <Title level={5}>Tư vấn AI chuyên sâu:</Title>
-                                            <div className="ai-advice-container" style={{ background: '#f5f7fa', padding: 16, borderRadius: 8, borderLeft: '4px solid #1677ff' }}>
-                                                <ReactMarkdown>
-                                                    {aiResult.advice}
-                                                </ReactMarkdown>
-                                            </div>
+                                        <Divider style={{ margin: '8px 0' }} />
+                                        <Title level={5}>Tư vấn AI chuyên sâu:</Title>
+                                        <div className="ai-advice-container" style={{ background: '#f5f7fa', padding: 16, borderRadius: 8, borderLeft: '4px solid #1677ff' }}>
+                                            <ReactMarkdown>{aiResult.advice}</ReactMarkdown>
                                         </div>
                                     </>
                                 ) : (

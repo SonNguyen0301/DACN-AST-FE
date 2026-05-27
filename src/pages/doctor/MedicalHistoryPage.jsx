@@ -3,7 +3,7 @@ import {
   Layout, Avatar, Typography, Row, Col, Card, Table,
   Tag, Space, Button, Input, DatePicker, Select,
   Tooltip, Modal, Descriptions, Divider, message, List,
-  Spin, Image
+  Spin, Image, Progress, Alert
 } from "antd";
 import {
   UserOutlined, SearchOutlined, EyeOutlined,
@@ -12,8 +12,9 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import dayjs from 'dayjs';
-import Footer from "../../components/common/Footer"; 
-import { getConsultationHistoryAPI, getConsultationDetailAPI } from '../../services/doctorService'; 
+import ReactMarkdown from 'react-markdown';
+import Footer from "../../components/common/Footer";
+import { getConsultationHistoryAPI, getConsultationDetailAPI, getAiDiagnosisResultAPI } from '../../services/doctorService';
 import useAuth from "../../hooks/useAuth";
 import DoctorHeader from './components/DoctorHeader';
 
@@ -36,7 +37,11 @@ export default function DoctorMedicalHistoryPage() {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
-  const [detailLoading, setDetailLoading] = useState(false); 
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const [aiDiagnosisResult, setAiDiagnosisResult] = useState(null);
+  const [aiDiagnosisLoading, setAiDiagnosisLoading] = useState(false);
+  const [activeLesionIndex, setActiveLesionIndex] = useState(0);
 
   const fetchHistory = async (page = 1) => {
       setLoading(true);
@@ -108,14 +113,21 @@ export default function DoctorMedicalHistoryPage() {
   const handleFilterClick = () => fetchHistory(1);
   const handleTableChange = (newPagination) => fetchHistory(newPagination.current);
 
+  const toDataUrl = (img) => {
+    if (!img) return null;
+    return img.startsWith('http') || img.startsWith('data:') ? img : `data:image/jpeg;base64,${img}`;
+  };
+
   const handleViewDetail = async (record) => {
     setIsModalOpen(true);
-    setSelectedRecord(record); 
+    setSelectedRecord(record);
     setDetailLoading(true);
+    setAiDiagnosisResult(null);
+    setActiveLesionIndex(0);
 
     try {
-        const res = await getConsultationDetailAPI(record.key); 
-        
+        const res = await getConsultationDetailAPI(record.key);
+
         if (res.data?.success && res.data?.data) {
             const data = res.data.data;
             const apt = data.appointment || {};
@@ -125,7 +137,7 @@ export default function DoctorMedicalHistoryPage() {
             const fromTime = apt.from ? apt.from.substring(0, 5) : '';
             const toTime = apt.to ? apt.to.substring(0, 5) : '';
 
-            const imageUrls = apt.images 
+            const imageUrls = apt.images
                 ? Object.values(apt.images)
                     .map((img) => typeof img === 'string' ? img : (img.base64 || img.dataUrl || img.url))
                     .filter(Boolean)
@@ -155,11 +167,45 @@ export default function DoctorMedicalHistoryPage() {
     } finally {
         setDetailLoading(false);
     }
+
+    // Load AI result separately (silently — not all consultations have AI)
+    try {
+        setAiDiagnosisLoading(true);
+        const aiRes = await getAiDiagnosisResultAPI(record.key);
+        if (aiRes.data?.success && aiRes.data?.data) {
+            const d = aiRes.data.data;
+            setAiDiagnosisResult({
+                suggestedDiagnosis: d.suggestedDiagnosis,
+                severityLevel: d.severityLevel,
+                imageWithAllBboxes: toDataUrl(d.imageWithAllBboxes),
+                aiAdvice: d.aiAdvice,
+                lesions: (d.lesions || []).map(l => ({
+                    lesionIndex: l.lesionIndex,
+                    topDisease: l.topDisease,
+                    severity: l.severity || 'MINOR',
+                    croppedImage: toDataUrl(l.croppedImage),
+                    diseases: (l.diseases || [])
+                        .map(dis => {
+                            const prob = dis.accuracy > 1 ? dis.accuracy : dis.accuracy * 100;
+                            return { name: dis.diseaseName, probability: Math.round(prob) };
+                        })
+                        .filter(dis => dis.probability >= 10)
+                        .slice(0, 4),
+                })),
+            });
+        }
+    } catch {
+        // 404 = no AI used for this consultation, silently ignore
+    } finally {
+        setAiDiagnosisLoading(false);
+    }
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedRecord(null);
+    setAiDiagnosisResult(null);
+    setActiveLesionIndex(0);
   };
 
   const columns = [
@@ -352,6 +398,96 @@ export default function DoctorMedicalHistoryPage() {
                             {selectedRecord.advices || "Không có lời khuyên thêm"}
                         </Descriptions.Item>
                     </Descriptions>
+
+                    {/* AI Diagnosis Section */}
+                    {aiDiagnosisLoading ? (
+                        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                            <Spin size="small" tip="Đang tải kết quả AI..." />
+                        </div>
+                    ) : aiDiagnosisResult ? (
+                        <div style={{ marginTop: 20 }}>
+                            <Divider orientation="left">
+                                <RobotOutlined style={{ color: '#722ed1' }} /> Kết quả phân tích AI
+                            </Divider>
+
+                            {aiDiagnosisResult.imageWithAllBboxes && (
+                                <div style={{ textAlign: 'center', marginBottom: 16, position: 'relative' }}>
+                                    <Image
+                                        src={aiDiagnosisResult.imageWithAllBboxes}
+                                        style={{ borderRadius: 8, maxHeight: 200, objectFit: 'contain', border: '1px solid #e8e8e8' }}
+                                    />
+                                    <Tag color="cyan" style={{ position: 'absolute', top: 8, right: 8 }}>
+                                        {aiDiagnosisResult.lesions?.length || 1} tổn thương
+                                    </Tag>
+                                </div>
+                            )}
+
+                            {aiDiagnosisResult.lesions?.length > 0 && (
+                                <div style={{ marginBottom: 16 }}>
+                                    <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8, borderBottom: '1px solid #f0f0f0', marginBottom: 12 }}>
+                                        {aiDiagnosisResult.lesions.map((_, i) => (
+                                            <Button
+                                                key={i}
+                                                size="small"
+                                                type={i === activeLesionIndex ? 'primary' : 'default'}
+                                                onClick={() => setActiveLesionIndex(i)}
+                                            >
+                                                Tổn thương #{i + 1}
+                                            </Button>
+                                        ))}
+                                    </div>
+
+                                    {(() => {
+                                        const lesion = aiDiagnosisResult.lesions[activeLesionIndex];
+                                        if (!lesion) return null;
+                                        const severityMap = { MINOR: 'THẤP', MODERATE: 'TRUNG BÌNH', SEVERE: 'NGHIÊM TRỌNG', CRITICAL: 'NGUY HIỂM' };
+                                        const severityType = { MINOR: 'success', MODERATE: 'warning', SEVERE: 'error', CRITICAL: 'error' };
+                                        return (
+                                            <Row gutter={[12, 12]}>
+                                                {lesion.croppedImage && (
+                                                    <Col span={8}>
+                                                        <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Ảnh cận cảnh</Text>
+                                                        <Image src={lesion.croppedImage} style={{ borderRadius: 6, width: '100%', maxHeight: 120, objectFit: 'contain', border: '1px solid #e8e8e8' }} />
+                                                    </Col>
+                                                )}
+                                                <Col span={lesion.croppedImage ? 16 : 24}>
+                                                    <Alert
+                                                        message={`Mức độ: ${severityMap[lesion.severity] ?? 'CHƯA XÁC ĐỊNH'}`}
+                                                        type={severityType[lesion.severity] ?? 'info'}
+                                                        showIcon
+                                                        style={{ marginBottom: 8 }}
+                                                    />
+                                                    <Tag color="blue" style={{ fontSize: 13, padding: '3px 10px', marginBottom: 8 }}>{lesion.topDisease}</Tag>
+                                                    <List
+                                                        size="small"
+                                                        dataSource={lesion.diseases}
+                                                        renderItem={item => (
+                                                            <List.Item style={{ display: 'block', padding: '4px 0', borderBottom: '1px dashed #f0f0f0' }}>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                                                                    <Text style={{ fontSize: 12 }}>{item.name}</Text>
+                                                                    <Tag color={item.probability > 50 ? 'green' : 'orange'} style={{ fontSize: 11 }}>{item.probability}%</Tag>
+                                                                </div>
+                                                                <Progress percent={item.probability} showInfo={false} size="small" status={item.probability > 50 ? 'success' : 'normal'} />
+                                                            </List.Item>
+                                                        )}
+                                                    />
+                                                </Col>
+                                            </Row>
+                                        );
+                                    })()}
+                                </div>
+                            )}
+
+                            {aiDiagnosisResult.aiAdvice && (
+                                <>
+                                    <Text strong style={{ fontSize: 13, color: '#722ed1' }}>Tư vấn AI:</Text>
+                                    <div style={{ background: '#f9f0ff', padding: 12, borderRadius: 8, borderLeft: '4px solid #722ed1', marginTop: 8 }}>
+                                        <ReactMarkdown>{aiDiagnosisResult.aiAdvice}</ReactMarkdown>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    ) : null}
 
                     {selectedRecord.images && selectedRecord.images.length > 0 && (
                         <div style={{ marginTop: 20 }}>
