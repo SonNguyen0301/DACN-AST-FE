@@ -571,15 +571,6 @@ useEffect(() => {
                                       />
                                     </div>
                                   )}
-
-                                  {aiDiagnosisResult.aiAdvice && (
-                                    <div style={{ background: '#f0f7ff', padding: 12, borderRadius: 8, borderLeft: '4px solid #1677ff' }}>
-                                      <Text strong style={{ fontSize: 12, color: '#1677ff', display: 'block', marginBottom: 6 }}>
-                                        Tư vấn từ AI:
-                                      </Text>
-                                      <ReactMarkdown>{aiDiagnosisResult.aiAdvice}</ReactMarkdown>
-                                    </div>
-                                  )}
                                 </Descriptions.Item>
                               )}
 
