@@ -173,14 +173,32 @@ export default function AdmissionStaffAppointmentPage() {
             setAppointments(newData);
             fetchAppointments(pagination.current);
             
-            message.success(res.data?.message || 'Đã hủy lịch hẹn thành công!');
-        } else {
-            message.error('Không thể hủy lịch hẹn này.');
-        }
+            message.success('Đã hủy lịch hẹn thành công!');
+        } 
     } catch (error) {
-        console.error("Lỗi khi hủy lịch hẹn:", error);
-        const errorMsg = error.response?.data?.message || 'Đã xảy ra lỗi hệ thống khi hủy lịch.';
-        message.error(errorMsg);
+        const apiMessage = error?.response?.data?.message || '';
+        let displayMessage = "Hủy lịch thất bại."; 
+
+        if (apiMessage.includes('Appointment with id') && apiMessage.includes('not found')) {
+            displayMessage = "Không tìm thấy cuộc hẹn";
+        } 
+        else if (apiMessage === 'You do not have permission to cancel this appointment') {
+            displayMessage = "Bạn không có quyền hủy cuộc hẹn của người khác";
+        } else if (apiMessage === 'You do not have permission to cancel appointment from other department') {
+            displayMessage = "Nhân viên không có quyền hủy cuộc hẹn của bệnh nhân khoa khác";
+        } else if (apiMessage === 'You do not have permission to cancel appointment from other doctor') {
+            displayMessage = "Bạn không thể hủy cuộc hẹn của bệnh nhân này với bác sĩ khác";
+        } else if (apiMessage === 'Only appointments with status SCHEDULED can be cancelled') {
+            displayMessage = "Chỉ những cuộc hẹn chưa được diễn ra mới có thể hủy";
+        } 
+        else if (apiMessage === 'Failed to cancel appointment' || apiMessage === 'Error cancelling appointment') {
+            displayMessage = "Lỗi hủy cuộc hẹn";
+        } 
+        else if (apiMessage) {
+            displayMessage = apiMessage;
+        }
+
+        message.error(displayMessage);
     }
   };
 
@@ -223,8 +241,22 @@ export default function AdmissionStaffAppointmentPage() {
         message.success('Đã cập nhật ghi chú thành công!');
         setIsNoteModalOpen(false);
     } catch (error) {
-        console.error("Lỗi cập nhật ghi chú:", error);
-        message.error('Có lỗi xảy ra khi cập nhật ghi chú.');
+        const apiMessage = error?.response?.data?.message || '';
+        let displayMessage = "Có lỗi xảy ra khi cập nhật ghi chú."; 
+
+        if (apiMessage.includes('Appointment with id') && apiMessage.includes('not found')) {
+            displayMessage = "Không thể tìm thấy cuộc hẹn";
+        } 
+        else if (apiMessage === 'You do not have permission to take note for appointment from other department') {
+            displayMessage = "Bạn không được quyền ghi chú trên các cuộc hẹn bên chuyên khoa khác";
+        } else if (apiMessage === 'Error taking note of appointment') {
+            displayMessage = "Lỗi ghi chú cuộc hẹn";
+        } 
+        else if (apiMessage) {
+            displayMessage = apiMessage;
+        }
+
+        message.error(displayMessage);
     }
   };
   

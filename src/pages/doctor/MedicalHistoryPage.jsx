@@ -23,6 +23,16 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker; 
 
+const HAM10000_MAPPING = {
+  'akiec': 'Dày sừng quang hóa / K nội biểu bì (AKIEC)',
+  'bcc': 'Ung thư biểu mô tế bào đáy (BCC)',
+  'bkl': 'Tổn thương giống dày sừng lành tính (BKL)',
+  'df': 'U xơ da (Dermatofibroma)',
+  'mel': 'Ung thư hắc tố (Melanoma)',
+  'nv': 'Nốt ruồi hắc tố (Melanocytic nevi)',
+  'vasc': 'Tổn thương mạch máu (Vascular lesions)'
+};
+
 export default function DoctorMedicalHistoryPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -457,19 +467,22 @@ export default function DoctorMedicalHistoryPage() {
                                                         showIcon
                                                         style={{ marginBottom: 8 }}
                                                     />
-                                                    <Tag color="blue" style={{ fontSize: 13, padding: '3px 10px', marginBottom: 8 }}>{lesion.topDisease}</Tag>
                                                     <List
                                                         size="small"
                                                         dataSource={lesion.diseases}
-                                                        renderItem={item => (
-                                                            <List.Item style={{ display: 'block', padding: '4px 0', borderBottom: '1px dashed #f0f0f0' }}>
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                                                                    <Text style={{ fontSize: 12 }}>{item.name}</Text>
-                                                                    <Tag color={item.probability > 50 ? 'green' : 'orange'} style={{ fontSize: 11 }}>{item.probability}%</Tag>
-                                                                </div>
-                                                                <Progress percent={item.probability} showInfo={false} size="small" status={item.probability > 50 ? 'success' : 'normal'} />
-                                                            </List.Item>
-                                                        )}
+                                                        renderItem={item => {
+                                                            const mappedItemName = HAM10000_MAPPING[(item.name || '').toLowerCase()] || item.name;
+                                                            
+                                                            return (
+                                                                <List.Item style={{ display: 'block', padding: '4px 0', borderBottom: '1px dashed #f0f0f0' }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                                                                        <Text style={{ fontSize: 12 }}>{mappedItemName}</Text>
+                                                                        <Tag color={item.probability > 50 ? 'green' : 'orange'} style={{ fontSize: 11 }}>{item.probability}%</Tag>
+                                                                    </div>
+                                                                    <Progress percent={item.probability} showInfo={false} size="small" status={item.probability > 50 ? 'success' : 'normal'} />
+                                                                </List.Item>
+                                                            );
+                                                        }}
                                                     />
                                                 </Col>
                                             </Row>
@@ -550,7 +563,17 @@ export default function DoctorMedicalHistoryPage() {
                                 {selectedRecord.clinicalInfo.symptom && <Descriptions.Item label="Triệu chứng">{selectedRecord.clinicalInfo.symptom}</Descriptions.Item>}
                                 {selectedRecord.clinicalInfo.location && <Descriptions.Item label="Vị trí">{selectedRecord.clinicalInfo.location}</Descriptions.Item>}
                                 {selectedRecord.clinicalInfo.duration && <Descriptions.Item label="Thời gian">{selectedRecord.clinicalInfo.duration}</Descriptions.Item>}
-                                {selectedRecord.clinicalInfo.skinType?.length > 0 && <Descriptions.Item label="Đặc điểm tổn thương">{selectedRecord.clinicalInfo.skinType.join(', ')}</Descriptions.Item>}
+                                {selectedRecord.clinicalInfo.skinType?.length > 0 && (
+                                    <Descriptions.Item label="Đặc điểm tổn thương">
+                                        {selectedRecord.clinicalInfo.skinType.map(type => {
+                                            const typeMap = {
+                                                'surface': 'Ngoài da',
+                                                'deep': 'Dưới da/Sâu',
+                                            };
+                                            return typeMap[type] || type;
+                                        }).join(', ')}
+                                    </Descriptions.Item>
+                                )}
                                 {selectedRecord.clinicalInfo.severity && <Descriptions.Item label="Mức độ lan rộng">{selectedRecord.clinicalInfo.severity === 'local' ? 'Khu trú' : selectedRecord.clinicalInfo.severity === 'spread' ? 'Lan rộng' : 'Toàn thân'}</Descriptions.Item>}
                                 {selectedRecord.clinicalInfo.allergy && <Descriptions.Item label="Dị ứng">{selectedRecord.clinicalInfo.allergy}</Descriptions.Item>}
                                 {selectedRecord.clinicalInfo.history && <Descriptions.Item label="Tiền sử">{selectedRecord.clinicalInfo.history}</Descriptions.Item>}

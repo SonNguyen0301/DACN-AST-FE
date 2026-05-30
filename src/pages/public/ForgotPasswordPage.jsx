@@ -41,7 +41,25 @@ export default function ForgotPasswordPage() {
         message.error(res.data.message || 'Có lỗi xảy ra, vui lòng thử lại.');
       }
     } catch (error) {
-      message.error(error.response?.data?.message || 'Có lỗi xảy ra khi gửi yêu cầu.');
+      const apiMessage = error.response?.data?.message || '';
+      let displayMessage = 'Có lỗi xảy ra khi gửi yêu cầu.';
+
+      if (apiMessage === 'User not found') {
+        displayMessage = 'Không tìm thấy người dùng với email này.';
+      } else if (apiMessage === 'Error in forgot password') {
+        displayMessage = 'Có lỗi trong quá trình đổi mật khẩu';
+      } 
+      else {
+        const match = apiMessage.match(/Waiting (\d+) seconds to send link again/);
+        
+        if (match) {
+          displayMessage = `Vui lòng đợi thêm ${match[1]} giây để gửi link lại lần nữa`;
+        } else if (apiMessage) {
+          displayMessage = apiMessage; 
+        }
+      }
+
+      message.error(displayMessage);
     } finally {
       setLoading(false);
     }

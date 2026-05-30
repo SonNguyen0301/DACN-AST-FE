@@ -132,6 +132,7 @@ export default function ManageStaffSchedulePage() {
               }
           } catch (error) {
               console.error("Lỗi tải danh sách bác sĩ:", error);
+                message.error("Không thể tải danh sách bác sĩ.");
           }
       };
 

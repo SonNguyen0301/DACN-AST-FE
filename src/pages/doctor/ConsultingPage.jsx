@@ -74,6 +74,15 @@ const getDetailAge = (dateOfBirth) => {
       const days = dayjs().diff(dob, 'day');
       return `${days} ngày`; 
   };
+const HAM10000_MAPPING = {
+  'akiec': 'Dày sừng quang hóa / K nội biểu bì (AKIEC)',
+  'bcc': 'Ung thư biểu mô tế bào đáy (BCC)',
+  'bkl': 'Tổn thương giống dày sừng lành tính (BKL)',
+  'df': 'U xơ da (Dermatofibroma)',
+  'mel': 'Ung thư hắc tố (Melanoma)',
+  'nv': 'Nốt ruồi hắc tố (Melanocytic nevi)',
+  'vasc': 'Tổn thương mạch máu (Vascular lesions)'
+};
 
 export default function ExaminationPage() {
   const navigate = useNavigate();
@@ -250,137 +259,149 @@ export default function ExaminationPage() {
     genetic: values.genetic,
   });
 
-  const handleAIAssist = () => {
-    form.validateFields().then(async values => {
-          setClinicalInfo(extractClinicalInfo(values));
-          setUseAI(true);
-          setViewState('result');
-          setIsAILoading(true);
-          
-          try {
-              if (!consultationId) {
-                  message.error("Lỗi: Không tìm thấy phiên khám bệnh.");
-                  setViewState('input');
-                  setIsAILoading(false);
-                  return;
-              }
+    const handleAIAssist = () => {
+        form.validateFields().then(async values => {
+            setClinicalInfo(extractClinicalInfo(values));
+            setUseAI(true);
+            setViewState('result');
+            setIsAILoading(true);
+            
+            try {
+                if (!consultationId) {
+                    message.error("Lỗi: Không tìm thấy phiên khám bệnh.");
+                    setViewState('input');
+                    setIsAILoading(false);
+                    return;
+                }
 
-              const formData = new FormData();
-              formData.append('consultationId', consultationId);
+                const formData = new FormData();
+                formData.append('consultationId', consultationId);
 
-              // Build rich description from clinical info for AI
-              const clinicalParts = [];
-              if (values.symptom) clinicalParts.push(`Triệu chứng chính: ${values.symptom}`);
-              if (values.location) clinicalParts.push(`Vị trí trên cơ thể: ${values.location}`);
-              if (values.duration) clinicalParts.push(`Thời gian kéo dài: ${values.duration}`);
-              if (values.skinType?.length) clinicalParts.push(`Đặc điểm tổn thương: ${values.skinType.join(', ')}`);
-              if (values.skinTypeNote) clinicalParts.push(`Ghi chú tổn thương: ${values.skinTypeNote}`);
-              if (values.severity) clinicalParts.push(`Mức độ lan rộng: ${values.severity}`);
-              if (values.allergy) clinicalParts.push(`Dị ứng: ${values.allergy}`);
-              if (values.history) clinicalParts.push(`Tiền sử bệnh lý: ${values.history}`);
-              if (values.gender) clinicalParts.push(`Giới tính: ${values.gender === 'MALE' ? 'Nam' : 'Nữ'}`);
-              if (values.age) clinicalParts.push(`Tuổi: ${values.age}`);
-              if (values.genetic) clinicalParts.push(`Yếu tố di truyền: ${values.genetic === 'yes' ? 'Có' : 'Không'}`);
-              const clinicalText = clinicalParts.join('. ');
-              const descText = values.description || '';
-              const fullDescription = [clinicalText, descText].filter(Boolean).join('\n\nMô tả thêm từ bác sĩ: ');
+                // Build rich description from clinical info for AI
+                const clinicalParts = [];
+                if (values.symptom) clinicalParts.push(`Triệu chứng chính: ${values.symptom}`);
+                if (values.location) clinicalParts.push(`Vị trí trên cơ thể: ${values.location}`);
+                if (values.duration) clinicalParts.push(`Thời gian kéo dài: ${values.duration}`);
+                if (values.skinType?.length) clinicalParts.push(`Đặc điểm tổn thương: ${values.skinType.join(', ')}`);
+                if (values.skinTypeNote) clinicalParts.push(`Ghi chú tổn thương: ${values.skinTypeNote}`);
+                if (values.severity) clinicalParts.push(`Mức độ lan rộng: ${values.severity}`);
+                if (values.allergy) clinicalParts.push(`Dị ứng: ${values.allergy}`);
+                if (values.history) clinicalParts.push(`Tiền sử bệnh lý: ${values.history}`);
+                if (values.gender) clinicalParts.push(`Giới tính: ${values.gender === 'MALE' ? 'Nam' : 'Nữ'}`);
+                if (values.age) clinicalParts.push(`Tuổi: ${values.age}`);
+                if (values.genetic) clinicalParts.push(`Yếu tố di truyền: ${values.genetic === 'yes' ? 'Có' : 'Không'}`);
+                const clinicalText = clinicalParts.join('. ');
+                const descText = values.description || '';
+                const fullDescription = [clinicalText, descText].filter(Boolean).join('\n\nMô tả thêm từ bác sĩ: ');
 
-              formData.append('description', fullDescription || "Không có mô tả");
+                formData.append('description', fullDescription || "Không có mô tả");
 
-              let hasImage = false;
-              let imageUrl = '';
-              let base64Images = [];
-              if (values.images && values.images.fileList && values.images.fileList.length > 0) {
-                  const file = values.images.fileList[0].originFileObj;
-                  formData.append('file', file);
-                  hasImage = true;
-                  imageUrl = URL.createObjectURL(file);
+                let hasImage = false;
+                let imageUrl = '';
+                let base64Images = [];
+                if (values.images && values.images.fileList && values.images.fileList.length > 0) {
+                    const file = values.images.fileList[0].originFileObj;
+                    formData.append('file', file);
+                    hasImage = true;
+                    imageUrl = URL.createObjectURL(file);
 
-                  // Convert all uploaded files to base64 for doctorImages
-                  for (let item of values.images.fileList) {
-                      if (item.originFileObj) {
-                          const b64 = await getBase64(item.originFileObj);
-                          base64Images.push(b64);
-                      }
-                  }
-                  setDoctorInputImages(base64Images);
-              }
+                    // Convert all uploaded files to base64 for doctorImages
+                    for (let item of values.images.fileList) {
+                        if (item.originFileObj) {
+                            const b64 = await getBase64(item.originFileObj);
+                            base64Images.push(b64);
+                        }
+                    }
+                    setDoctorInputImages(base64Images);
+                }
 
-              if (!hasImage) {
-                 message.error("AI yêu cầu ít nhất 1 hình ảnh tổn thương để phân tích.");
-                 setViewState('input');
-                 setIsAILoading(false);
-                 return;
-              }
+                if (!hasImage) {
+                    message.error("AI yêu cầu ít nhất 1 hình ảnh tổn thương để phân tích.");
+                    setViewState('input');
+                    setIsAILoading(false);
+                    return;
+                }
 
-              await createAiDiagnosisAPI(formData);
+                await createAiDiagnosisAPI(formData);
 
-              const pollResult = setInterval(async () => {
-                  try {
-                      const res = await getAiDiagnosisResultAPI(consultationId);
-                      if (res.data?.success && res.data?.data) {
-                          clearInterval(pollResult);
-                          setIsAILoading(false);
-                          message.success("AI đã hoàn tất phân tích!");
-                          
-                          const aiResData = res.data.data;
+                const pollResult = setInterval(async () => {
+                    try {
+                        const res = await getAiDiagnosisResultAPI(consultationId);
+                        if (res.data?.success && res.data?.data) {
+                            clearInterval(pollResult);
+                            setIsAILoading(false);
+                            message.success("AI đã hoàn tất phân tích!");
+                            
+                            const aiResData = res.data.data;
 
-                          const toDataUrl = (img) => {
-                              if (!img) return null;
-                              return img.startsWith('http') || img.startsWith('data:')
-                                  ? img
-                                  : `data:image/jpeg;base64,${img}`;
-                          };
+                            const toDataUrl = (img) => {
+                                if (!img) return null;
+                                return img.startsWith('http') || img.startsWith('data:')
+                                    ? img
+                                    : `data:image/jpeg;base64,${img}`;
+                            };
 
-                          const lesions = (aiResData.lesions || []).map(l => ({
-                              lesionIndex: l.lesionIndex,
-                              topDisease: l.topDisease,
-                              severity: l.severity || 'MINOR',
-                              croppedImage: toDataUrl(l.croppedImage),
-                              diseases: (l.diseases || [])
-                                  .map(d => {
-                                      const prob = d.accuracy > 1 ? d.accuracy : d.accuracy * 100;
-                                      return { name: d.diseaseName, probability: Math.round(prob) };
-                                  })
-                                  .filter(d => d.probability >= 10)
-                                  .slice(0, 4),
-                          }));
+                            const lesions = (aiResData.lesions || []).map(l => {
+                                const rawTopDisease = l.topDisease ? l.topDisease.toLowerCase() : '';
+                                const mappedTopDisease = HAM10000_MAPPING[rawTopDisease] || l.topDisease;
 
-                          setAiResult({
-                              lesions,
-                              explanation: aiResData.suggestedDiagnosis || "Chẩn đoán hình ảnh AI",
-                              severityLevel: aiResData.severityLevel || "MINOR",
-                              imageWithAllBboxes: toDataUrl(aiResData.imageWithAllBboxes) || imageUrl,
-                              advice: aiResData.aiAdvice || "Cần theo dõi thêm và kết hợp chỉ định y khoa.",
-                          });
+                                return {
+                                    lesionIndex: l.lesionIndex,
+                                    topDisease: mappedTopDisease,
+                                    severity: l.severity || 'MINOR',
+                                    croppedImage: toDataUrl(l.croppedImage),
+                                    diseases: (l.diseases || [])
+                                        .map(d => {
+                                            const prob = d.accuracy > 1 ? d.accuracy : d.accuracy * 100;
+                                            
+                                            const rawName = d.diseaseName ? d.diseaseName.toLowerCase() : '';
+                                            const fullName = HAM10000_MAPPING[rawName] || d.diseaseName;
 
-                          resultForm.setFieldsValue({
-                              finalDiagnosis: aiResData.suggestedDiagnosis || aiResData.lesions?.[0]?.topDisease || "",
-                              department: "dermatology",
-                              doctorAdvice: aiResData.aiAdvice || "",
-                              currentCondition: values.description || values.symptom
-                          });
-                      }
-                  } catch (e) {
-                      if (e.response?.status !== 404) {
-                          clearInterval(pollResult);
-                          setIsAILoading(false);
-                          setViewState('input');
-                          message.error("Lỗi khi chờ kết quả AI.");
-                      }
-                  }
-              }, 3000); 
+                                            return { name: fullName, probability: Math.round(prob) };
+                                        })
+                                        .filter(d => d.probability >= 10)
+                                        .slice(0, 4),
+                                };
+                            });
 
-          } catch (error) {
-              console.error("Lỗi chạy AI:", error);
-              message.error("Không thể gửi yêu cầu phân tích AI.");
-              setIsAILoading(false);
-              setViewState('input');
-          }
-      }).catch(info => {
-          console.log('Validate Failed:', info);
-      });
-  };
+                            setAiResult({
+                                lesions,
+                                explanation: aiResData.suggestedDiagnosis || "Chẩn đoán hình ảnh AI",
+                                severityLevel: aiResData.severityLevel || "MINOR",
+                                imageWithAllBboxes: toDataUrl(aiResData.imageWithAllBboxes) || imageUrl,
+                                advice: aiResData.aiAdvice || "Cần theo dõi thêm và kết hợp chỉ định y khoa.",
+                            });
+
+                            const rawSuggested = aiResData.suggestedDiagnosis || aiResData.lesions?.[0]?.topDisease || "";
+                            const mappedSuggested = HAM10000_MAPPING[rawSuggested.toLowerCase()] || rawSuggested;
+
+                            resultForm.setFieldsValue({
+                                finalDiagnosis: mappedSuggested,
+                                department: "dermatology",
+                                doctorAdvice: aiResData.aiAdvice || "",
+                                currentCondition: values.description || values.symptom
+                            });
+                        }
+                    } catch (e) {
+                        if (e.response?.status !== 404) {
+                            clearInterval(pollResult);
+                            setIsAILoading(false);
+                            setViewState('input');
+                            message.error("Lỗi khi chờ kết quả AI.");
+                        }
+                    }
+                }, 3000); 
+
+            } catch (error) {
+                console.error("Lỗi chạy AI:", error);
+                message.error("Không thể gửi yêu cầu phân tích AI.");
+                setIsAILoading(false);
+                setViewState('input');
+            }
+        }).catch(info => {
+            console.log('Validate Failed:', info);
+        });
+    };
 
   const handleManualDiagnose = () => {
       form.validateFields().then(async values => {
@@ -492,8 +513,29 @@ export default function ExaminationPage() {
                                   window.location.reload();
                               }
                           } catch (error) {
-                              console.error("Lỗi khi hủy ca khám:", error);
-                              message.error(error.response?.data?.message || "Không thể hủy ca khám.");
+                              const apiMessage = error?.response?.data?.message || '';
+                                let displayMessage = "Hủy lịch thất bại."; 
+
+                                if (apiMessage.includes('Appointment with id') && apiMessage.includes('not found')) {
+                                    displayMessage = "Không tìm thấy cuộc hẹn";
+                                } 
+                                else if (apiMessage === 'You do not have permission to cancel this appointment') {
+                                    displayMessage = "Bạn không có quyền hủy cuộc hẹn của người khác";
+                                } else if (apiMessage === 'You do not have permission to cancel appointment from other department') {
+                                    displayMessage = "Nhân viên không có quyền hủy cuộc hẹn của bệnh nhân khoa khác";
+                                } else if (apiMessage === 'You do not have permission to cancel appointment from other doctor') {
+                                    displayMessage = "Bạn không thể hủy cuộc hẹn của bệnh nhân này với bác sĩ khác";
+                                } else if (apiMessage === 'Only appointments with status SCHEDULED can be cancelled') {
+                                    displayMessage = "Chỉ những cuộc hẹn chưa được diễn ra mới có thể hủy";
+                                } 
+                                else if (apiMessage === 'Failed to cancel appointment' || apiMessage === 'Error cancelling appointment') {
+                                    displayMessage = "Lỗi hủy cuộc hẹn";
+                                } 
+                                else if (apiMessage) {
+                                    displayMessage = apiMessage;
+                                }
+
+                                message.error(displayMessage);
                           }
                       }}
                       okText="Đồng ý"

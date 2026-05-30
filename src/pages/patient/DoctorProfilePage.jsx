@@ -67,7 +67,7 @@ export default function DoctorProfilePage() {
             experienceYears: d.experience, 
             specialty: d.department,
             role: d.role,
-            workplace: "Đang cập nhật...", 
+            workplace: "Bệnh viện AST-Care", 
             address: "Đang cập nhật...", 
             avatarUrl: d.avatarUrl || "/doctor_default.png",
             introduction: d.description || "Bác sĩ chưa cập nhật thông tin giới thiệu.",
@@ -250,9 +250,13 @@ export default function DoctorProfilePage() {
         }
       }
     } catch (error) {
-        console.error("Lỗi đặt lịch chi tiết:", error.response?.data || error);
-        const errorMsg = error.response?.data?.message || "Có lỗi hệ thống, vui lòng thử lại sau.";
-        message.error(`Lỗi: ${errorMsg}`);
+        const apiMessage = error?.response?.data?.message || 'Đặt lịch thất bại.';
+
+        if (apiMessage.includes('You have already booked an appointment with doctor') ) {
+            message.error("Bạn đã đặt lịch hẹn vào thời điểm này với bác sĩ khác.");
+            return;
+        } 
+        message.error(apiMessage);
     } finally {
         setBookingLoading(false);
     }
@@ -339,7 +343,7 @@ const uploadProps = {
                               <Text>{doctor.experienceYears}</Text>
                           </Space>
                           <div style={{ marginTop: 12 }}>
-                              <Text strong>Chuyên khoa:</Text> <Text>{doctor.specialty}</Text> <br/>
+                              <Text strong>Chuyên khoa:</Text> <Text>{doctor.specialty == "Dermatology" ? "Da liễu" : doctor.specialty}</Text> <br/>
                               <Text strong>Nơi công tác:</Text> <Text>{doctor.workplace}</Text>
                           </div>
                       </Col>

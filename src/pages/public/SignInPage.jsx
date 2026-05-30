@@ -70,7 +70,17 @@ const onFinish = async (values) => {
       }
 
     } else {
-      message.error(res.message || 'Đăng nhập thất bại, vui lòng thử lại.');
+      const apiMessage = res.message;
+      
+      const errorMapping = {
+        'Invalid credentials': 'Tài khoản với email này không tồn tại',
+        'User is not registered completely or activated': 'Người dùng chưa hoàn thành đăng ký hoặc tài khoản bị vô hiệu hóa',
+        'Invalid Password': 'Sai mật khẩu'
+      };
+
+      const displayMessage = errorMapping[apiMessage] || apiMessage || 'Đăng nhập thất bại, vui lòng thử lại.';
+      
+      message.error(displayMessage);
     }
   };
 

@@ -11,7 +11,8 @@ import {
   Spin,
   Empty,
   Button,
-  notification
+  notification,
+  message
 } from "antd";
 import {
   CalendarOutlined,
@@ -85,7 +86,18 @@ export default function PatientDashboardPage() {
           setUpcomingApt(null);
         }
       } catch (error) {
-        console.error("Lỗi lấy lịch sắp tới:", error);
+        const apiMessage = error?.response?.data?.message || '';
+        let displayMessage = "Có lỗi xảy ra khi lấy thông tin lịch hẹn.";
+
+        if (apiMessage.includes('Metadata is lost for appointment with id')) {
+          displayMessage = "Có một cuộc hẹn bị mất đi thông tin chi tiết";
+        } else if (apiMessage === 'Error getting upcoming appointment') {
+          displayMessage = "Không thể lấy thông tin cuộc hẹn sắp tới";
+        } else if (apiMessage) {
+          displayMessage = apiMessage;
+        }
+
+        message.error(displayMessage);
         setUpcomingApt(null);
       } finally {
         setLoadingApt(false);
@@ -96,9 +108,9 @@ export default function PatientDashboardPage() {
   }, [user, navigate]);
 
   const hospitalIntroSlides = [
-    "ATS-Care là nền tảng y tế thông minh giúp bệnh nhân dễ dàng đặt lịch, theo dõi sức khỏe và nhận chẩn đoán da liễu từ AI.",
+    "AST-Care là nền tảng y tế thông minh giúp bệnh nhân dễ dàng đặt lịch, theo dõi sức khỏe và nhận chẩn đoán da liễu từ AI.",
     "Mục tiêu của chúng tôi là mang đến trải nghiệm chăm sóc sức khỏe hiệu quả, tiện lợi và an toàn.",
-    "Với đội ngũ y bác sĩ hàng đầu và công nghệ hiện đại, ATS-Care luôn đồng hành cùng sức khỏe của bạn.",
+    "Với đội ngũ y bác sĩ hàng đầu và công nghệ hiện đại, AST-Care luôn đồng hành cùng sức khỏe của bạn.",
   ];
 
 const featureCards = [

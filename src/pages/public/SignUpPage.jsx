@@ -105,7 +105,13 @@ export default function SignUpPage() {
             setCurrentStep(1);
         }
     } catch (error) {
-        message.error(error.response?.data?.message || "Lỗi gửi OTP");
+        const apiMessage = error.response?.data?.message;
+        const errorMapping = {
+            "Email is already registered": "Email đã được đăng ký",
+            "Error sending register otp": "Lỗi gửi OTP"
+        };
+        const displayMessage = errorMapping[apiMessage] || apiMessage || "Lỗi hệ thống, vui lòng thử lại sau";
+        message.error(displayMessage);
     } finally {
         setLoading(false);
     }
@@ -135,7 +141,7 @@ export default function SignUpPage() {
         } else if (errorMsg === 'Wrong OTP') {
             message.error("Mã OTP không chính xác.");
         } else {
-            message.error(errorMsg);
+            message.error("Lỗi trong xác nhận OTP");
         }
     } finally {
         setLoading(false);

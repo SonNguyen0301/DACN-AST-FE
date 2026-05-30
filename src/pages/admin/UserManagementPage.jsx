@@ -252,7 +252,15 @@ export default function UserManagementPage() {
       message.success('Đã xóa tài khoản thành công');
       fetchUsers();
     } catch (err) {
-      message.error(err?.response?.data?.message || 'Có lỗi khi xóa');
+      const apiMessage = err?.response?.data?.message;
+      
+      const errorMapping = {
+        'Doctor account not found.': 'Không tìm thấy tài khoản bác sĩ',
+        'Admission staff account not found.': 'Không tìm thấy tài khoản nhân viên y tế'
+      };
+
+      const displayMessage = errorMapping[apiMessage] || apiMessage || 'Có lỗi khi xóa';
+      message.error(displayMessage);
     }
   };
 
@@ -302,7 +310,21 @@ export default function UserManagementPage() {
       setIsModalOpen(false);
       fetchUsers();
     } catch (e) {
-      message.error(e?.response?.data?.message || 'Có lỗi xảy ra, mã nhân viên/bác sĩ có thể bị trùng');
+      const apiMessage = e?.response?.data?.message;
+      
+      const errorMapping = {
+        'Email has already been registered.': 'Email đã được đăng ký',
+        'Doctor code has already been registered.': 'Mã bác sĩ đã tồn tại trong hệ thống',
+        'Staff code has already been registered.': 'Mã nhân viên đã tồn tại trong hệ thống',
+        
+        'Patient account not found.': 'Không tìm thấy tài khoản bệnh nhân',
+        'Doctor account not found.': 'Không tìm thấy tài khoản bác sĩ',
+        'Admission staff account not found.': 'Không tìm thấy tài khoản nhân viên y tế'
+      };
+
+      const displayMessage = errorMapping[apiMessage] || apiMessage || 'Có lỗi xảy ra, vui lòng thử lại sau';
+      
+      message.error(displayMessage);
     }
   };
 

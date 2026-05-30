@@ -120,7 +120,16 @@ export default function DoctorDashboardPage() {
                   setDiseaseData(mappedDisease);
               }
           } catch (error) {
-              console.error("Lỗi lấy dữ liệu Dashboard tổng quan:", error);
+              const apiMessage = error?.response?.data?.message;
+              
+              const errorMapping = {
+                  'Invalid month': 'Thời gian không hợp lệ',
+                  'Doctor not found': 'Không thể tìm thấy thông tin của bác sĩ hiện tại'
+              };
+
+              const displayMessage = errorMapping[apiMessage] || apiMessage || 'Có lỗi xảy ra khi tải dữ liệu trang chủ.';
+              
+              message.error(displayMessage); 
           }
       };
 
@@ -220,6 +229,7 @@ export default function DoctorDashboardPage() {
             }
         } catch (error) {
             console.error("Lỗi lấy dữ liệu calendar:", error);
+            message.error("Có lỗi xảy ra khi tải dữ liệu lịch khám.");
         } finally {
             setLoadingCalendar(false);
         }
@@ -274,6 +284,7 @@ export default function DoctorDashboardPage() {
               }
           } catch (error) {
               console.error("Lỗi lấy danh sách khám theo ngày:", error);
+              message.error("Có lỗi xảy ra khi tải danh sách khám theo ngày.");
               setWaitingPatients([]);
           } finally {
               setLoadingWaiting(false);
@@ -302,8 +313,14 @@ const handleStartConsultation = async (patient) => {
               message.error({ content: 'Không thể bắt đầu ca khám', key: 'startExam' });
           }
       } catch (error) {
-          console.error("Lỗi khi bắt đầu khám:", error);
-          message.error({ content: error.response?.data?.message || "Không thể bắt đầu ca khám.", key: 'startExam' });
+          const apiMessage = error.response?.data?.message;
+            const errorMapping = {
+                "Appointment does not belong to the given patient.": "Phiên khám này không thể bắt đầu vì sai lệch trong bệnh nhân",
+                "You are not assigned to examine this appointment.": "Bạn không được hẹn để bắt đầu phiên khám với cuộc hẹn này",
+                "There is an ongoing examination must be cancelled or completed": "Có một phiên khám đang diễn ra cần được hoàn thành hoặc hủy"
+            };
+            const errorMessage = errorMapping[apiMessage] || "Không thể bắt đầu ca khám.";
+            message.error(errorMessage);
       }
   };
 

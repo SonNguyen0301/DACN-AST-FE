@@ -59,7 +59,16 @@ export default function ResetPasswordPage() {
         message.error(res.data.message || 'Có lỗi xảy ra, vui lòng thử lại.');
       }
     } catch (error) {
-      message.error(error.response?.data?.message || 'Link đã hết hạn hoặc không hợp lệ.');
+      const apiMessage = error.response?.data?.message;
+      
+      const errorMapping = {
+        'User not found': 'Người dùng không tìm thấy',
+        'Invalid or expired password reset link': 'Link thay đổi mật khẩu không hợp lệ hoặc hết hạn'
+      };
+
+      const displayMessage = errorMapping[apiMessage] || apiMessage || 'Link đã hết hạn hoặc không hợp lệ.';
+      
+      message.error(displayMessage);
     } finally {
       setLoading(false);
     }
