@@ -84,7 +84,18 @@ export default function AppointmentPage() {
         }));
       }
     } catch (err) {
-      console.error(err);
+      const apiMessage = err?.response?.data?.message || '';
+      let displayMessage = "Không thể tải danh sách lịch hẹn.";
+
+      if (apiMessage.includes('Metadata is lost for appointment with id')) {
+        displayMessage = "Có một cuộc hẹn bị mất đi thông tin chi tiết";
+      } else if (apiMessage === 'Error getting list of appointments') {
+        displayMessage = "Không thể lấy danh sách cuộc hẹn";
+      } else if (apiMessage) {
+        displayMessage = apiMessage;
+      }
+
+      message.error(displayMessage);
     } finally {
       setLoading(false);
     }
@@ -114,8 +125,18 @@ export default function AppointmentPage() {
       });
       setAppointments(newAppointments);
     } catch (error) {
-        console.error("Lỗi lấy lịch hẹn:", error);
-        message.error("Không thể tải danh sách lịch hẹn.");
+        const apiMessage = error?.response?.data?.message || '';
+      let displayMessage = "Không thể tải danh sách lịch hẹn.";
+
+      if (apiMessage.includes('Metadata is lost for appointment with id')) {
+        displayMessage = "Có một cuộc hẹn bị mất đi thông tin chi tiết";
+      } else if (apiMessage === 'Error getting list of appointments') {
+        displayMessage = "Không thể lấy danh sách cuộc hẹn";
+      } else if (apiMessage) {
+        displayMessage = apiMessage;
+      }
+
+      message.error(displayMessage);
     } finally {
         setLoading(false);
     }
@@ -189,8 +210,27 @@ export default function AppointmentPage() {
                 fetchAppointments(); 
             }
         } catch (error) {
-            message.error("Cập nhật thất bại.");
-            console.error(error);
+           const apiMessage = error?.response?.data?.message || '';
+            let displayMessage = "Cập nhật thất bại."; 
+
+            if (apiMessage.includes('Appointment with id') && apiMessage.includes('not found')) {
+                displayMessage = "Không thể tìm thấy cuộc hẹn";
+            } else if (apiMessage.includes('Cannot update appointment with status')) {
+                displayMessage = "Không thể thay đổi thông tin của cuộc hẹn vì cuộc hẹn đang diễn ra hoặc đã hủy";
+            } 
+            else if (apiMessage === 'You do not have permission to update this appointment') {
+                displayMessage = "Bạn không được quyền thay đổi thông tin cuộc hẹn này";
+            } else if (apiMessage === 'Unsupported file type') {
+                displayMessage = "Không hỗ trợ hình ảnh với định dạng này, hãy thử lại với ảnh PNG, JPEG hoặc JPG";
+            } else if (apiMessage === 'File is empty or corrupted') {
+                displayMessage = "Không thể nhận diện file hoặc file bị lỗi";
+            } else if (apiMessage === 'Error updating appointment') {
+                displayMessage = "Lỗi cập nhật cuộc hẹn";
+            } else if (apiMessage) {
+                displayMessage = apiMessage; 
+            }
+
+            message.error(displayMessage);
         } finally {
             setSubmitting(false);
         }
@@ -235,8 +275,29 @@ export default function AppointmentPage() {
           fetchAppointments(); 
         }
     } catch (error) {
-        console.error("Lỗi hủy lịch hẹn:", error);
-        message.error("Hủy lịch thất bại.");
+        const apiMessage = error?.response?.data?.message || '';
+        let displayMessage = "Hủy lịch thất bại."; 
+
+        if (apiMessage.includes('Appointment with id') && apiMessage.includes('not found')) {
+            displayMessage = "Không tìm thấy cuộc hẹn";
+        } 
+        else if (apiMessage === 'You do not have permission to cancel this appointment') {
+            displayMessage = "Bạn không có quyền hủy cuộc hẹn của người khác";
+        } else if (apiMessage === 'You do not have permission to cancel appointment from other department') {
+            displayMessage = "Nhân viên không có quyền hủy cuộc hẹn của bệnh nhân khoa khác";
+        } else if (apiMessage === 'You do not have permission to cancel appointment from other doctor') {
+            displayMessage = "Bạn không thể hủy cuộc hẹn của bệnh nhân này với bác sĩ khác";
+        } else if (apiMessage === 'Only appointments with status SCHEDULED can be cancelled') {
+            displayMessage = "Chỉ những cuộc hẹn chưa được diễn ra mới có thể hủy";
+        } 
+        else if (apiMessage === 'Failed to cancel appointment' || apiMessage === 'Error cancelling appointment') {
+            displayMessage = "Lỗi hủy cuộc hẹn";
+        } 
+        else if (apiMessage) {
+            displayMessage = apiMessage;
+        }
+
+        message.error(displayMessage);
     } finally {
         setSubmitting(false);
     }

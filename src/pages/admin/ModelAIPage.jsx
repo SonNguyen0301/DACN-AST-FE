@@ -90,10 +90,22 @@ export default function ModelAIPage() {
       if (response.data?.success) {
         message.success('Kết nối Dify API thành công!');
       } else {
-        message.error(response.data?.message || 'Kết nối thất bại. Token không hợp lệ.');
+        const apiMessage = response.data?.message;
+        
+        if (apiMessage === 'Invalid token or API error') {
+          message.error('Token không hợp lệ hoặc lỗi API');
+        } else {
+          message.error(apiMessage || 'Kết nối thất bại. Token không hợp lệ.');
+        }
       }
     } catch (error) {
-      message.error('Lỗi kết nối đến server backend.');
+      const apiMessage = error.response?.data?.message;
+      
+      if (apiMessage === 'Invalid token or API error') {
+        message.error('Token không hợp lệ hoặc lỗi API');
+      } else {
+        message.error(apiMessage || 'Lỗi kết nối đến server backend.');
+      }
     } finally {
       setTestingConnection(false);
     }
@@ -166,7 +178,15 @@ export default function ModelAIPage() {
       setIsModalOpen(false);
       fetchModels(chatbotPagination.page, diagnosisPagination.page);
     } catch (error) {
-      message.error(error?.response?.data?.message || 'Có lỗi xảy ra!');
+      const apiMessage = error?.response?.data?.message;
+      
+      const errorMapping = {
+        'Chatbot model version already exists.': 'Đã tồn tại version của chatbot trong hệ thống',
+        'Chatbot model not found.': 'Không tìm thấy chatbot'
+      };
+
+      const displayMessage = errorMapping[apiMessage] || apiMessage || 'Có lỗi xảy ra!';
+      message.error(displayMessage);
     }
   };
 

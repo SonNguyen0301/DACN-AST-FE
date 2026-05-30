@@ -210,7 +210,7 @@ export default function BookingPage() {
                         
                         <Text strong style={{ display: 'block', marginTop: 10, fontSize: 15 }}>
                             <MedicineBoxOutlined style={{ color: '#1677ff', marginRight: 8 }}/> 
-                            Khoa: {doctor.department == "dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
+                            Khoa: {doctor.department == "Dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
                         </Text>
 
                         <Paragraph type="secondary" style={{ marginTop: 10, marginBottom: 0 }}>
@@ -254,7 +254,7 @@ export default function BookingPage() {
                             
                             <Text strong style={{ fontSize: 14, marginBottom: 8 }}>
                                 <MedicineBoxOutlined style={{ color: '#1677ff', marginRight: 4 }}/> 
-                                {doctor.department == "dermatology" ? "Da liễu" : doctor.department == "cardiology" ? "Tim mạch" : doctor.department == "pediatrics" ? "Nhi khoa" : doctor.department == "gastroenterology" ? "Tiêu hóa" : doctor.department == "ent" ? "Tai Mũi Họng" : doctor.department == "orthopedics" ? "Cơ Xương Khớp" : doctor.department}
+                                {doctor.department == "Dermatology" ? "Da liễu" : doctor.department == "Cardiology" ? "Tim mạch" : doctor.department == "Pediatrics" ? "Nhi khoa" : doctor.department == "Gastroenterology" ? "Tiêu hóa" : doctor.department == "ENT" ? "Tai Mũi Họng" : doctor.department == "Orthopedics" ? "Cơ Xương Khớp" : doctor.department}
                             </Text>
 
                             <Paragraph 

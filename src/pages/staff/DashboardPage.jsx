@@ -13,7 +13,8 @@ import {
   List,
   Badge,
   Space,
-  Modal
+  Modal,
+  message
 } from "antd";
 import {
   UserOutlined,
@@ -88,6 +89,7 @@ export default function AdmissionStaffDashboardPage() {
             }
         } catch (error) {
             console.error("Lỗi lấy danh sách cuộc hẹn:", error);
+            message.error("Không thể tải danh sách cuộc hẹn vào lúc này.");
         }
     };
 
@@ -115,6 +117,7 @@ export default function AdmissionStaffDashboardPage() {
           }
       } catch (error) {
           console.error("Lỗi lấy danh sách bác sĩ trực:", error);
+          message.error("Không thể tải danh sách bác sĩ trực vào lúc này.");
       }
   };
 
@@ -147,6 +150,7 @@ export default function AdmissionStaffDashboardPage() {
           }
       } catch (error) {
           console.error("Lỗi lấy thống kê dashboard:", error);
+          message.error("Không thể tải thông tin dashboard vào lúc này.");
       }
   };
 
