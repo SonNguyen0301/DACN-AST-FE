@@ -495,8 +495,14 @@ export default function ExaminationPage() {
                               setActivePatient(record);
                           }
                       } catch (error) {
-                          console.error("Lỗi khi bắt đầu khám:", error);
-                          message.error(error.response?.data?.message || "Không thể bắt đầu ca khám.");
+                            const apiMessage = error.response?.data?.message;
+                            const errorMapping = {
+                                "Appointment does not belong to the given patient.": "Phiên khám này không thể bắt đầu vì sai lệch trong bệnh nhân",
+                                "You are not assigned to examine this appointment.": "Bạn không được hẹn để bắt đầu phiên khám với cuộc hẹn này",
+                                "There is an ongoing examination must be cancelled or completed": "Có một phiên khám đang diễn ra cần được hoàn thành hoặc hủy"
+                            };
+                            const errorMessage = errorMapping[apiMessage] || "Không thể bắt đầu ca khám.";
+                            message.error(errorMessage);
                       }
                   }}>
                       {record.status === 'EXAMINING' ? 'Tiếp tục khám' : 'Bắt đầu khám'}

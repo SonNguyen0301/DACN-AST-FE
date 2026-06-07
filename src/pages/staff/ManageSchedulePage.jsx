@@ -328,8 +328,34 @@ export default function ManageStaffSchedulePage() {
               }
           }
       } catch (error) {
-          console.error("Lỗi upload CSV:", error);
-          message.error({ content: error.response?.data?.message || 'Có lỗi xảy ra khi upload file.', key: 'uploadCsv', duration: 3 });
+          const apiMessage = error.response?.data?.message || '';
+        let displayMessage = 'Có lỗi xảy ra khi upload file.'; 
+
+        if (apiMessage) {
+            let match;
+            
+            if ((match = apiMessage.match(/CSV file is missing required columns:\s*(.*)/))) {
+                displayMessage = `File CSV bị thiếu cột cần thiết sau: ${match[1]}`;
+            } 
+            else if ((match = apiMessage.match(/Duplicate CSV row\s*-\s*(.*)/))) {
+                displayMessage = `Dòng sau trong CSV đã bị trùng: ${match[1]}`;
+            } 
+            else if ((match = apiMessage.match(/Invalid date format \(YYYY-mm-dd required\)\s*-\s*(.*)/))) {
+                displayMessage = `Định dạng ngày của dòng này sai, cần theo định dạng YYYY-mm-dd: ${match[1]}`;
+            } 
+            else if ((match = apiMessage.match(/Invalid '(from|to)' time format \(HH:mm required\)\s*-\s*(.*)/))) {
+                displayMessage = `Định dạng thời gian sai ở dòng sau, cần theo định dạng HH:mm: ${match[2]}`;
+            } 
+            else if ((match = apiMessage.match(/Doctor not found with code (.*?)\s*-\s*(.*)/))) {
+                displayMessage = `Bác sĩ không tồn tại với mã bác sĩ ${match[1]} ở dòng sau: ${match[2]}`;
+            } 
+            else {
+                displayMessage = apiMessage;
+            }
+        }
+
+        message.error({ content: displayMessage, key: 'uploadCsv', duration: 4 });
+    }
       }
   };
 
@@ -371,8 +397,54 @@ export default function ManageStaffSchedulePage() {
               fetchSchedule(currentMonthView); 
           }
       } catch (error) {
-          console.error("Lỗi thêm lịch:", error);
-          message.error(error.response?.data?.message || 'Có lỗi xảy ra khi xóa ca trực.');
+          const apiMessage = error.response?.data?.message || '';
+          let displayMessage = isEditMode ? 'Có lỗi xảy ra khi cập nhật ca trực.' : 'Có lỗi xảy ra khi thêm ca trực.';
+
+          if (apiMessage.includes('Schedule already exists, existing schedule:')) {
+              displayMessage = 'Lịch làm việc này đã tồn tại trong hệ thống';
+          } 
+          else if (apiMessage.includes('Schedule not found with list of id')) {
+              displayMessage = 'Thông tin lịch hẹn không tìm thấy trong danh sách cần hủy';
+          } 
+          else if (apiMessage.includes('Schedule not found with id')) {
+              displayMessage = 'Không thể tìm thấy lịch làm việc';
+          } 
+          else if (apiMessage.includes('Staff not found with id')) {
+              displayMessage = 'Thông tin của nhân viên không tìm thấy trong hệ thống';
+          } 
+          else if (apiMessage.includes('Schedule date is in the past, the schedule cannot be adjust for schedule with id')) {
+              displayMessage = 'Lịch làm việc trong quá khứ không thể được điều chỉnh';
+          } 
+          else if (apiMessage.includes('Schedule date is in the week, the schedule cannot be deleted for schedule with id')) {
+              displayMessage = 'Đang trong tuần làm việc, không thể hủy lịch hẹn này';
+          } 
+          else if (apiMessage.includes('Schedule has appointments, the schedule with id') && apiMessage.includes('cannot be deleted')) {
+              displayMessage = 'Lịch làm việc đã có bệnh nhân đặt hẹn, không thể hủy';
+          } else if (apiMessage === 'Invalid time range') {
+              displayMessage = 'Thời gian kết thúc không được trước thời gian bắt đầu';
+          } 
+          else if (apiMessage === 'Time must be on the hour (XX:00:00) or half hour (XX:30:00)') {
+              displayMessage = 'Thời gian được định phải theo định dạng (XX:00:00) hoặc (XX:30:00)';
+          } 
+          else if (apiMessage === 'In a request period that has a schedule with an internal time period, please reselects the time period') {
+              displayMessage = 'Trong lịch làm việc được đặt có khoảng thời gian đã được đặt bởi bác sĩ khác, hãy điều chỉnh lại thời gian đặt';
+          } 
+          else if (apiMessage === 'Invalid time range or the time range after adjust is invalid') {
+              displayMessage = 'Thời gian đặt được hiệu chỉnh nhằm tránh xung đột xảy ra lỗi, hãy điều chỉnh lại thời gian đặt';
+          } 
+          else if (apiMessage === 'You cannot update schedule at date that is in the past') {
+              displayMessage = 'Không thể cập nhật lại lịch làm việc ở quá khứ';
+          } 
+          else if (apiMessage === 'Cannot delete schedule from other department') {
+              displayMessage = 'Không thể hủy cuộc hẹn của chuyên khoa khác';
+          } 
+          else if (apiMessage === 'Schedule is not assigned to any doctor') {
+              displayMessage = 'Lịch làm việc không có bác sĩ phụ trách';
+          } else if (apiMessage) {
+              displayMessage = apiMessage;
+          }
+
+          message.error(displayMessage);
       }
   };
 
@@ -400,8 +472,28 @@ export default function ManageStaffSchedulePage() {
                       setSelectedDateShifts(prev => prev.filter(item => item.id !== scheduleId));
                   }
               } catch (error) {
-                  console.error("Lỗi xóa ca trực:", error);
-                  message.error(error.response?.data?.message || 'Có lỗi xảy ra khi xóa ca trực.');
+                  const apiMessage = error.response?.data?.message || '';
+                  let displayMessage = 'Có lỗi xảy ra khi xóa ca trực.';
+
+                  if (apiMessage.includes('Staff not found with id')) {
+                      displayMessage = 'Thông tin của nhân viên không tìm thấy trong hệ thống';
+                  } else if (apiMessage.includes('Schedule not found with list of id')) {
+                      displayMessage = 'Thông tin lịch hẹn không tìm thấy trong danh sách cần hủy';
+                  } else if (apiMessage.includes('Schedule date is in the past, the schedule cannot be adjust for schedule with id')) {
+                      displayMessage = 'Lịch làm việc trong quá khứ không thể được điều chỉnh';
+                  } else if (apiMessage.includes('Schedule date is in the week, the schedule cannot be deleted for schedule with id')) {
+                      displayMessage = 'Đang trong tuần làm việc, không thể hủy lịch hẹn này';
+                  } else if (apiMessage.includes('Schedule has appointments, the schedule with id') && apiMessage.includes('cannot be deleted')) {
+                      displayMessage = 'Lịch làm việc đã có bệnh nhân đặt hẹn, không thể hủy';
+                  } else if (apiMessage === 'Cannot delete schedule from other department') {
+                      displayMessage = 'Không thể hủy cuộc hẹn của chuyên khoa khác';
+                  } else if (apiMessage === 'Schedule is not assigned to any doctor') {
+                      displayMessage = 'Lịch làm việc không có bác sĩ phụ trách';
+                  } else if (apiMessage) {
+                      displayMessage = apiMessage;
+                  }
+
+                  message.error(displayMessage);
               }
           }
     });
@@ -456,8 +548,28 @@ export default function ManageStaffSchedulePage() {
                 
                 if (remainingShifts.length === 0) setViewDetailsOpen(false);
             } catch (error) {
-                console.error("Lỗi xóa hàng loạt:", error);
-                message.error({ content: error.response?.data?.message || 'Có lỗi xảy ra khi xóa hàng loạt', key: 'bulkDelete' });
+                const apiMessage = error.response?.data?.message || '';
+                let displayMessage = 'Có lỗi xảy ra khi xóa hàng loạt';
+
+                if (apiMessage.includes('Staff not found with id')) {
+                    displayMessage = 'Thông tin của nhân viên không tìm thấy trong hệ thống';
+                } else if (apiMessage.includes('Schedule not found with list of id')) {
+                    displayMessage = 'Thông tin lịch hẹn không tìm thấy trong danh sách cần hủy';
+                } else if (apiMessage.includes('Schedule date is in the past, the schedule cannot be adjust for schedule with id')) {
+                    displayMessage = 'Lịch làm việc trong quá khứ không thể được điều chỉnh';
+                } else if (apiMessage.includes('Schedule date is in the week, the schedule cannot be deleted for schedule with id')) {
+                    displayMessage = 'Đang trong tuần làm việc, không thể hủy lịch hẹn này';
+                } else if (apiMessage.includes('Schedule has appointments, the schedule with id') && apiMessage.includes('cannot be deleted')) {
+                    displayMessage = 'Lịch làm việc đã có bệnh nhân đặt hẹn, không thể hủy';
+                } else if (apiMessage === 'Cannot delete schedule from other department') {
+                    displayMessage = 'Không thể hủy cuộc hẹn của chuyên khoa khác';
+                } else if (apiMessage === 'Schedule is not assigned to any doctor') {
+                    displayMessage = 'Lịch làm việc không có bác sĩ phụ trách';
+                } else if (apiMessage) {
+                    displayMessage = apiMessage;
+                }
+
+                message.error({ content: displayMessage, key: 'bulkDelete' });
             }
         }
     });

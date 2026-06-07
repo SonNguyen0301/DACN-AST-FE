@@ -250,13 +250,26 @@ export default function DoctorProfilePage() {
         }
       }
     } catch (error) {
-        const apiMessage = error?.response?.data?.message || 'Đặt lịch thất bại.';
+        const apiMessage = error?.response?.data?.message || '';
+        let displayMessage = 'Đặt lịch thất bại.'; 
 
-        if (apiMessage.includes('You have already booked an appointment with doctor') ) {
-            message.error("Bạn đã đặt lịch hẹn vào thời điểm này với bác sĩ khác.");
-            return;
-        } 
-        message.error(apiMessage);
+        if (apiMessage.includes('Patient not found for')) {
+            displayMessage = 'Thông tin bệnh nhân đặt lịch hẹn không thể tìm thấy';
+        } else if (apiMessage.includes('You have already booked an appointment with doctor')) {
+            displayMessage = 'Bạn đã đặt lịch hẹn vào thời điểm này với bác sĩ khác trong cùng ngày';
+        } else if (apiMessage.includes('Room not found for shift with id')) {
+            displayMessage = 'Không tìm thấy phòng khám cho thời điểm này';
+        } else if (apiMessage === 'This shift is not available for the selected doctor') {
+            displayMessage = 'Bác sĩ được đặt không làm việc vào thời điểm này';
+        } else if (apiMessage === 'This shift has already been booked') {
+            displayMessage = 'Thời điểm này của bác sĩ đã được đặt';
+        } else if (apiMessage === 'Failed to book shift or shift is already booked') {
+            displayMessage = 'Không thể đặt lịch hoặc lịch đã được đặt';
+        } else if (apiMessage) {
+            displayMessage = apiMessage; 
+        }
+
+        message.error(displayMessage);
     } finally {
         setBookingLoading(false);
     }

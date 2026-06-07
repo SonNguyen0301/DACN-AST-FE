@@ -7,7 +7,7 @@ import {
 } from "antd";
 import { 
   PlusOutlined, SendOutlined, 
-  PaperClipOutlined, LoadingOutlined, CloseCircleFilled
+  PaperClipOutlined, LoadingOutlined, CloseCircleFilled, RobotOutlined
 } from "@ant-design/icons";
 import useAuth from "../../hooks/useAuth"; 
 import { getConversationsAPI, getMessagesAPI, sendChatStreamAPI, uploadFileChatAPI } from "../../services/chatService";
@@ -196,6 +196,7 @@ export default function ChatBotPopup({ onClose }) {
       >
         {!isUser && (
             <Avatar 
+                icon={<RobotOutlined />}
                 style={{ backgroundColor: '#e6f7ff', color: '#1677ff', marginRight: 10, marginTop: 5 }} 
             />
         )}

@@ -237,7 +237,7 @@ useEffect(() => {
       }
     } catch (error) {
       console.error("Lỗi cập nhật:", error);
-      message.error(error.response?.data?.message || "Cập nhật thất bại. Vui lòng kiểm tra lại thông tin.");
+      message.error("Cập nhật thất bại. Vui lòng kiểm tra lại thông tin.");
     } finally {
       setUpdating(false);
     }
