@@ -415,8 +415,8 @@ useEffect(() => {
                                             Chẩn đoán sơ bộ:
                                         </Text>
                                         <Text strong style={{ color: '#333', fontSize: 15 }}>
-                                            {/* {apt.diseases && apt.diseases.length > 0 ? apt.diseases.join(', ') : 'Chưa cập nhật'} */}
-                                            {apt.symptoms}
+                                            {apt.diseases && apt.diseases.length > 0 ? apt.diseases.join(', ') : 'Chưa cập nhật'}
+                                            {/* {apt.symptoms} */}
                                         </Text>
                                         </div>
                                     </Col>

@@ -356,7 +356,6 @@ export default function ManageStaffSchedulePage() {
 
         message.error({ content: displayMessage, key: 'uploadCsv', duration: 4 });
     }
-      }
   };
 
   const handleFormSubmit = async (values) => {
